@@ -1,0 +1,89 @@
+# מודל הנתונים ושמירה
+
+## מה הרכיב עושה
+
+מחזיק את כל מצב האפליקציה, משנה אותו רק דרך reducer טהור, שומר אותו ל-localStorage, ומאפשר ביטול (undo) של מחיקות וייבוא. הקוד לא נוגע ב-DOM ולכן נבדק ב-Node.
+
+## קבצים
+
+- `src/js/store.js` - reducer, נרמול, טעינה, `createStore`
+- `src/js/utils.js` - `cleanText`, `clampInt`, `isHexColor`, `toTimestamp`, `createId`
+- `src/js/ui-prefs.js` - העדפות תצוגה (נשמרות בנפרד מהנתונים)
+- `tests/store.test.js`, `tests/utils-and-prefs.test.js`
+
+## מבנה ה-state
+
+```js
+{
+  schemaVersion: 1,
+  categories: [{ id, name, color }],          // color בפורמט #rrggbb בלבד
+  tasks: [{
+    id, title, description, categoryId,       // categoryId = null -> "ללא קטגוריה"
+    status, contact,                           // contact = ממי מחכים / ממי הגיע המייל
+    statusChangedAt, lastCheckedAt,            // טיימרים (ms epoch); lastCheckedAt מתאפס בכל שינוי סטטוס
+    createdAt, updatedAt,
+    subtasks: [{ id, title, status, contact, statusChangedAt, lastCheckedAt, createdAt, updatedAt }],
+  }],
+  settings: { claudeCheckMinutes, waitingFollowUpDays, notificationsEnabled, theme, lastExportAt },
+}
+```
+
+ברירת מחדל: שלוש קטגוריות - פיתוח (`#2563eb`), HR (`#db2777`), אישי (`#16a34a`). משימות חדשות נכנסות לראש הרשימה; תתי משימות מתווספות לסוף.
+
+## פעולות ה-reducer
+
+`reduce(state, action, { now, makeId })` מחזיר את **אותו אובייקט** כשהפעולה לא שינתה כלום - כך ה-store יודע לא לשמור ולא לרנדר.
+
+| פעולה | שדות | התנהגות |
+|-------|------|---------|
+| `task/add` | title, description, categoryId, status, contact | כותרת ריקה נדחית; קטגוריה לא קיימת -> null; סטטוס לא חוקי -> todo; עד 2000 משימות |
+| `task/update` | taskId, changes{title, description, contact, categoryId} | כותרת ריקה מתעלמת, שאר השדות מתעדכנים |
+| `task/setStatus` | taskId, status | מעדכן `statusChangedAt`, מאפס `lastCheckedAt` |
+| `task/markChecked` | taskId | רק ל"קלוד רץ" / "ממתין למייל": `lastCheckedAt = now` |
+| `task/delete` | taskId | |
+| `subtask/add` / `update` / `setStatus` / `markChecked` / `delete` | taskId, subtaskId, ... | כמו במשימה; עד 300 תתי משימות למשימה; כל שינוי מעדכן את `updatedAt` של משימת האב |
+| `category/add` | name, color | שם כפול (ללא תלות באותיות גדולות/קטנות) נדחה; צבע לא חוקי -> `#64748b`; עד 50 קטגוריות |
+| `category/update` | categoryId, changes{name, color} | ערכים לא חוקיים מתעלמים |
+| `category/delete` | categoryId | המשימות נשארות ועוברות ל"ללא קטגוריה" |
+| `settings/update` | changes | עובר `normalizeSettings` (הגבלת טווחים) |
+
+מגבלות אורך (`LIMITS`): כותרת 200, תיאור 4000, איש קשר 120, שם קטגוריה 40. טקסט בשורה אחת מכווץ רווחים ושורות; התיאור שומר ירידות שורה.
+
+## נרמול קלט לא אמין
+
+`normalizeState(raw)` רץ על כל מה שנטען מ-localStorage או מיובא מקובץ גיבוי, ובונה את ה-state מחדש שדה אחרי שדה:
+- זורק שגיאה (בעברית) אם אין מערכי `tasks` ו-`categories`.
+- מזהים כפולים או חסרים מקבלים מזהה חדש (ייחודיות על כל המסמך).
+- סטטוס לא חוקי -> todo; הפניה לקטגוריה שלא קיימת -> null; צבע לא חוקי -> צבע ברירת מחדל.
+- פריטים בלי כותרת נזרקים; חותמות זמן לא תקינות מוחלפות.
+- חותמות זמן עתידיות נחתכות ל-`now` (אחרת הטיימרים של קלוד/תזכורת לא היו מגיעים לעולם); `lastCheckedAt` שקודם לתחילת הסטטוס הנוכחי מתאפס.
+- אותן תקרות כמו ב-reducer: עד 2000 משימות ו-300 תתי משימות למשימה, כדי שקובץ חריג לא יתקע את הדף.
+- שדות לא מוכרים נזרקים.
+
+## ה-store
+
+`createStore({ storage, clock, makeId, onPersistError })`:
+- `dispatch(action, { undoable, notify })` - מחזיר `false` אם לא היה שינוי. `undoable` שומר את המצב הקודם; כל שינוי נוסף מוחק אותו. `notify: false` שומר בלי לרנדר (עריכת טקסט במקום - ראו `USER_INTERFACE.md`).
+- `undo()`, `canUndo()`.
+- `replaceState(raw, { undoable })` - ייבוא גיבוי; זורק על קלט לא תקין בלי לשנות דבר.
+- `reloadFromStorage()` - נקרא מאירוע `storage` כשלשונית אחרת שמרה שינוי. אם הנתונים באחסון נמחקו או פגומים, ה-state הנוכחי נשאר ומוחזרת אזהרה (הלשונית לא מתרוקנת). ב-app.js הטעינה נדחית כל עוד מקלידים בשדה שלא נשמר, ומתבצעת ביציאה מהשדה.
+- state חדש לגמרי נשמר מיד, כדי שמזהי הקטגוריות לא ישתנו בין טעינות.
+
+טעינה (`loadState`) לא זורקת לעולם: אם הנתונים השמורים פגומים, הם מועתקים למפתח `taskManager.state.v1.corrupt-<timestamp>`, האפליקציה מתחילה מחדש, ומוצגת אזהרה. כשל בכתיבה (למשל מכסה מלאה) מדווח ל-`onPersistError` ומוצג כ-toast.
+
+## העדפות תצוגה
+
+`ui-prefs.js` שומר במפתח `taskManager.ui.v1`: סינון קטגוריות, סינון סטטוס, הצגת הושלמו, מיון ורשימת כרטיסים פתוחים. טקסט החיפוש לא נשמר בכוונה. ערכים לא חוקיים חוזרים לברירת מחדל.
+
+## גיבוי
+
+- ייצוא: קובץ `task-manager-backup-YYYY-MM-DD.json` עם כל ה-state (+ `app`, `exportedAt`), ועדכון `settings.lastExportAt`.
+- ייבוא: עד 5MB, JSON.parse, אישור משתמש, `replaceState` עם אפשרות ביטול.
+- `.gitignore` חוסם קבצי `*backup*.json` כדי שגיבויים עם נתוני עבודה לא ייכנסו לריפו.
+
+## מגבלות
+
+- הנתונים קיימים רק בדפדפן ובפרופיל שבהם נוצרו; אין סנכרון בין מכשירים מעבר לייצוא/ייבוא.
+- ניקוי נתוני האתר בדפדפן מוחק את המשימות - לכן יש תזכורת גיבוי (ראו `STATUS_WORKFLOW.md`).
+- undo זוכר צעד אחד בלבד.
+- שתי לשוניות שעורכות בו-זמנית: השמירה האחרונה גוברת (אין מיזוג).

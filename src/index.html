@@ -1,0 +1,181 @@
+<!doctype html>
+<html lang="he" dir="rtl">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self'; style-src 'self'; img-src 'self' data:; connect-src 'self'; object-src 'none'; base-uri 'none'">
+  <meta name="referrer" content="no-referrer">
+  <meta name="color-scheme" content="light dark">
+  <meta name="description" content="ניהול משימות ותתי משימות עם סטטוסים של המתנה למייל ותהליכי קלוד ברקע">
+  <title>ניהול משימות</title>
+  <link rel="icon" href="favicon.svg" type="image/svg+xml">
+  <link rel="stylesheet" href="css/styles.css">
+  <script type="module" src="js/app.js"></script>
+</head>
+<body>
+  <header class="topbar">
+    <div class="brand">
+      <img src="favicon.svg" alt="" class="brand-logo" width="30" height="30">
+      <h1>ניהול משימות</h1>
+    </div>
+    <div class="topbar-actions">
+      <button type="button" class="btn btn-primary" data-action="open-new-task" title="משימה חדשה (קיצור מקלדת: N)">
+        <span data-icon="plus"></span><span class="btn-label">משימה חדשה</span>
+      </button>
+      <button type="button" class="btn btn-ghost" data-action="open-categories" title="קטגוריות וצבעים">
+        <span data-icon="tag"></span><span class="btn-label">קטגוריות</span>
+      </button>
+      <button type="button" class="icon-btn" data-action="toggle-theme" title="מצב בהיר / כהה" aria-label="מצב בהיר / כהה">
+        <span data-icon="moon"></span>
+      </button>
+      <button type="button" class="icon-btn" data-action="open-settings" title="הגדרות וגיבוי" aria-label="הגדרות וגיבוי">
+        <span data-icon="sliders"></span>
+      </button>
+    </div>
+  </header>
+
+  <main class="layout">
+    <section id="dashboard" class="dashboard" aria-label="סיכום מצב"></section>
+    <section id="filters" class="filters" aria-label="סינון ומיון"></section>
+    <section id="backup-banner" aria-label="תזכורת גיבוי"></section>
+    <section id="task-list" class="task-list" aria-label="משימות"></section>
+  </main>
+
+  <noscript>
+    <p class="noscript">האפליקציה דורשת JavaScript.</p>
+  </noscript>
+
+  <div id="toast-region" class="toast-region" aria-live="polite"></div>
+
+  <!-- New / edit task -->
+  <dialog id="task-dialog" aria-labelledby="task-dialog-title">
+    <form id="task-form" class="dialog-body">
+      <header class="dialog-head">
+        <h2 id="task-dialog-title">משימה חדשה</h2>
+        <button type="button" class="icon-btn" data-action="close-dialog" aria-label="סגירה"><span data-icon="x"></span></button>
+      </header>
+
+      <label class="field">
+        <span class="field-label">כותרת</span>
+        <input name="title" type="text" required maxlength="200" autocomplete="off" placeholder="למשל: הקמת סביבת בדיקות לפרויקט">
+      </label>
+
+      <div class="field-row">
+        <label class="field">
+          <span class="field-label">
+            קטגוריה
+            <button type="button" class="btn btn-link btn-inline" data-action="open-categories">ניהול קטגוריות</button>
+          </span>
+          <select name="categoryId" class="select"></select>
+        </label>
+        <label class="field">
+          <span class="field-label">סטטוס</span>
+          <select name="status" class="select"></select>
+        </label>
+      </div>
+
+      <label class="field">
+        <span class="field-label">איש קשר <small>(אופציונלי - ממי מחכים לתשובה / ממי הגיע המייל)</small></span>
+        <input name="contact" type="text" maxlength="120" autocomplete="off">
+      </label>
+
+      <label class="field">
+        <span class="field-label">תיאור <small>(אופציונלי)</small></span>
+        <textarea name="description" rows="4" maxlength="4000"></textarea>
+      </label>
+
+      <footer class="dialog-foot">
+        <button type="button" id="task-dialog-delete" class="btn btn-danger-soft" data-action="delete-task-from-dialog" hidden>מחיקה</button>
+        <span class="spacer"></span>
+        <button type="button" class="btn btn-ghost" data-action="close-dialog">ביטול</button>
+        <button type="submit" class="btn btn-primary">שמירה</button>
+      </footer>
+    </form>
+  </dialog>
+
+  <!-- Categories and colors -->
+  <dialog id="categories-dialog" aria-labelledby="categories-dialog-title">
+    <div class="dialog-body">
+      <header class="dialog-head">
+        <h2 id="categories-dialog-title">קטגוריות וצבעים</h2>
+        <button type="button" class="icon-btn" data-action="close-dialog" aria-label="סגירה"><span data-icon="x"></span></button>
+      </header>
+      <p class="muted small">כל משימה כללית משויכת לקטגוריה, והצבע של הקטגוריה מסמן אותה ברשימה. שינויים נשמרים מיד.</p>
+
+      <ul id="categories-list" class="categories-list"></ul>
+
+      <form id="category-form" class="category-form">
+        <h3>קטגוריה חדשה</h3>
+        <div class="category-form-row">
+          <input type="color" id="new-category-color" class="color-input" value="#7c3aed" aria-label="צבע לקטגוריה החדשה">
+          <input type="text" id="new-category-name" maxlength="40" required autocomplete="off" placeholder="שם הקטגוריה, למשל: לקוחות" aria-label="שם הקטגוריה החדשה">
+          <button type="submit" class="btn btn-primary">הוספה</button>
+        </div>
+        <div id="category-swatches" class="swatches" role="group" aria-label="צבעים מוצעים"></div>
+      </form>
+
+      <footer class="dialog-foot">
+        <span class="spacer"></span>
+        <button type="button" class="btn btn-primary" data-action="close-dialog">סגירה</button>
+      </footer>
+    </div>
+  </dialog>
+
+  <!-- Settings and backup -->
+  <dialog id="settings-dialog" aria-labelledby="settings-dialog-title">
+    <form id="settings-form" class="dialog-body">
+      <header class="dialog-head">
+        <h2 id="settings-dialog-title">הגדרות וגיבוי</h2>
+        <button type="button" class="icon-btn" data-action="close-dialog" aria-label="סגירה"><span data-icon="x"></span></button>
+      </header>
+
+      <section class="settings-section">
+        <h3>תזכורות</h3>
+        <label class="setting-line">
+          <span>להזכיר לבדוק את קלוד אחרי</span>
+          <input type="number" name="claudeCheckMinutes" min="1" max="1440" step="1" data-action="setting-claude-minutes">
+          <span>דקות</span>
+        </label>
+        <label class="setting-line">
+          <span>להציע תזכורת על מייל שלא נענה אחרי</span>
+          <input type="number" name="waitingFollowUpDays" min="1" max="90" step="1" data-action="setting-followup-days">
+          <span>ימים</span>
+        </label>
+        <label class="toggle">
+          <input type="checkbox" name="notificationsEnabled" data-action="setting-notifications">
+          התראת דפדפן כשמגיע הזמן לבדוק את קלוד (כל עוד הלשונית פתוחה)
+        </label>
+      </section>
+
+      <section class="settings-section">
+        <h3>תצוגה</h3>
+        <label class="setting-line">
+          <span>ערכת צבעים</span>
+          <select name="theme" class="select" data-action="setting-theme">
+            <option value="auto">לפי המערכת</option>
+            <option value="light">בהירה</option>
+            <option value="dark">כהה</option>
+          </select>
+        </label>
+      </section>
+
+      <section class="settings-section">
+        <h3>נתונים וגיבוי</h3>
+        <p class="muted small">הנתונים נשמרים רק בדפדפן הזה ולא נשלחים לשום שרת. כדי לא לאבד אותם, או כדי להעביר אותם למחשב אחר, מייצאים קובץ גיבוי ומייבאים אותו.</p>
+        <p id="storage-summary" class="small"></p>
+        <p id="last-export-label" class="small muted"></p>
+        <div class="button-row">
+          <button type="button" class="btn btn-soft" data-action="export-backup"><span data-icon="download"></span>ייצוא גיבוי</button>
+          <button type="button" class="btn btn-soft" data-action="import-backup"><span data-icon="upload"></span>ייבוא מגיבוי</button>
+          <input type="file" id="import-input" accept="application/json,.json" data-action="import-file" hidden>
+        </div>
+      </section>
+
+      <footer class="dialog-foot">
+        <span class="spacer"></span>
+        <button type="button" class="btn btn-primary" data-action="close-dialog">סגירה</button>
+      </footer>
+    </form>
+  </dialog>
+</body>
+</html>

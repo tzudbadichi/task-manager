@@ -1,0 +1,11 @@
+# Backups exported from the app (may contain personal / work task data - never commit)
+*backup*.json
+
+# OS / editor
+.DS_Store
+Thumbs.db
+.vscode/
+.idea/
+
+# Node (only if a build step or dev dependency is added later)
+node_modules/
