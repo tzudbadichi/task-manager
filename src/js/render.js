@@ -3,12 +3,9 @@
 
 import { h } from './dom.js';
 import { icon } from './icons.js';
-import { CONTACT_STATUSES, STATUSES, STATUS_ORDER, TIMED_STATUSES } from './statuses.js';
+import { STATUSES, STATUS_ORDER } from './statuses.js';
 import { LIMITS } from './store.js';
-import {
-  ATTENTION, NO_CATEGORY, countSubtaskAttention, getAttention, getBackupReminder,
-  getDashboardCounts, selectVisibleTasks, summarizeSubtasks, timerStart,
-} from './selectors.js';
+import { NO_CATEGORY, getBackupReminder, getDashboardCounts, selectVisibleTasks, summarizeSubtasks } from './selectors.js';
 import { formatElapsed } from './utils.js';
 
 export const UNCATEGORIZED_COLOR = '#94a3b8';
@@ -19,69 +16,38 @@ export const CATEGORY_SWATCHES = Object.freeze([
 
 const STATUS_FILTER_OPTIONS = [
   { value: 'all', label: 'כל הסטטוסים' },
-  { value: 'attention', label: 'דורש אותי עכשיו' },
-  { value: 'open', label: 'פתוח (לביצוע / בעבודה)' },
   ...STATUS_ORDER.map(key => ({ value: key, label: STATUSES[key].label })),
 ];
 
 const SORT_OPTIONS = [
-  { value: 'attention', label: 'מיון: דחוף קודם' },
+  { value: 'status', label: 'מיון: לפי סטטוס' },
   { value: 'updated', label: 'מיון: עודכן לאחרונה' },
   { value: 'created', label: 'מיון: נוצר לאחרונה' },
   { value: 'category', label: 'מיון: לפי קטגוריה' },
 ];
 
-const CHECK_BUTTON = Object.freeze({
-  claude_running: { label: 'בדקתי - עדיין רץ', title: 'מאפס את הטיימר עד הבדיקה הבאה' },
-  waiting_email: { label: 'שלחתי תזכורת', title: 'מאפס את הטיימר עד התזכורת הבאה' },
-});
+const DASHBOARD_ICONS = Object.freeze({ todo: 'list', in_progress: 'clock', done: 'check' });
 
 // ---------------------------------------------------------------------------
 // Dashboard
 // ---------------------------------------------------------------------------
 
-export function renderDashboard(container, state, filters, now) {
-  const counts = getDashboardCounts(state, now);
-  const cards = [
-    {
-      filter: 'email_received', iconName: 'inbox', title: 'התקבל מייל - לטיפולי',
-      value: counts.emailReceived, urgent: counts.emailReceived > 0,
-      sub: counts.emailReceived > 0 ? 'מחכה לטיפול שלך' : 'אין כרגע',
-    },
-    {
-      filter: 'claude_running', iconName: 'terminal', title: 'קלוד רץ ברקע',
-      value: counts.claudeRunning, urgent: counts.claudeOverdue > 0,
-      sub: counts.claudeOverdue > 0 ? `${counts.claudeOverdue} לבדוק עכשיו`
-        : counts.claudeRunning > 0 ? 'עוד לא הגיע זמן בדיקה' : 'אין תהליכים פעילים',
-    },
-    {
-      filter: 'waiting_email', iconName: 'mail', title: 'ממתין למייל',
-      value: counts.waitingEmail, urgent: false,
-      sub: counts.waitingFollowUp > 0 ? `${counts.waitingFollowUp} כדאי לתזכר` : 'לא בטיפולך כרגע',
-    },
-    {
-      filter: 'open', iconName: 'list', title: 'לביצוע / בעבודה',
-      value: counts.open, urgent: false,
-      sub: `${counts.inProgress} בעבודה, ${counts.todo} לביצוע`,
-    },
-  ];
-  // The 'open' card borrows the in-progress color.
-  const toneOf = filter => (filter === 'open' ? 'in_progress' : filter);
-
-  container.replaceChildren(...cards.map(card => {
-    const isActive = filters.status === card.filter;
+export function renderDashboard(container, state, filters) {
+  const counts = getDashboardCounts(state);
+  container.replaceChildren(...STATUS_ORDER.map(status => {
+    const isActive = filters.status === status;
     return h('button', {
       type: 'button',
-      class: ['dash-card', isActive && 'is-active', card.urgent && 'is-urgent'],
-      dataset: { action: 'dashboard-filter', filter: card.filter, status: toneOf(card.filter) },
+      class: ['dash-card', isActive && 'is-active'],
+      dataset: { action: 'dashboard-filter', filter: status, status },
       'aria-pressed': String(isActive),
       title: isActive ? 'לחיצה נוספת מבטלת את הסינון' : 'לחיצה מסננת את הרשימה',
     },
-    h('span', { class: 'dash-icon' }, icon(card.iconName)),
+    h('span', { class: 'dash-icon' }, icon(DASHBOARD_ICONS[status])),
     h('span', { class: 'dash-text' },
-      h('span', { class: 'dash-title' }, card.title),
-      h('span', { class: 'dash-sub' }, card.sub)),
-    h('span', { class: 'dash-value' }, String(card.value)));
+      h('span', { class: 'dash-title' }, STATUSES[status].label),
+      h('span', { class: 'dash-sub' }, STATUSES[status].hint)),
+    h('span', { class: 'dash-value' }, String(counts[status])));
   }));
 }
 
@@ -113,7 +79,7 @@ export function renderFilters(container, state, filters) {
         icon('search'),
         h('input', {
           type: 'search', value: filters.search, 'aria-label': 'חיפוש',
-          placeholder: 'חיפוש במשימות, תתי משימות ואנשי קשר',
+          placeholder: 'חיפוש במשימות ובתתי משימות',
           dataset: { action: 'filter-search', focusKey: 'filter-search' },
         })),
       selectElement(STATUS_FILTER_OPTIONS, filters.status, { action: 'filter-status', focusKey: 'filter-status' }, 'סינון לפי סטטוס'),
@@ -171,7 +137,7 @@ export function renderTaskList(container, state, filters, expandedTaskIds, now) 
       h('button', { type: 'button', class: 'btn btn-primary', dataset: { action: 'open-new-task' } }, icon('plus'), 'משימה חדשה')));
     return;
   }
-  const visibleTasks = selectVisibleTasks(state, filters, now);
+  const visibleTasks = selectVisibleTasks(state, filters);
   if (visibleTasks.length === 0) {
     container.replaceChildren(emptyState(
       'אין משימות שמתאימות לסינון',
@@ -181,24 +147,17 @@ export function renderTaskList(container, state, filters, expandedTaskIds, now) 
   }
   const categoriesById = new Map(state.categories.map(category => [category.id, category]));
   container.replaceChildren(...visibleTasks.map(task => renderTaskCard(
-    task, categoriesById.get(task.categoryId) ?? null, state.settings, expandedTaskIds.has(task.id), now)));
+    task, categoriesById.get(task.categoryId) ?? null, expandedTaskIds.has(task.id), now)));
 }
 
-function renderTaskCard(task, category, settings, isExpanded, now) {
+function renderTaskCard(task, category, isExpanded, now) {
   const color = category?.color ?? UNCATEGORIZED_COLOR;
-  const isDone = task.status === 'done';
   const summary = summarizeSubtasks(task);
-  const ownAttention = getAttention(task, settings, now);
-  const subtaskAttention = countSubtaskAttention(task, settings, now);
   const ids = { taskId: task.id };
   const bodyId = `task-body-${task.id}`;
 
-  let highlight = null;
-  if (!isDone && (ownAttention === ATTENTION.action || subtaskAttention.action > 0)) highlight = 'attn-action';
-  else if (!isDone && (ownAttention === ATTENTION.check || subtaskAttention.check > 0)) highlight = 'attn-check';
-
   return h('article', {
-    class: ['task-card', isDone && 'is-done', highlight],
+    class: ['task-card', task.status === 'done' && 'is-done'],
     cssVars: { '--cat-color': color },
     'aria-label': task.title,
   },
@@ -215,53 +174,38 @@ function renderTaskCard(task, category, settings, isExpanded, now) {
         h('span', { class: 'cat-chip', cssVars: { '--chip-color': color } },
           h('span', { class: 'dot', 'aria-hidden': 'true' }), category?.name ?? 'ללא קטגוריה'),
         summary.total > 0 && progressIndicator(summary),
-        task.contact && contactChip(task.contact),
-        !isDone && sinceLabel(task, now),
-        !isDone && isTimedEscalation(ownAttention) && attentionBadge(ownAttention),
-        !isDone && subtaskAttentionBadges(subtaskAttention))),
+        sinceLabel(task, now))),
     h('div', { class: 'task-actions' },
       statusControl(task.status, { action: 'set-task-status', focusKey: `task-status-${task.id}`, ...ids }),
-      checkButton(task, ownAttention, ids),
       iconButton('edit', 'עריכת משימה', { action: 'edit-task', ...ids }),
       iconButton('trash', 'מחיקת משימה', { action: 'delete-task', ...ids }, 'danger'))),
   isExpanded && h('div', { class: 'task-body', id: bodyId },
     task.description && h('p', { class: 'task-description' }, task.description),
     summary.total > 0
-      ? h('ul', { class: 'subtasks' }, ...task.subtasks.map(subtask => renderSubtask(task, subtask, settings, now)))
+      ? h('ul', { class: 'subtasks' }, ...task.subtasks.map(subtask => renderSubtask(task, subtask, now)))
       : h('p', { class: 'muted small no-subtasks' }, 'אין עדיין תתי משימות.'),
     addSubtaskRow(task.id)));
 }
 
-function renderSubtask(task, subtask, settings, now) {
+function renderSubtask(task, subtask, now) {
   const ids = { taskId: task.id, subtaskId: subtask.id };
-  const attention = getAttention(subtask, settings, now);
   const isDone = subtask.status === 'done';
-  const showContact = CONTACT_STATUSES.has(subtask.status) || subtask.contact !== '';
+  const toggleLabel = isDone ? 'החזרה לביצוע' : 'סימון כהושלם';
 
-  return h('li', { class: ['subtask', attention && `attn-${attention.level}`], dataset: { status: subtask.status } },
+  return h('li', { class: 'subtask', dataset: { status: subtask.status } },
     h('button', {
       type: 'button',
       class: ['done-toggle', isDone && 'is-checked'],
       dataset: { action: 'toggle-subtask-done', ...ids },
       'aria-pressed': String(isDone),
-      title: isDone ? 'החזרה לביצוע' : 'סימון כהושלם',
-      'aria-label': isDone ? 'החזרה לביצוע' : 'סימון כהושלם',
+      title: toggleLabel,
+      'aria-label': toggleLabel,
     }, icon('check', { size: 14 })),
     h('div', { class: 'subtask-main' },
-      inlineInput(subtask.title, { action: 'edit-subtask-title', focusKey: `sub-title-${subtask.id}`, ...ids }, 'subtask-title', 'כותרת תת-המשימה'),
-      showContact && h('label', { class: 'contact-field' },
-        icon('user', { size: 14 }),
-        h('input', {
-          type: 'text', class: 'inline-edit contact-input', value: subtask.contact, maxlength: LIMITS.contact,
-          placeholder: subtask.status === 'email_received' ? 'ממי הגיע המייל?' : 'ממי מחכים לתשובה?',
-          'aria-label': 'איש קשר',
-          dataset: { action: 'edit-subtask-contact', focusKey: `sub-contact-${subtask.id}`, original: subtask.contact, ...ids },
-        }))),
+      inlineInput(subtask.title, { action: 'edit-subtask-title', focusKey: `sub-title-${subtask.id}`, ...ids }, 'subtask-title', 'כותרת תת-המשימה')),
     h('div', { class: 'subtask-side' },
-      !isDone && sinceLabel(subtask, now),
-      isTimedEscalation(attention) && attentionBadge(attention),
+      sinceLabel(subtask, now),
       statusControl(subtask.status, { action: 'set-subtask-status', focusKey: `sub-status-${subtask.id}`, ...ids }),
-      checkButton(subtask, attention, ids),
       iconButton('trash', 'מחיקת תת-משימה', { action: 'delete-subtask', ...ids }, 'danger')));
 }
 
@@ -281,10 +225,6 @@ function addSubtaskRow(taskId) {
 // Small building blocks
 // ---------------------------------------------------------------------------
 
-function isTimedEscalation(attention) {
-  return attention === ATTENTION.check || attention === ATTENTION.followup;
-}
-
 function statusControl(status, dataset) {
   return h('span', { class: 'status-chip', dataset: { status } },
     h('span', { class: 'dot', 'aria-hidden': 'true' }),
@@ -293,39 +233,11 @@ function statusControl(status, dataset) {
     }, ...STATUS_ORDER.map(key => h('option', { value: key, title: STATUSES[key].hint }, STATUSES[key].label))));
 }
 
-function checkButton(item, attention, dataset) {
-  const isRelevant = item.status === 'claude_running' || (item.status === 'waiting_email' && attention === ATTENTION.followup);
-  if (!isRelevant) return null;
-  const { label, title } = CHECK_BUTTON[item.status];
-  return h('button', {
-    type: 'button', class: 'btn btn-soft btn-xs', title,
-    dataset: { action: 'mark-checked', ...dataset },
-  }, icon('refresh', { size: 13 }), label);
-}
-
+// How long an item has been in progress.
 function sinceLabel(item, now) {
-  if (item.status === 'todo' || item.status === 'done') return null;
-  const isTimed = TIMED_STATUSES.has(item.status);
-  const elapsed = formatElapsed(now - (isTimed ? timerStart(item) : item.statusChangedAt));
-  const title = isTimed && item.lastCheckedAt
-    ? `עברו ${elapsed} מאז הבדיקה האחרונה`
-    : `בסטטוס "${STATUSES[item.status].label}" כבר ${elapsed}`;
-  return h('span', { class: 'since', title }, icon('clock', { size: 13 }), elapsed);
-}
-
-function attentionBadge(attention, text = attention.label, iconName = null) {
-  const isStrong = attention === ATTENTION.action || attention === ATTENTION.check;
-  return h('span', { class: ['badge', isStrong && 'is-strong'], dataset: { status: attention.status } },
-    iconName && icon(iconName, { size: 13 }), text);
-}
-
-function subtaskAttentionBadges(counts) {
-  return [
-    counts.action > 0 && attentionBadge(ATTENTION.action, `לטיפולי: ${counts.action}`, 'inbox'),
-    counts.check > 0 && attentionBadge(ATTENTION.check, `לבדוק: ${counts.check}`, 'terminal'),
-    counts.running > 0 && attentionBadge(ATTENTION.running, `רץ ברקע: ${counts.running}`, 'terminal'),
-    counts.followup > 0 && attentionBadge(ATTENTION.followup, `לתזכר: ${counts.followup}`, 'mail'),
-  ];
+  if (item.status !== 'in_progress') return null;
+  const elapsed = formatElapsed(now - item.statusChangedAt);
+  return h('span', { class: 'since', title: `בעבודה כבר ${elapsed}` }, icon('clock', { size: 13 }), elapsed);
 }
 
 function progressIndicator({ total, done }) {
@@ -334,10 +246,6 @@ function progressIndicator({ total, done }) {
     h('span', { class: 'progress-bar', 'aria-hidden': 'true' },
       h('span', { class: 'progress-fill', cssVars: { '--pct': `${percent}%` } })),
     h('span', { dir: 'ltr' }, `${done}/${total}`));
-}
-
-function contactChip(contact) {
-  return h('span', { class: 'contact-chip', title: 'איש קשר' }, icon('user', { size: 13 }), contact);
 }
 
 function inlineInput(value, dataset, className, label) {

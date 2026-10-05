@@ -25,9 +25,6 @@
   /* Status colors */
   --st-todo: #64748b;
   --st-in_progress: #0284c7;
-  --st-claude_running: #7c3aed;
-  --st-email_received: #ea580c;
-  --st-waiting_email: #a16207;
   --st-done: #16a34a;
 
   color-scheme: light;
@@ -51,9 +48,6 @@
   --success: #4ade80;
   --st-todo: #94a3b8;
   --st-in_progress: #38bdf8;
-  --st-claude_running: #a78bfa;
-  --st-email_received: #fb923c;
-  --st-waiting_email: #facc15;
   --st-done: #4ade80;
   color-scheme: dark;
 }
@@ -76,9 +70,6 @@
 
 [data-status="todo"] { --st: var(--st-todo); }
 [data-status="in_progress"] { --st: var(--st-in_progress); }
-[data-status="claude_running"] { --st: var(--st-claude_running); }
-[data-status="email_received"] { --st: var(--st-email_received); }
-[data-status="waiting_email"] { --st: var(--st-waiting_email); }
 [data-status="done"] { --st: var(--st-done); }
 
 /* ==========================================================================
@@ -139,7 +130,6 @@ h1, h2, h3 { margin: 0; line-height: 1.25; }
 .btn-danger-soft { color: var(--danger); background: color-mix(in srgb, var(--danger) 10%, transparent); }
 .btn-danger-soft:hover { background: color-mix(in srgb, var(--danger) 18%, transparent); }
 .btn-sm { padding: 6px 10px; font-size: 0.88rem; }
-.btn-xs { padding: 3px 8px; font-size: 0.78rem; border-radius: 8px; gap: 4px; }
 
 .icon-btn {
   display: inline-grid;
@@ -158,8 +148,7 @@ h1, h2, h3 { margin: 0; line-height: 1.25; }
 .select,
 .field input,
 .field textarea,
-.category-form input[type="text"],
-.setting-line input[type="number"] {
+.category-form input[type="text"] {
   padding: 8px 10px;
   border: 1px solid var(--border);
   border-radius: 10px;
@@ -168,8 +157,7 @@ h1, h2, h3 { margin: 0; line-height: 1.25; }
 .select:focus,
 .field input:focus,
 .field textarea:focus,
-.category-form input[type="text"]:focus,
-.setting-line input[type="number"]:focus {
+.category-form input[type="text"]:focus {
   outline: none;
   border-color: var(--primary);
   box-shadow: 0 0 0 3px color-mix(in srgb, var(--primary) 20%, transparent);
@@ -245,7 +233,7 @@ option { color: var(--text); background: var(--surface); }
 
 .dashboard {
   display: grid;
-  grid-template-columns: repeat(4, minmax(0, 1fr));
+  grid-template-columns: repeat(3, minmax(0, 1fr));
   gap: 12px;
 }
 
@@ -281,7 +269,6 @@ option { color: var(--text); background: var(--surface); }
 .dash-text { display: flex; flex-direction: column; flex: 1; min-width: 0; }
 .dash-title { font-weight: 700; font-size: 0.95rem; }
 .dash-sub { color: var(--text-muted); font-size: 0.8rem; }
-.dash-card.is-urgent .dash-sub { color: var(--st); font-weight: 700; }
 .dash-value { font-size: 1.9rem; font-weight: 800; color: var(--st); font-variant-numeric: tabular-nums; }
 
 /* ==========================================================================
@@ -371,14 +358,6 @@ option { color: var(--text); background: var(--surface); }
   box-shadow: var(--shadow);
   transition: box-shadow 0.2s;
 }
-.task-card.attn-action {
-  --st: var(--st-email_received);
-  box-shadow: 0 0 0 2px color-mix(in srgb, var(--st) 50%, transparent), var(--shadow);
-}
-.task-card.attn-check {
-  --st: var(--st-claude_running);
-  box-shadow: 0 0 0 2px color-mix(in srgb, var(--st) 50%, transparent), var(--shadow);
-}
 .task-card.is-done { opacity: 0.62; }
 .task-card.is-done .task-title { text-decoration: line-through; }
 
@@ -400,26 +379,11 @@ option { color: var(--text); background: var(--surface); }
   color: var(--text-muted);
 }
 .cat-chip { display: inline-flex; align-items: center; gap: 6px; font-weight: 700; color: var(--text); }
-.contact-chip, .since { display: inline-flex; align-items: center; gap: 4px; white-space: nowrap; }
-.since { font-variant-numeric: tabular-nums; }
+.since { display: inline-flex; align-items: center; gap: 4px; white-space: nowrap; font-variant-numeric: tabular-nums; }
 
 .progress { display: inline-flex; align-items: center; gap: 6px; font-variant-numeric: tabular-nums; }
 .progress-bar { width: 72px; height: 6px; overflow: hidden; border-radius: 999px; background: var(--border); }
 .progress-fill { display: block; height: 100%; width: var(--pct); background: var(--st-done); border-radius: inherit; }
-
-.badge {
-  display: inline-flex;
-  align-items: center;
-  gap: 4px;
-  padding: 2px 9px;
-  font-size: 0.76rem;
-  font-weight: 700;
-  white-space: nowrap;
-  color: var(--st);
-  background: color-mix(in srgb, var(--st) 14%, transparent);
-  border-radius: 999px;
-}
-.badge.is-strong { color: #fff; background: var(--st); }
 
 /* Status pill: a colored chip wrapping a native select */
 .status-chip {
@@ -434,7 +398,6 @@ option { color: var(--text); background: var(--surface); }
   border-radius: 999px;
 }
 .status-chip .dot { width: 8px; height: 8px; background: var(--st); }
-.status-chip[data-status="claude_running"] .dot { animation: pulse 1.6s ease-in-out infinite; }
 .status-select {
   appearance: none;
   -webkit-appearance: none;
@@ -447,11 +410,6 @@ option { color: var(--text); background: var(--surface); }
 }
 .status-select:focus { outline: none; }
 .status-chip:focus-within { outline: 2px solid var(--primary); outline-offset: 1px; }
-
-@keyframes pulse {
-  0%, 100% { box-shadow: 0 0 0 0 color-mix(in srgb, var(--st) 60%, transparent); }
-  50% { box-shadow: 0 0 0 5px transparent; }
-}
 
 /* ==========================================================================
    Task body and subtasks
@@ -471,19 +429,10 @@ option { color: var(--text); background: var(--surface); }
   border-radius: 10px;
 }
 .subtask:hover { background: var(--surface-2); }
-.subtask[data-status="email_received"] {
-  background: color-mix(in srgb, var(--st) 9%, transparent);
-  border-color: color-mix(in srgb, var(--st) 28%, transparent);
-}
-.subtask[data-status="claude_running"] { background: color-mix(in srgb, var(--st) 7%, transparent); }
-.subtask.attn-check { border-color: var(--st); }
-.subtask[data-status="waiting_email"] .subtask-main { opacity: 0.6; } /* parked - not mine right now */
 .subtask[data-status="done"] .subtask-title { text-decoration: line-through; color: var(--text-muted); }
 
 .subtask-main { display: flex; flex: 1; flex-wrap: wrap; align-items: center; gap: 4px 8px; min-width: 0; }
 .subtask-title { flex: 1 1 220px; }
-.contact-field { display: inline-flex; flex: 0 1 200px; align-items: center; gap: 2px; color: var(--text-muted); }
-.contact-input { font-size: 0.85rem; }
 .subtask-side { display: flex; flex-wrap: wrap; align-items: center; justify-content: flex-end; gap: 6px; font-size: 0.8rem; color: var(--text-muted); }
 
 .done-toggle {
@@ -574,7 +523,6 @@ dialog::backdrop { background: rgba(15, 23, 42, 0.45); backdrop-filter: blur(2px
 .settings-section h3 { font-size: 0.98rem; }
 .settings-section p { margin: 0; }
 .setting-line { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; font-size: 0.92rem; }
-.setting-line input[type="number"] { width: 84px; }
 .button-row { display: flex; flex-wrap: wrap; gap: 8px; }
 
 /* ==========================================================================
@@ -627,10 +575,6 @@ dialog::backdrop { background: rgba(15, 23, 42, 0.45); backdrop-filter: blur(2px
    Responsive and motion preferences
    ========================================================================== */
 
-@media (max-width: 900px) {
-  .dashboard { grid-template-columns: repeat(2, minmax(0, 1fr)); }
-}
-
 @media (max-width: 680px) {
   .topbar { padding: 10px 14px; }
   .topbar .btn-label { display: none; }
@@ -645,7 +589,7 @@ dialog::backdrop { background: rgba(15, 23, 42, 0.45); backdrop-filter: blur(2px
 @media (max-width: 460px) {
   .dashboard { gap: 8px; }
   .dash-card { gap: 8px; padding: 10px 12px; }
-  .dash-icon { display: none; }
+  .dash-icon, .dash-sub { display: none; }
   .dash-title { font-size: 0.86rem; }
   .dash-value { font-size: 1.5rem; }
 }

@@ -1,7 +1,7 @@
 import { describe, test } from 'node:test';
 import assert from 'node:assert/strict';
 import {
-  LIMITS, STORAGE_KEY, createInitialState, createStore, normalizeState, reduce,
+  LIMITS, PRE_MIGRATION_KEY, STORAGE_KEY, createInitialState, createStore, normalizeState, reduce,
 } from '../src/js/store.js';
 import { createFailingStorage, createMemoryStorage, sequentialIds } from './fixtures/memory-storage.js';
 
@@ -30,7 +30,7 @@ describe('createInitialState', () => {
     assert.deepEqual(state.categories.map(category => category.name), ['פיתוח', 'HR', 'אישי']);
     assert.ok(state.categories.every(category => /^#[0-9a-f]{6}$/.test(category.color)));
     assert.deepEqual(state.tasks, []);
-    assert.equal(state.settings.claudeCheckMinutes, 15);
+    assert.deepEqual(state.settings, { theme: 'auto', lastExportAt: null });
   });
 });
 
@@ -44,7 +44,6 @@ describe('tasks', () => {
     assert.equal(newest.status, 'todo');
     assert.equal(newest.categoryId, harness.categoryIds[1]);
     assert.equal(newest.statusChangedAt, T0);
-    assert.equal(newest.lastCheckedAt, null);
     assert.deepEqual(newest.subtasks, []);
     assert.equal(oldest.title, 'first');
   });
@@ -57,7 +56,7 @@ describe('tasks', () => {
 
   test('task/add with an unknown category or invalid status falls back safely', () => {
     const harness = createHarness();
-    harness.run({ type: 'task/add', title: 'x', categoryId: 'missing', status: 'bogus' });
+    harness.run({ type: 'task/add', title: 'x', categoryId: 'missing', status: 'claude_running' });
     assert.equal(harness.state.tasks[0].categoryId, null);
     assert.equal(harness.state.tasks[0].status, 'todo');
   });
@@ -76,12 +75,11 @@ describe('tasks', () => {
     harness.advance(MINUTE);
     harness.run({
       type: 'task/update', taskId,
-      changes: { title: ' ', description: 'line 1\nline 2', contact: 'Dana', categoryId: harness.categoryIds[2] },
+      changes: { title: ' ', description: 'line 1\nline 2', categoryId: harness.categoryIds[2] },
     });
     const task = harness.state.tasks[0];
     assert.equal(task.title, 'keep me');
     assert.equal(task.description, 'line 1\nline 2');
-    assert.equal(task.contact, 'Dana');
     assert.equal(task.categoryId, harness.categoryIds[2]);
     assert.equal(task.updatedAt, T0 + MINUTE);
   });
@@ -93,19 +91,16 @@ describe('tasks', () => {
     assert.equal(harness.run({ type: 'task/update', taskId: before.tasks[0].id, changes: { title: 'same ' } }), before);
   });
 
-  test('task/setStatus records when the status changed and clears the check timer', () => {
+  test('task/setStatus records when the status changed', () => {
     const harness = createHarness();
-    harness.run({ type: 'task/add', title: 'build', status: 'claude_running' });
+    harness.run({ type: 'task/add', title: 'build' });
     const taskId = harness.state.tasks[0].id;
-    harness.advance(5 * MINUTE);
-    harness.run({ type: 'task/markChecked', taskId });
-    assert.equal(harness.state.tasks[0].lastCheckedAt, T0 + 5 * MINUTE);
-    harness.advance(5 * MINUTE);
-    harness.run({ type: 'task/setStatus', taskId, status: 'email_received' });
+    harness.advance(10 * MINUTE);
+    harness.run({ type: 'task/setStatus', taskId, status: 'in_progress' });
     const task = harness.state.tasks[0];
-    assert.equal(task.status, 'email_received');
+    assert.equal(task.status, 'in_progress');
     assert.equal(task.statusChangedAt, T0 + 10 * MINUTE);
-    assert.equal(task.lastCheckedAt, null);
+    assert.equal(task.updatedAt, T0 + 10 * MINUTE);
   });
 
   test('setting the same status or an invalid status returns the same state', () => {
@@ -114,14 +109,7 @@ describe('tasks', () => {
     const before = harness.state;
     const taskId = before.tasks[0].id;
     assert.equal(harness.run({ type: 'task/setStatus', taskId, status: 'todo' }), before);
-    assert.equal(harness.run({ type: 'task/setStatus', taskId, status: 'nope' }), before);
-  });
-
-  test('task/markChecked only applies to timed statuses', () => {
-    const harness = createHarness();
-    harness.run({ type: 'task/add', title: 'x', status: 'in_progress' });
-    const before = harness.state;
-    assert.equal(harness.run({ type: 'task/markChecked', taskId: before.tasks[0].id }), before);
+    assert.equal(harness.run({ type: 'task/setStatus', taskId, status: 'waiting_email' }), before);
   });
 
   test('task/delete removes the task; unknown id is a no-op', () => {
@@ -145,11 +133,10 @@ describe('subtasks', () => {
     const { harness, taskId } = withTask();
     harness.advance(MINUTE);
     harness.run({ type: 'subtask/add', taskId, title: 'one' });
-    harness.run({ type: 'subtask/add', taskId, title: 'two', status: 'waiting_email', contact: 'HR team' });
+    harness.run({ type: 'subtask/add', taskId, title: 'two', status: 'in_progress' });
     const task = harness.state.tasks[0];
     assert.deepEqual(task.subtasks.map(subtask => subtask.title), ['one', 'two']);
-    assert.equal(task.subtasks[1].status, 'waiting_email');
-    assert.equal(task.subtasks[1].contact, 'HR team');
+    assert.equal(task.subtasks[1].status, 'in_progress');
     assert.equal(task.updatedAt, T0 + MINUTE);
   });
 
@@ -160,26 +147,22 @@ describe('subtasks', () => {
     assert.equal(harness.run({ type: 'subtask/add', taskId: 'missing', title: 'x' }), before);
   });
 
-  test('subtask status, contact edit, check and delete', () => {
+  test('subtask title edit, status change and delete', () => {
     const { harness, taskId } = withTask();
     harness.run({ type: 'subtask/add', taskId, title: 'ask for approval' });
     const subtaskId = harness.state.tasks[0].subtasks[0].id;
 
     harness.advance(MINUTE);
-    harness.run({ type: 'subtask/setStatus', taskId, subtaskId, status: 'waiting_email' });
-    harness.run({ type: 'subtask/update', taskId, subtaskId, changes: { contact: '  Yossi  ' } });
-    harness.advance(MINUTE);
-    harness.run({ type: 'subtask/markChecked', taskId, subtaskId });
-    let subtask = harness.state.tasks[0].subtasks[0];
-    assert.equal(subtask.status, 'waiting_email');
+    harness.run({ type: 'subtask/setStatus', taskId, subtaskId, status: 'done' });
+    harness.run({ type: 'subtask/update', taskId, subtaskId, changes: { title: '  approval received  ' } });
+    const subtask = harness.state.tasks[0].subtasks[0];
+    assert.equal(subtask.status, 'done');
     assert.equal(subtask.statusChangedAt, T0 + MINUTE);
-    assert.equal(subtask.contact, 'Yossi');
-    assert.equal(subtask.lastCheckedAt, T0 + 2 * MINUTE);
-    assert.equal(harness.state.tasks[0].updatedAt, T0 + 2 * MINUTE);
+    assert.equal(subtask.title, 'approval received');
+    assert.equal(harness.state.tasks[0].updatedAt, T0 + MINUTE);
 
     harness.run({ type: 'subtask/delete', taskId, subtaskId });
     assert.equal(harness.state.tasks[0].subtasks.length, 0);
-    subtask = null;
   });
 });
 
@@ -219,14 +202,14 @@ describe('categories', () => {
 });
 
 describe('settings', () => {
-  test('settings/update clamps numbers, accepts numeric strings and rejects unknown themes', () => {
+  test('settings/update accepts known themes only and ignores unknown keys', () => {
     const harness = createHarness();
-    harness.run({ type: 'settings/update', changes: { claudeCheckMinutes: '45', waitingFollowUpDays: 999, theme: 'neon' } });
-    assert.equal(harness.state.settings.claudeCheckMinutes, 45);
-    assert.equal(harness.state.settings.waitingFollowUpDays, 90);
-    assert.equal(harness.state.settings.theme, 'auto');
+    harness.run({ type: 'settings/update', changes: { theme: 'dark', claudeCheckMinutes: 5 } });
+    assert.deepEqual(harness.state.settings, { theme: 'dark', lastExportAt: null });
     const before = harness.state;
-    assert.equal(harness.run({ type: 'settings/update', changes: { claudeCheckMinutes: 45 } }), before);
+    assert.equal(harness.run({ type: 'settings/update', changes: { theme: 'dark' } }), before);
+    harness.run({ type: 'settings/update', changes: { theme: 'neon' } });
+    assert.equal(harness.state.settings.theme, 'auto');
   });
 });
 
@@ -246,13 +229,13 @@ describe('normalizeState', () => {
       ],
       tasks: [
         {
-          id: 't1', title: 'ok', status: 'claude_running', categoryId: 'c1', createdAt: 1000, updatedAt: 2000,
+          id: 't1', title: 'ok', status: 'in_progress', categoryId: 'c1', createdAt: 1000, updatedAt: 2000,
           subtasks: [{ id: 't1', title: 'dup id', status: 'hacked' }, { title: '' }, 'garbage'],
         },
-        { id: 't2', title: 'no category', categoryId: 'ghost', createdAt: 'yesterday' },
+        { id: 't2', title: 'no category', categoryId: 'ghost', createdAt: 'yesterday', status: '__proto__' },
         { title: '   ' },
       ],
-      settings: { claudeCheckMinutes: -5, notificationsEnabled: 'yes' },
+      settings: { theme: 'sepia' },
     };
     const state = normalizeState(raw, { now: T0, makeId: sequentialIds('new') });
 
@@ -268,17 +251,55 @@ describe('normalizeState', () => {
     assert.notEqual(first.subtasks[0].id, 't1');
     assert.equal(first.subtasks[0].status, 'todo');
     assert.equal(second.categoryId, null);
+    assert.equal(second.status, 'todo');
     assert.equal(second.createdAt, T0);
-    assert.equal(state.settings.claudeCheckMinutes, 1);
-    assert.equal(state.settings.notificationsEnabled, false);
+    assert.equal(state.settings.theme, 'auto');
   });
 
   test('round-trips a valid state unchanged', () => {
     const harness = createHarness();
-    harness.run({ type: 'task/add', title: 'x', categoryId: harness.categoryIds[0], status: 'waiting_email', contact: 'A' });
+    harness.run({ type: 'task/add', title: 'x', categoryId: harness.categoryIds[0], status: 'in_progress' });
     harness.run({ type: 'subtask/add', taskId: harness.state.tasks[0].id, title: 'y' });
     const roundTripped = normalizeState(JSON.parse(JSON.stringify(harness.state)), { now: T0 + 1 });
     assert.deepEqual(roundTripped, harness.state);
+  });
+});
+
+describe('migration of version 1 data', () => {
+  test('old Claude / email statuses map onto the three statuses', () => {
+    const state = normalizeState({
+      categories: [],
+      tasks: [
+        { title: 'a', status: 'claude_running' },
+        { title: 'b', status: 'waiting_email' },
+        { title: 'c', status: 'email_received', subtasks: [{ title: 'd', status: 'claude_running' }] },
+      ],
+    }, { now: T0 });
+    assert.deepEqual(state.tasks.map(task => task.status), ['in_progress', 'in_progress', 'todo']);
+    assert.equal(state.tasks[2].subtasks[0].status, 'in_progress');
+  });
+
+  test('the old contact field is kept as text and the old fields are dropped', () => {
+    const state = normalizeState({
+      categories: [],
+      tasks: [
+        {
+          title: 'quarterly report', description: 'numbers for Q3', contact: 'Dana', lastCheckedAt: T0,
+          subtasks: [{ title: 'approval', contact: 'Infra team' }, { title: 'no contact', contact: '  ' }],
+        },
+        { title: 'no description', contact: 'Yossi' },
+      ],
+      settings: { theme: 'dark', claudeCheckMinutes: 30, waitingFollowUpDays: 2, notificationsEnabled: true },
+    }, { now: T0 });
+    const [report, noDescription] = state.tasks;
+    assert.equal(report.description, 'numbers for Q3\nאיש קשר: Dana');
+    assert.deepEqual(report.subtasks.map(subtask => subtask.title), ['approval - Infra team', 'no contact']);
+    assert.equal(noDescription.description, 'איש קשר: Yossi');
+    for (const item of [report, ...report.subtasks]) {
+      assert.equal('contact' in item, false);
+      assert.equal('lastCheckedAt' in item, false);
+    }
+    assert.deepEqual(state.settings, { theme: 'dark', lastExportAt: null });
   });
 });
 
@@ -340,6 +361,24 @@ describe('createStore', () => {
     assert.equal(store.getState().tasks[0].title, 'original');
   });
 
+  test('version 1 data in storage is migrated, saved right away, and the original is kept once', () => {
+    const original = JSON.stringify({ schemaVersion: 1, categories: [], tasks: [{ title: 'old', status: 'email_received', contact: 'Dana' }] });
+    const storage = createMemoryStorage({ [STORAGE_KEY]: original });
+    const store = createStore({ storage, clock: () => T0 });
+    const [task] = store.getState().tasks;
+    assert.equal(task.status, 'todo');
+    assert.equal(task.description, 'איש קשר: Dana');
+
+    const stored = JSON.parse(storage.getItem(STORAGE_KEY));
+    assert.equal(stored.schemaVersion, 2);
+    assert.equal(stored.tasks[0].status, 'todo');
+    assert.equal(storage.getItem(PRE_MIGRATION_KEY), original);
+
+    // A later load of current-format data neither rewrites nor replaces the kept original.
+    createStore({ storage });
+    assert.equal(storage.getItem(PRE_MIGRATION_KEY), original);
+  });
+
   test('corrupt saved data is kept under a backup key and a warning is exposed', () => {
     const storage = createMemoryStorage({ [STORAGE_KEY]: '{not json' });
     const store = createStore({ storage, clock: () => T0 });
@@ -385,26 +424,17 @@ describe('createStore', () => {
 });
 
 describe('limits and timestamps from untrusted data', () => {
-  test('future timestamps are clamped to now so timers still fire', () => {
+  test('future timestamps are clamped to now', () => {
     const future = T0 + 365 * 24 * 60 * MINUTE;
     const state = normalizeState({
       categories: [],
-      tasks: [{ title: 'x', status: 'claude_running', createdAt: future, updatedAt: future, statusChangedAt: future, lastCheckedAt: future }],
+      tasks: [{ title: 'x', status: 'in_progress', createdAt: future, updatedAt: future, statusChangedAt: future }],
       settings: { lastExportAt: future },
     }, { now: T0 });
     const [task] = state.tasks;
     assert.equal(task.createdAt, T0);
     assert.equal(task.statusChangedAt, T0);
-    assert.equal(task.lastCheckedAt, T0);
     assert.equal(state.settings.lastExportAt, T0);
-  });
-
-  test('a check recorded before the current status started is dropped', () => {
-    const state = normalizeState({
-      categories: [],
-      tasks: [{ title: 'x', status: 'claude_running', statusChangedAt: T0, lastCheckedAt: T0 - MINUTE }],
-    }, { now: T0 + MINUTE });
-    assert.equal(state.tasks[0].lastCheckedAt, null);
   });
 
   test('task and subtask counts are capped on import and on add', () => {

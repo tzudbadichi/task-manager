@@ -4,19 +4,18 @@
 import { STATUSES } from './statuses.js';
 
 export const UI_PREFS_KEY = 'taskManager.ui.v1';
-export const SORT_KEYS = Object.freeze(['attention', 'updated', 'created', 'category']);
-const SPECIAL_STATUS_FILTERS = Object.freeze(['all', 'attention', 'open']);
+export const SORT_KEYS = Object.freeze(['status', 'updated', 'created', 'category']);
 
 export const DEFAULT_FILTERS = Object.freeze({
   search: '',
   categoryIds: [],
   status: 'all',
   showDone: false,
-  sort: 'attention',
+  sort: 'status',
 });
 
 export function isValidStatusFilter(value) {
-  return SPECIAL_STATUS_FILTERS.includes(value) || (typeof value === 'string' && Object.hasOwn(STATUSES, value));
+  return value === 'all' || (typeof value === 'string' && Object.hasOwn(STATUSES, value));
 }
 
 const onlyStrings = value => (Array.isArray(value) ? value.filter(item => typeof item === 'string') : []);

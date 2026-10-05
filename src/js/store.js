@@ -1,16 +1,16 @@
 // Application state: a pure reducer plus a small store that persists to localStorage.
 // No DOM access here - the unit tests run this module in Node with an in-memory storage.
 
-import { DEFAULT_STATUS, TIMED_STATUSES, isValidStatus } from './statuses.js';
-import { cleanText, clampInt, createId, isHexColor, toTimestamp } from './utils.js';
+import { DEFAULT_STATUS, LEGACY_STATUS_MAP, isValidStatus } from './statuses.js';
+import { cleanText, createId, isHexColor, toTimestamp } from './utils.js';
 
-export const SCHEMA_VERSION = 1;
+export const SCHEMA_VERSION = 2;
+// The key name is kept from version 1 so existing saved data keeps loading.
 export const STORAGE_KEY = 'taskManager.state.v1';
 
 export const LIMITS = Object.freeze({
   title: 200,
   description: 4000,
-  contact: 120,
   categoryName: 40,
   categories: 50,
   tasks: 2000,
@@ -21,9 +21,6 @@ export const FALLBACK_CATEGORY_COLOR = '#64748b';
 export const THEMES = Object.freeze(['auto', 'light', 'dark']);
 
 export const DEFAULT_SETTINGS = Object.freeze({
-  claudeCheckMinutes: 15,
-  waitingFollowUpDays: 3,
-  notificationsEnabled: false,
   theme: 'auto',
   lastExportAt: null,
 });
@@ -38,10 +35,9 @@ const DEFAULT_CATEGORIES = Object.freeze([
 const TEXT_FIELD_RULES = Object.freeze({
   title: { maxLength: LIMITS.title, required: true },
   description: { maxLength: LIMITS.description, multiline: true },
-  contact: { maxLength: LIMITS.contact },
 });
-const TASK_TEXT_FIELDS = ['title', 'description', 'contact'];
-const SUBTASK_TEXT_FIELDS = ['title', 'contact'];
+const TASK_TEXT_FIELDS = ['title', 'description'];
+const SUBTASK_TEXT_FIELDS = ['title'];
 
 export function createInitialState({ makeId = createId } = {}) {
   return {
@@ -65,8 +61,6 @@ export function reduce(state, action, { now, makeId = createId }) {
       return mapTask(state, action.taskId, task => updateTaskFields(state, task, action.changes, now));
     case 'task/setStatus':
       return mapTask(state, action.taskId, task => withStatus(task, action.status, now));
-    case 'task/markChecked':
-      return mapTask(state, action.taskId, task => withCheck(task, now));
     case 'task/delete':
       return removeTask(state, action.taskId);
     case 'subtask/add':
@@ -76,8 +70,6 @@ export function reduce(state, action, { now, makeId = createId }) {
         subtask => applyTextChanges(subtask, action.changes, SUBTASK_TEXT_FIELDS, now));
     case 'subtask/setStatus':
       return mapSubtask(state, action.taskId, action.subtaskId, now, subtask => withStatus(subtask, action.status, now));
-    case 'subtask/markChecked':
-      return mapSubtask(state, action.taskId, action.subtaskId, now, subtask => withCheck(subtask, now));
     case 'subtask/delete':
       return mapTask(state, action.taskId, task => removeSubtask(task, action.subtaskId, now));
     case 'category/add':
@@ -93,14 +85,12 @@ export function reduce(state, action, { now, makeId = createId }) {
   }
 }
 
-function newItemBase(title, status, contact, now, makeId) {
+function newItemBase(title, status, now, makeId) {
   return {
     id: makeId(),
     title,
     status: isValidStatus(status) ? status : DEFAULT_STATUS,
-    contact: cleanText(contact, LIMITS.contact),
     statusChangedAt: now,
-    lastCheckedAt: null,
     createdAt: now,
     updatedAt: now,
   };
@@ -110,7 +100,7 @@ function addTask(state, action, now, makeId) {
   const title = cleanText(action.title, LIMITS.title);
   if (!title || state.tasks.length >= LIMITS.tasks) return state;
   const task = {
-    ...newItemBase(title, action.status, action.contact, now, makeId),
+    ...newItemBase(title, action.status, now, makeId),
     description: cleanText(action.description, LIMITS.description, { multiline: true }),
     categoryId: resolveCategoryId(state, action.categoryId),
     subtasks: [],
@@ -121,7 +111,7 @@ function addTask(state, action, now, makeId) {
 function addSubtask(task, action, now, makeId) {
   const title = cleanText(action.title, LIMITS.title);
   if (!title || task.subtasks.length >= LIMITS.subtasksPerTask) return task;
-  const subtask = newItemBase(title, action.status, action.contact, now, makeId);
+  const subtask = newItemBase(title, action.status, now, makeId);
   return { ...task, subtasks: [...task.subtasks, subtask], updatedAt: now };
 }
 
@@ -180,16 +170,10 @@ function updateTaskFields(state, task, changes, now) {
   return categoryId === withText.categoryId ? withText : { ...withText, categoryId, updatedAt: now };
 }
 
-// A status change restarts the "time in status" clock and clears any earlier check.
+// A status change restarts the "time in status" clock.
 function withStatus(item, status, now) {
   if (!isValidStatus(status) || item.status === status) return item;
-  return { ...item, status, statusChangedAt: now, lastCheckedAt: null, updatedAt: now };
-}
-
-// "Checked Claude, still running" / "sent a reminder": restarts the timer without changing status.
-function withCheck(item, now) {
-  if (!TIMED_STATUSES.has(item.status)) return item;
-  return { ...item, lastCheckedAt: now, updatedAt: now };
+  return { ...item, status, statusChangedAt: now, updatedAt: now };
 }
 
 function resolveCategoryId(state, categoryId) {
@@ -253,9 +237,6 @@ function updateSettings(state, changes, now) {
 export function normalizeSettings(raw, now = Date.now()) {
   const source = raw && typeof raw === 'object' ? raw : {};
   return {
-    claudeCheckMinutes: clampInt(source.claudeCheckMinutes, 1, 1440, DEFAULT_SETTINGS.claudeCheckMinutes),
-    waitingFollowUpDays: clampInt(source.waitingFollowUpDays, 1, 90, DEFAULT_SETTINGS.waitingFollowUpDays),
-    notificationsEnabled: source.notificationsEnabled === true,
     theme: THEMES.includes(source.theme) ? source.theme : DEFAULT_SETTINGS.theme,
     lastExportAt: pastTimestamp(source.lastExportAt, null, now),
   };
@@ -293,11 +274,15 @@ export function normalizeState(raw, { now = Date.now(), makeId = createId } = {}
     const base = normalizeItemBase(rawTask, uniqueId, now);
     if (!base) continue;
     const subtasks = Array.isArray(rawTask.subtasks)
-      ? rawTask.subtasks.map(rawSubtask => normalizeItemBase(rawSubtask, uniqueId, now)).filter(Boolean).slice(0, LIMITS.subtasksPerTask)
+      ? rawTask.subtasks.map(rawSubtask => normalizeSubtask(rawSubtask, uniqueId, now)).filter(Boolean).slice(0, LIMITS.subtasksPerTask)
       : [];
+    const description = cleanText(rawTask.description, LIMITS.description, { multiline: true });
+    const contact = legacyContactOf(rawTask);
     tasks.push({
       ...base,
-      description: cleanText(rawTask.description, LIMITS.description, { multiline: true }),
+      description: contact
+        ? cleanText(`${description}\nאיש קשר: ${contact}`, LIMITS.description, { multiline: true })
+        : description,
       categoryId: categoryIds.has(rawTask.categoryId) ? rawTask.categoryId : null,
       subtasks,
     });
@@ -306,8 +291,7 @@ export function normalizeState(raw, { now = Date.now(), makeId = createId } = {}
   return { schemaVersion: SCHEMA_VERSION, categories, tasks, settings: normalizeSettings(raw.settings, now) };
 }
 
-// Stored or imported timestamps must not lie in the future - otherwise the Claude-check and
-// follow-up timers (now - timerStart) would stay negative and never fire.
+// Stored or imported timestamps must not lie in the future (a "time in status" would go negative).
 function pastTimestamp(value, fallback, now) {
   const timestamp = toTimestamp(value, fallback);
   return timestamp === null ? null : Math.min(timestamp, now);
@@ -319,19 +303,31 @@ function normalizeItemBase(raw, uniqueId, now) {
   if (!title) return null;
   const createdAt = pastTimestamp(raw.createdAt, now, now);
   const updatedAt = pastTimestamp(raw.updatedAt, createdAt, now);
-  const statusChangedAt = pastTimestamp(raw.statusChangedAt, updatedAt, now);
-  const lastCheckedAt = pastTimestamp(raw.lastCheckedAt, null, now);
   return {
     id: uniqueId(raw.id),
     title,
-    status: isValidStatus(raw.status) ? raw.status : DEFAULT_STATUS,
-    contact: cleanText(raw.contact, LIMITS.contact),
-    statusChangedAt,
-    // A check from before the current status started belongs to an older status - drop it.
-    lastCheckedAt: lastCheckedAt !== null && lastCheckedAt >= statusChangedAt ? lastCheckedAt : null,
+    status: normalizeStatus(raw.status),
+    statusChangedAt: pastTimestamp(raw.statusChangedAt, updatedAt, now),
     createdAt,
     updatedAt,
   };
+}
+
+function normalizeSubtask(raw, uniqueId, now) {
+  const base = normalizeItemBase(raw, uniqueId, now);
+  const contact = legacyContactOf(raw);
+  return base && contact ? { ...base, title: cleanText(`${base.title} - ${contact}`, LIMITS.title) } : base;
+}
+
+function normalizeStatus(value) {
+  if (isValidStatus(value)) return value;
+  return typeof value === 'string' && Object.hasOwn(LEGACY_STATUS_MAP, value) ? LEGACY_STATUS_MAP[value] : DEFAULT_STATUS;
+}
+
+// Version 1 had a per-item "contact" field (who an email came from / was awaited from).
+// It is no longer a field, so its text is kept: in the description of a task, or after a subtask's title.
+function legacyContactOf(raw) {
+  return raw && typeof raw === 'object' ? cleanText(raw.contact, LIMITS.title) : '';
 }
 
 // ---------------------------------------------------------------------------
@@ -351,7 +347,12 @@ export function loadState(storage, { now, makeId = createId }) {
   }
   if (raw === null) return { state: createInitialState({ makeId }), warning: null, fresh: true };
   try {
-    return { state: normalizeState(JSON.parse(raw), { now, makeId }), warning: null, fresh: false };
+    const parsed = JSON.parse(raw);
+    const state = normalizeState(parsed, { now, makeId });
+    const migrated = parsed.schemaVersion !== SCHEMA_VERSION;
+    // Before an older format is rewritten, keep the original once under its own key.
+    if (migrated) keepPreMigrationCopy(storage, raw);
+    return { state, warning: null, fresh: false, migrated };
   } catch {
     const backupKey = `${STORAGE_KEY}.corrupt-${now}`;
     try {
@@ -364,6 +365,16 @@ export function loadState(storage, { now, makeId = createId }) {
       warning: `הנתונים השמורים היו פגומים ולכן התחלנו מחדש. עותק של הנתונים הישנים נשמר בדפדפן תחת המפתח ${backupKey}`,
       fresh: true,
     };
+  }
+}
+
+export const PRE_MIGRATION_KEY = `${STORAGE_KEY}.before-schema-${SCHEMA_VERSION}`;
+
+function keepPreMigrationCopy(storage, raw) {
+  try {
+    if (storage.getItem(PRE_MIGRATION_KEY) === null) storage.setItem(PRE_MIGRATION_KEY, raw);
+  } catch {
+    // Best effort only - the migrated data itself is still saved.
   }
 }
 
@@ -392,8 +403,9 @@ export function createStore({ storage = null, clock = () => Date.now(), makeId =
     if (notify) notifyListeners();
   };
 
-  // Save a brand-new state right away so generated category ids stay stable across reloads.
-  if (loaded.fresh) persist();
+  // Save a brand-new state right away so generated category ids stay stable across reloads,
+  // and save migrated data right away so storage holds the current format.
+  if (loaded.fresh || loaded.migrated) persist();
 
   return {
     loadWarning: loaded.warning,

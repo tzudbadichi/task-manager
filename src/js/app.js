@@ -1,8 +1,8 @@
 // Entry point: connects the store to the DOM, handles all user events (delegated),
-// the periodic timer (elapsed times, Claude check reminders), dialogs and backup import/export.
+// the periodic refresh (time in progress), dialogs and backup import/export.
 
 import { createStore, STORAGE_KEY } from './store.js';
-import { NO_CATEGORY, countAttentionItems, listOverdueClaudeItems, selectVisibleTasks } from './selectors.js';
+import { NO_CATEGORY, selectVisibleTasks } from './selectors.js';
 import { DEFAULT_FILTERS, loadUiPrefs, saveUiPrefs } from './ui-prefs.js';
 import {
   fillCategorySelect, fillStatusSelect, renderBackupBanner, renderCategoriesList, renderDashboard,
@@ -12,7 +12,6 @@ import { hydrateIcons } from './icons.js';
 import { h } from './dom.js';
 import { dateStamp } from './utils.js';
 
-const APP_TITLE = 'ניהול משימות';
 const TICK_INTERVAL_MS = 30_000;
 const MAX_IMPORT_BYTES = 5 * 1024 * 1024;
 const MAX_VISIBLE_TOASTS = 3;
@@ -46,7 +45,6 @@ const store = createStore({
   onPersistError: () => showToast('השמירה בדפדפן נכשלה - מומלץ לייצא גיבוי עכשיו', { tone: 'error', durationMs: 12000 }),
 });
 const ui = loadUiPrefs(storage);
-const notifiedClaudeKeys = new Set();
 const darkSchemeQuery = window.matchMedia('(prefers-color-scheme: dark)');
 let isBackupBannerDismissed = false;
 let editingTaskId = null;
@@ -78,13 +76,11 @@ function render() {
   const focusSnapshot = captureFocus();
   pruneCategoryFilter(state);
   applyTheme(state.settings.theme);
-  renderDashboard(els.dashboard, state, ui.filters, now);
+  renderDashboard(els.dashboard, state, ui.filters);
   renderFilters(els.filters, state, ui.filters);
   renderBackupBanner(els.backupBanner, state, now, isBackupBannerDismissed);
   renderTaskList(els.taskList, state, ui.filters, ui.expandedTaskIds, now);
   if (els.categoriesDialog.open) renderCategoriesList(els.categoriesList, state);
-  const attentionCount = countAttentionItems(state, now);
-  document.title = attentionCount > 0 ? `(${attentionCount}) ${APP_TITLE}` : APP_TITLE;
   restoreFocus(focusSnapshot);
 }
 
@@ -177,9 +173,6 @@ const clickActions = {
     persistUi();
     render();
   },
-  'mark-checked': ({ taskId, subtaskId }) => store.dispatch(subtaskId
-    ? { type: 'subtask/markChecked', taskId, subtaskId }
-    : { type: 'task/markChecked', taskId }),
   'toggle-subtask-done': ({ taskId, subtaskId }) => {
     const subtask = store.getState().tasks.find(task => task.id === taskId)?.subtasks.find(item => item.id === subtaskId);
     if (subtask) store.dispatch({ type: 'subtask/setStatus', taskId, subtaskId, status: subtask.status === 'done' ? 'todo' : 'done' });
@@ -217,8 +210,6 @@ const changeActions = {
     commitInlineEdit(element, { type: 'task/update', taskId, changes: { title: element.value } }),
   'edit-subtask-title': ({ taskId, subtaskId }, element) =>
     commitInlineEdit(element, { type: 'subtask/update', taskId, subtaskId, changes: { title: element.value } }),
-  'edit-subtask-contact': ({ taskId, subtaskId }, element) =>
-    commitInlineEdit(element, { type: 'subtask/update', taskId, subtaskId, changes: { contact: element.value } }),
   'filter-status': (_, element) => setFilters({ status: element.value }),
   'filter-sort': (_, element) => setFilters({ sort: element.value }),
   'filter-show-done': (_, element) => setFilters({ showDone: element.checked }),
@@ -229,10 +220,7 @@ const changeActions = {
     }
   },
   'category-color': ({ categoryId }, element) => store.dispatch({ type: 'category/update', categoryId, changes: { color: element.value } }),
-  'setting-claude-minutes': (_, element) => updateSettings({ claudeCheckMinutes: element.value }),
-  'setting-followup-days': (_, element) => updateSettings({ waitingFollowUpDays: element.value }),
   'setting-theme': (_, element) => updateSettings({ theme: element.value }),
-  'setting-notifications': (_, element) => setNotifications(element.checked),
   'import-file': (_, element) => importBackup(element),
 };
 
@@ -335,7 +323,6 @@ function openTaskDialog(taskId) {
   fillCategorySelect(fields.categoryId, state.categories, task ? task.categoryId : defaultCategoryForNewTask(state));
   fillStatusSelect(fields.status, task?.status ?? 'todo');
   fields.title.value = task?.title ?? '';
-  fields.contact.value = task?.contact ?? '';
   fields.description.value = task?.description ?? '';
   els.taskDialogDelete.hidden = !task;
 
@@ -363,7 +350,6 @@ els.taskForm.addEventListener('submit', event => {
     title,
     description: fields.description.value,
     categoryId: fields.categoryId.value || null,
-    contact: fields.contact.value,
   };
   const status = fields.status.value;
 
@@ -383,7 +369,7 @@ els.taskForm.addEventListener('submit', event => {
 els.taskForm.elements.title.addEventListener('input', event => event.target.setCustomValidity(''));
 
 function warnIfHiddenByFilters(taskId) {
-  const isVisible = selectVisibleTasks(store.getState(), ui.filters, Date.now()).some(task => task.id === taskId);
+  const isVisible = selectVisibleTasks(store.getState(), ui.filters).some(task => task.id === taskId);
   if (isVisible) return;
   showToast('המשימה נוספה, אבל הסינון הנוכחי מסתיר אותה', {
     actionLabel: 'ניקוי סינון',
@@ -428,7 +414,7 @@ els.categoriesDialog.addEventListener('close', () => {
 });
 
 // ---------------------------------------------------------------------------
-// Settings dialog, notifications, backup
+// Settings dialog and backup
 // ---------------------------------------------------------------------------
 
 function openSettingsDialog() {
@@ -440,10 +426,7 @@ function syncSettingsForm() {
   const state = store.getState();
   const { settings } = state;
   const fields = els.settingsForm.elements;
-  fields.claudeCheckMinutes.value = settings.claudeCheckMinutes;
-  fields.waitingFollowUpDays.value = settings.waitingFollowUpDays;
   fields.theme.value = settings.theme;
-  fields.notificationsEnabled.checked = settings.notificationsEnabled && notificationPermission() === 'granted';
   const subtaskCount = state.tasks.reduce((sum, task) => sum + task.subtasks.length, 0);
   els.storageSummary.textContent = `שמורים כרגע: ${state.tasks.length} משימות, ${subtaskCount} תתי משימות, ${state.categories.length} קטגוריות.`;
   els.lastExportLabel.textContent = settings.lastExportAt
@@ -453,53 +436,10 @@ function syncSettingsForm() {
 
 function updateSettings(changes) {
   store.dispatch({ type: 'settings/update', changes });
-  syncSettingsForm(); // shows the clamped / normalized values
+  syncSettingsForm();
 }
 
 els.settingsForm.addEventListener('submit', event => event.preventDefault());
-
-function notificationPermission() {
-  return 'Notification' in window ? Notification.permission : 'unsupported';
-}
-
-async function setNotifications(isEnabled) {
-  if (!isEnabled) {
-    updateSettings({ notificationsEnabled: false });
-    return;
-  }
-  if (notificationPermission() === 'unsupported') {
-    showToast('הדפדפן הזה לא תומך בהתראות', { tone: 'warning' });
-    updateSettings({ notificationsEnabled: false });
-    return;
-  }
-  const permission = Notification.permission === 'granted' ? 'granted' : await Notification.requestPermission();
-  if (permission !== 'granted') {
-    showToast('ההרשאה להתראות לא אושרה בדפדפן', { tone: 'warning' });
-    updateSettings({ notificationsEnabled: false });
-    return;
-  }
-  updateSettings({ notificationsEnabled: true });
-  showToast('התראות הופעלו. הן מופיעות כל עוד הלשונית של האפליקציה פתוחה.', { tone: 'success' });
-}
-
-// Notifies once per Claude item each time its check time passes (the key changes after every "checked" click).
-function notifyOverdueClaude({ silent = false } = {}) {
-  const state = store.getState();
-  const canNotify = !silent && state.settings.notificationsEnabled && notificationPermission() === 'granted';
-  for (const item of listOverdueClaudeItems(state, Date.now())) {
-    if (notifiedClaudeKeys.has(item.key)) continue;
-    notifiedClaudeKeys.add(item.key);
-    if (!canNotify) continue;
-    try {
-      new Notification('קלוד - הגיע הזמן לבדוק', {
-        body: item.context ? `${item.title} (${item.context})` : item.title,
-        tag: item.key,
-      });
-    } catch {
-      // Some mobile browsers only allow notifications from a service worker.
-    }
-  }
-}
 
 function exportBackup() {
   const state = store.getState();
@@ -606,7 +546,6 @@ function onTick() {
     if (hasPendingStorageReload) applyStorageReload();
     else render();
   }
-  notifyOverdueClaude();
 }
 
 // Another tab saved data. Apply it now, or - if the user is mid-typing here - once they leave the field.
@@ -637,7 +576,6 @@ hydrateIcons();
 pruneExpandedTasks(store.getState());
 store.subscribe(render);
 render();
-notifyOverdueClaude({ silent: true }); // items already overdue on load are visible on screen - no notification burst
 
 if (!storage) {
   showToast('הדפדפן חוסם שמירה מקומית - הנתונים לא יישמרו אחרי סגירת הלשונית', { tone: 'error', durationMs: 15000 });

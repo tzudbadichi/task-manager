@@ -1,6 +1,6 @@
 import { describe, test } from 'node:test';
 import assert from 'node:assert/strict';
-import { cleanText, clampInt, dateStamp, formatElapsed, isHexColor } from '../src/js/utils.js';
+import { cleanText, dateStamp, formatElapsed, isHexColor } from '../src/js/utils.js';
 import { UI_PREFS_KEY, loadUiPrefs, saveUiPrefs } from '../src/js/ui-prefs.js';
 import { createMemoryStorage } from './fixtures/memory-storage.js';
 
@@ -38,13 +38,6 @@ describe('small helpers', () => {
     assert.equal(isHexColor('#123456; color: red'), false);
   });
 
-  test('clampInt clamps, rounds and falls back on junk', () => {
-    assert.equal(clampInt('7.6', 1, 10, 5), 8);
-    assert.equal(clampInt(500, 1, 10, 5), 10);
-    assert.equal(clampInt('abc', 1, 10, 5), 5);
-    assert.equal(clampInt('', 1, 10, 5), 5);
-  });
-
   test('dateStamp pads month and day', () => {
     assert.equal(dateStamp(new Date(2026, 0, 5)), '2026-01-05');
   });
@@ -54,11 +47,11 @@ describe('UI preferences', () => {
   test('round-trips filters and expanded cards, but never the search text', () => {
     const storage = createMemoryStorage();
     saveUiPrefs(storage, {
-      filters: { search: 'secret', categoryIds: ['dev'], status: 'attention', showDone: true, sort: 'category' },
+      filters: { search: 'secret', categoryIds: ['dev'], status: 'in_progress', showDone: true, sort: 'category' },
       expandedTaskIds: new Set(['t1', 't2']),
     });
     const prefs = loadUiPrefs(storage);
-    assert.deepEqual(prefs.filters, { search: '', categoryIds: ['dev'], status: 'attention', showDone: true, sort: 'category' });
+    assert.deepEqual(prefs.filters, { search: '', categoryIds: ['dev'], status: 'in_progress', showDone: true, sort: 'category' });
     assert.deepEqual([...prefs.expandedTaskIds], ['t1', 't2']);
     assert.equal(storage.getItem(UI_PREFS_KEY).includes('secret'), false);
   });
@@ -67,10 +60,10 @@ describe('UI preferences', () => {
     const corrupt = loadUiPrefs(createMemoryStorage({ [UI_PREFS_KEY]: '{oops' }));
     assert.equal(corrupt.filters.status, 'all');
     const invalid = loadUiPrefs(createMemoryStorage({
-      [UI_PREFS_KEY]: JSON.stringify({ filters: { status: 'evil', sort: 'x', categoryIds: [1, 'ok'] }, expandedTaskIds: 'nope' }),
+      [UI_PREFS_KEY]: JSON.stringify({ filters: { status: 'attention', sort: 'attention', categoryIds: [1, 'ok'] }, expandedTaskIds: 'nope' }),
     }));
-    assert.deepEqual(invalid.filters, { search: '', categoryIds: ['ok'], status: 'all', showDone: false, sort: 'attention' });
+    assert.deepEqual(invalid.filters, { search: '', categoryIds: ['ok'], status: 'all', showDone: false, sort: 'status' });
     assert.equal(invalid.expandedTaskIds.size, 0);
-    assert.equal(loadUiPrefs(null).filters.sort, 'attention');
+    assert.equal(loadUiPrefs(null).filters.sort, 'status');
   });
 });

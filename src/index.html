@@ -6,7 +6,7 @@
   <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self'; style-src 'self'; img-src 'self' data:; connect-src 'self'; object-src 'none'; base-uri 'none'">
   <meta name="referrer" content="no-referrer">
   <meta name="color-scheme" content="light dark">
-  <meta name="description" content="ניהול משימות ותתי משימות עם סטטוסים של המתנה למייל ותהליכי קלוד ברקע">
+  <meta name="description" content="ניהול משימות ותתי משימות לפי סטטוס וקטגוריות צבעוניות">
   <title>ניהול משימות</title>
   <link rel="icon" href="favicon.svg" type="image/svg+xml">
   <link rel="stylesheet" href="css/styles.css">
@@ -75,11 +75,6 @@
       </div>
 
       <label class="field">
-        <span class="field-label">איש קשר <small>(אופציונלי - ממי מחכים לתשובה / ממי הגיע המייל)</small></span>
-        <input name="contact" type="text" maxlength="120" autocomplete="off">
-      </label>
-
-      <label class="field">
         <span class="field-label">תיאור <small>(אופציונלי)</small></span>
         <textarea name="description" rows="4" maxlength="4000"></textarea>
       </label>
@@ -128,24 +123,6 @@
         <h2 id="settings-dialog-title">הגדרות וגיבוי</h2>
         <button type="button" class="icon-btn" data-action="close-dialog" aria-label="סגירה"><span data-icon="x"></span></button>
       </header>
-
-      <section class="settings-section">
-        <h3>תזכורות</h3>
-        <label class="setting-line">
-          <span>להזכיר לבדוק את קלוד אחרי</span>
-          <input type="number" name="claudeCheckMinutes" min="1" max="1440" step="1" data-action="setting-claude-minutes">
-          <span>דקות</span>
-        </label>
-        <label class="setting-line">
-          <span>להציע תזכורת על מייל שלא נענה אחרי</span>
-          <input type="number" name="waitingFollowUpDays" min="1" max="90" step="1" data-action="setting-followup-days">
-          <span>ימים</span>
-        </label>
-        <label class="toggle">
-          <input type="checkbox" name="notificationsEnabled" data-action="setting-notifications">
-          התראת דפדפן כשמגיע הזמן לבדוק את קלוד (כל עוד הלשונית פתוחה)
-        </label>
-      </section>
 
       <section class="settings-section">
         <h3>תצוגה</h3>

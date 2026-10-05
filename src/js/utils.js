@@ -26,13 +26,6 @@ export function isHexColor(value) {
   return typeof value === 'string' && HEX_COLOR_PATTERN.test(value);
 }
 
-export function clampInt(value, min, max, fallback) {
-  if (value === null || value === undefined || value === '') return fallback;
-  const number = Math.round(Number(value));
-  if (!Number.isFinite(number)) return fallback;
-  return Math.min(max, Math.max(min, number));
-}
-
 export function toTimestamp(value, fallback) {
   return Number.isFinite(value) && value > 0 ? value : fallback;
 }
