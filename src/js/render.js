@@ -75,6 +75,10 @@ export function renderFilters(container, state, filters) {
     ...state.categories.map(category =>
       categoryChip(category.id, category.name, category.color, selectedCategories.has(category.id))),
     hasUncategorized && categoryChip(NO_CATEGORY, 'ללא קטגוריה', UNCATEGORIZED_COLOR, selectedCategories.has(NO_CATEGORY)),
+    h('button', {
+      type: 'button', class: 'chip chip-edit', dataset: { action: 'open-categories' },
+      title: 'הוספה, שינוי שם, שינוי צבע ומחיקה של קטגוריות',
+    }, icon('edit', { size: 14 }), 'עריכה'),
   ];
 
   container.replaceChildren(
@@ -158,10 +162,11 @@ function renderTaskTile(task, category, now) {
   const hiddenCount = summary.total - preview.length;
   const ids = { taskId: task.id };
 
+  // The top stripe takes the category color; data-status tints the rest of the tile by status.
   return h('article', {
     class: ['task-tile', task.status === 'done' && 'is-done'],
     cssVars: { '--cat-color': color },
-    dataset: { taskId: task.id },
+    dataset: { taskId: task.id, status: task.status },
   },
   h('div', { class: 'tile-top' },
     h('span', { class: 'cat-chip', cssVars: { '--chip-color': color } },
@@ -217,7 +222,8 @@ export function renderTaskDetail(container, state, taskId, now) {
       h('button', { type: 'button', class: 'icon-btn', dataset: { action: 'close-dialog' }, 'aria-label': 'סגירה', autofocus: true }, icon('x'))),
     h('div', { class: 'field-row' },
       h('label', { class: 'field' },
-        h('span', { class: 'field-label' }, 'קטגוריה'),
+        h('span', { class: 'field-label' }, 'קטגוריה',
+          h('button', { type: 'button', class: 'btn btn-link btn-inline', dataset: { action: 'open-categories' } }, 'ניהול קטגוריות')),
         h('select', { class: 'select', value: task.categoryId ?? '', dataset: { action: 'set-task-category', focusKey: `detail-category-${task.id}`, ...ids } },
           ...state.categories.map(item => h('option', { value: item.id }, item.name)),
           h('option', { value: '' }, 'ללא קטגוריה'))),
@@ -351,7 +357,11 @@ function emptyState(title, text, ...actions) {
 // Dialog helpers
 // ---------------------------------------------------------------------------
 
-export function renderCategoriesList(container, state) {
+/**
+ * Category rows: color button, editable name, task count, delete.
+ * The row whose id is paletteCategoryId shows its color palette (swatches + a custom color picker).
+ */
+export function renderCategoriesList(container, state, paletteCategoryId = null) {
   const usage = new Map();
   for (const task of state.tasks) usage.set(task.categoryId, (usage.get(task.categoryId) ?? 0) + 1);
 
@@ -359,31 +369,51 @@ export function renderCategoriesList(container, state) {
     container.replaceChildren(h('li', { class: 'muted small' }, 'אין קטגוריות. אפשר להוסיף למטה.'));
     return;
   }
-  container.replaceChildren(...state.categories.map(category => h('li', { class: 'category-row' },
-    h('input', {
-      type: 'color', class: 'color-input', value: category.color,
-      'aria-label': `צבע לקטגוריה ${category.name}`,
-      dataset: { action: 'category-color', categoryId: category.id, focusKey: `cat-color-${category.id}` },
-    }),
-    h('input', {
-      type: 'text', class: 'inline-edit category-name', value: category.name, maxlength: LIMITS.categoryName,
-      'aria-label': 'שם הקטגוריה',
-      dataset: { action: 'category-name', categoryId: category.id, focusKey: `cat-name-${category.id}`, original: category.name },
-    }),
-    h('span', { class: 'muted small category-usage' }, `${usage.get(category.id) ?? 0} משימות`),
-    iconButton('trash', 'מחיקת קטגוריה', { action: 'delete-category', categoryId: category.id }, 'danger'))));
+  container.replaceChildren(...state.categories.map(category => {
+    const ids = { categoryId: category.id };
+    const isPaletteOpen = category.id === paletteCategoryId;
+    return h('li', { class: ['category-row', isPaletteOpen && 'is-palette-open'] },
+      h('div', { class: 'category-main' },
+        h('button', {
+          type: 'button', class: 'swatch color-btn', cssVars: { '--swatch': category.color },
+          title: 'שינוי צבע', 'aria-label': `שינוי הצבע של ${category.name}`, 'aria-expanded': String(isPaletteOpen),
+          dataset: { action: 'toggle-category-palette', focusKey: `cat-color-${category.id}`, ...ids },
+        }),
+        h('input', {
+          type: 'text', class: 'inline-edit category-name', value: category.name, maxlength: LIMITS.categoryName,
+          'aria-label': 'שם הקטגוריה', title: 'לחיצה לשינוי השם',
+          dataset: { action: 'category-name', focusKey: `cat-name-${category.id}`, original: category.name, ...ids },
+        }),
+        h('span', { class: 'muted small category-usage' }, `${usage.get(category.id) ?? 0} משימות`),
+        iconButton('trash', `מחיקת הקטגוריה ${category.name}`, { action: 'delete-category', ...ids }, 'danger')),
+      isPaletteOpen && h('div', { class: 'category-palette', role: 'group', 'aria-label': `צבעים לקטגוריה ${category.name}` },
+        ...swatchButtons(category.color, color => ({
+          action: 'set-category-color', color, focusKey: `cat-swatch-${category.id}-${color}`, ...ids,
+        })),
+        h('label', { class: 'custom-color' },
+          h('input', {
+            type: 'color', class: 'color-input', value: category.color,
+            'aria-label': `צבע אחר לקטגוריה ${category.name}`,
+            dataset: { action: 'category-color', focusKey: `cat-custom-color-${category.id}`, ...ids },
+          }),
+          'צבע אחר')));
+  }));
 }
 
 export function renderSwatches(container, selectedColor) {
+  container.replaceChildren(...swatchButtons(selectedColor, color => ({ action: 'pick-swatch', color })));
+}
+
+function swatchButtons(selectedColor, datasetFor) {
   const selected = selectedColor.toLowerCase();
-  container.replaceChildren(...CATEGORY_SWATCHES.map(color => h('button', {
+  return CATEGORY_SWATCHES.map(color => h('button', {
     type: 'button',
     class: ['swatch', color === selected && 'is-selected'],
     cssVars: { '--swatch': color },
-    dataset: { action: 'pick-swatch', color },
+    dataset: datasetFor(color),
     'aria-label': `בחירת צבע ${color}`,
     'aria-pressed': String(color === selected),
-  })));
+  }));
 }
 
 /** First palette color not used yet by any category. */

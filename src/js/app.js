@@ -61,6 +61,7 @@ const finePointerQuery = window.matchMedia('(pointer: fine)');
 
 let isBackupBannerDismissed = false;
 let detailTaskId = null;
+let paletteCategoryId = null; // category whose color palette is open in the categories dialog
 let hasPendingStorageReload = false;
 let isRenderDeferred = false;
 let isDragging = false;
@@ -112,7 +113,7 @@ function render() {
   renderFilters(els.filters, state, ui.filters);
   renderBackupBanner(els.backupBanner, state, now, isBackupBannerDismissed || mode === 'cloud');
   renderTaskGrid(els.taskList, state, ui.filters, now);
-  if (els.categoriesDialog.open) renderCategoriesList(els.categoriesList, state);
+  if (els.categoriesDialog.open) renderCategoriesList(els.categoriesList, state, paletteCategoryId);
   if (els.detailDialog.open && !renderTaskDetail(els.detailBody, state, detailTaskId, now)) els.detailDialog.close();
   restoreFocus(focusSnapshot);
 }
@@ -240,6 +241,11 @@ const clickActions = {
   'filter-reset': () => setFilters({ search: '', categoryIds: [], status: DEFAULT_FILTERS.status }),
   'open-categories': () => openCategoriesDialog(),
   'delete-category': ({ categoryId }) => deleteWithUndo({ type: 'category/delete', categoryId }, 'הקטגוריה נמחקה. המשימות שלה נשארו, ללא קטגוריה.'),
+  'toggle-category-palette': ({ categoryId }) => {
+    paletteCategoryId = paletteCategoryId === categoryId ? null : categoryId;
+    render();
+  },
+  'set-category-color': ({ categoryId, color }) => store.dispatch({ type: 'category/update', categoryId, changes: { color } }),
   'pick-swatch': ({ color }) => {
     els.newCategoryColor.value = color;
     renderSwatches(els.categorySwatches, color);
@@ -462,7 +468,8 @@ els.detailDialog.addEventListener('close', () => {
 
 function openCategoriesDialog() {
   const state = store.getState();
-  renderCategoriesList(els.categoriesList, state);
+  paletteCategoryId = null;
+  renderCategoriesList(els.categoriesList, state, paletteCategoryId);
   els.newCategoryName.value = '';
   els.newCategoryColor.value = suggestCategoryColor(state.categories);
   renderSwatches(els.categorySwatches, els.newCategoryColor.value);
