@@ -14,12 +14,16 @@ export const CATEGORY_SWATCHES = Object.freeze([
   '#ca8a04', '#16a34a', '#0d9488', '#0891b2', '#475569',
 ]);
 
+// How many subtasks a tile previews (CSS shows fewer on small screens).
+const TILE_PREVIEW_COUNT = 4;
+
 const STATUS_FILTER_OPTIONS = [
   { value: 'all', label: 'כל הסטטוסים' },
   ...STATUS_ORDER.map(key => ({ value: key, label: STATUSES[key].label })),
 ];
 
 const SORT_OPTIONS = [
+  { value: 'manual', label: 'מיון: הסדר שלי' },
   { value: 'status', label: 'מיון: לפי סטטוס' },
   { value: 'updated', label: 'מיון: עודכן לאחרונה' },
   { value: 'created', label: 'מיון: נוצר לאחרונה' },
@@ -82,15 +86,13 @@ export function renderFilters(container, state, filters) {
           placeholder: 'חיפוש במשימות ובתתי משימות',
           dataset: { action: 'filter-search', focusKey: 'filter-search' },
         })),
-      selectElement(STATUS_FILTER_OPTIONS, filters.status, { action: 'filter-status', focusKey: 'filter-status' }, 'סינון לפי סטטוס'),
-      selectElement(SORT_OPTIONS, filters.sort, { action: 'filter-sort', focusKey: 'filter-sort' }, 'מיון'),
+      h('div', { class: 'filters-selects' },
+        selectElement(STATUS_FILTER_OPTIONS, filters.status, { action: 'filter-status', focusKey: 'filter-status' }, 'סינון לפי סטטוס'),
+        selectElement(SORT_OPTIONS, filters.sort, { action: 'filter-sort', focusKey: 'filter-sort' }, 'מיון')),
       h('label', { class: 'toggle' },
         h('input', { type: 'checkbox', checked: filters.showDone, dataset: { action: 'filter-show-done', focusKey: 'filter-show-done' } }),
         `הצגת משימות שהושלמו (${doneCount})`),
-      h('div', { class: 'filters-tools' },
-        isFiltered && h('button', { type: 'button', class: 'btn btn-link', dataset: { action: 'filter-reset' } }, 'ניקוי סינון'),
-        iconButton('chevrons-down', 'פתיחת כל המשימות', { action: 'expand-all' }),
-        iconButton('chevrons-up', 'כיווץ כל המשימות', { action: 'collapse-all' }))),
+      isFiltered && h('button', { type: 'button', class: 'btn btn-link filters-reset', dataset: { action: 'filter-reset' } }, 'ניקוי סינון')),
     h('div', { class: 'chips-row', role: 'group', 'aria-label': 'סינון לפי קטגוריה' }, ...chips),
   );
 }
@@ -106,11 +108,11 @@ function categoryChip(categoryId, name, color, isActive) {
 }
 
 // ---------------------------------------------------------------------------
-// Backup reminder banner
+// Backup reminder banner (local-only mode)
 // ---------------------------------------------------------------------------
 
-export function renderBackupBanner(container, state, now, isDismissed) {
-  const reminder = isDismissed ? null : getBackupReminder(state, now);
+export function renderBackupBanner(container, state, now, isHidden) {
+  const reminder = isHidden ? null : getBackupReminder(state, now);
   if (!reminder) {
     container.replaceChildren();
     return;
@@ -126,14 +128,14 @@ export function renderBackupBanner(container, state, now, isDismissed) {
 }
 
 // ---------------------------------------------------------------------------
-// Task list
+// Task grid (square tiles)
 // ---------------------------------------------------------------------------
 
-export function renderTaskList(container, state, filters, expandedTaskIds, now) {
+export function renderTaskGrid(container, state, filters, now) {
   if (state.tasks.length === 0) {
     container.replaceChildren(emptyState(
       'אין עדיין משימות',
-      'אפשר להתחיל עם "משימה חדשה" ולהוסיף לה תתי משימות. לכל משימה ולכל תת-משימה יש סטטוס משלה.',
+      'אפשר להתחיל עם "משימה חדשה" ולהוסיף לה תתי משימות. את הריבועים אפשר לגרור ולסדר איך שנוח.',
       h('button', { type: 'button', class: 'btn btn-primary', dataset: { action: 'open-new-task' } }, icon('plus'), 'משימה חדשה')));
     return;
   }
@@ -146,45 +148,101 @@ export function renderTaskList(container, state, filters, expandedTaskIds, now) 
     return;
   }
   const categoriesById = new Map(state.categories.map(category => [category.id, category]));
-  container.replaceChildren(...visibleTasks.map(task => renderTaskCard(
-    task, categoriesById.get(task.categoryId) ?? null, expandedTaskIds.has(task.id), now)));
+  container.replaceChildren(...visibleTasks.map(task => renderTaskTile(task, categoriesById.get(task.categoryId) ?? null, now)));
 }
 
-function renderTaskCard(task, category, isExpanded, now) {
+function renderTaskTile(task, category, now) {
+  const color = category?.color ?? UNCATEGORIZED_COLOR;
+  const summary = summarizeSubtasks(task);
+  const preview = task.subtasks.slice(0, TILE_PREVIEW_COUNT);
+  const hiddenCount = summary.total - preview.length;
+  const ids = { taskId: task.id };
+
+  return h('article', {
+    class: ['task-tile', task.status === 'done' && 'is-done'],
+    cssVars: { '--cat-color': color },
+    dataset: { taskId: task.id },
+  },
+  h('div', { class: 'tile-top' },
+    h('span', { class: 'cat-chip', cssVars: { '--chip-color': color } },
+      h('span', { class: 'dot', 'aria-hidden': 'true' }), category?.name ?? 'ללא קטגוריה'),
+    h('span', { class: 'tile-grip', title: 'גרירה לסידור', 'aria-hidden': 'true' }, icon('grip', { size: 16 }))),
+  // The title button stretches over the whole tile (CSS ::after), so a click anywhere opens the task.
+  h('button', {
+    type: 'button', class: 'tile-open', dataset: { action: 'open-task', ...ids },
+    'aria-label': `פתיחת המשימה ${task.title}`,
+  }, h('span', { class: 'tile-title' }, task.title)),
+  summary.total === 0 && task.description && h('p', { class: 'tile-description' }, task.description),
+  summary.total > 0 && h('ul', { class: 'tile-subtasks', 'aria-label': 'תתי משימות' },
+    ...preview.map(subtask => {
+      const isDone = subtask.status === 'done';
+      return h('li', { class: 'tile-subtask', dataset: { status: subtask.status } },
+        h('button', {
+          type: 'button',
+          class: ['done-toggle', 'is-mini', 'no-drag', isDone && 'is-checked'],
+          dataset: { action: 'toggle-subtask-done', ...ids, subtaskId: subtask.id },
+          'aria-pressed': String(isDone),
+          'aria-label': `${isDone ? 'החזרה לביצוע' : 'סימון כהושלם'}: ${subtask.title}`,
+        }, icon('check', { size: 11 })),
+        h('span', { class: 'tile-subtask-title' }, subtask.title));
+    })),
+  hiddenCount > 0 && h('span', { class: 'tile-more' }, `+${hiddenCount} נוספות`),
+  h('div', { class: 'tile-bottom' },
+    statusControl(task.status, { action: 'set-task-status', focusKey: `tile-status-${task.id}`, ...ids }, 'no-drag'),
+    summary.total > 0 && progressIndicator(summary),
+    sinceLabel(task, now)));
+}
+
+// ---------------------------------------------------------------------------
+// Task detail (dialog content)
+// ---------------------------------------------------------------------------
+
+/** Renders the detail view of one task. Returns false when the task no longer exists. */
+export function renderTaskDetail(container, state, taskId, now) {
+  const task = state.tasks.find(item => item.id === taskId);
+  if (!task) return false;
+  const category = state.categories.find(item => item.id === task.categoryId) ?? null;
   const color = category?.color ?? UNCATEGORIZED_COLOR;
   const summary = summarizeSubtasks(task);
   const ids = { taskId: task.id };
-  const bodyId = `task-body-${task.id}`;
 
-  return h('article', {
-    class: ['task-card', task.status === 'done' && 'is-done'],
-    cssVars: { '--cat-color': color },
-    'aria-label': task.title,
-  },
-  h('div', { class: 'task-head' },
-    h('button', {
-      type: 'button', class: 'icon-btn expand-btn',
-      dataset: { action: 'toggle-expand', ...ids },
-      'aria-expanded': String(isExpanded), 'aria-controls': bodyId,
-      title: isExpanded ? 'כיווץ' : 'פתיחה',
-    }, icon('chevron-down')),
-    h('div', { class: 'task-main' },
-      inlineInput(task.title, { action: 'edit-task-title', focusKey: `task-title-${task.id}`, ...ids }, 'task-title', 'כותרת המשימה'),
-      h('div', { class: 'task-meta' },
-        h('span', { class: 'cat-chip', cssVars: { '--chip-color': color } },
-          h('span', { class: 'dot', 'aria-hidden': 'true' }), category?.name ?? 'ללא קטגוריה'),
-        summary.total > 0 && progressIndicator(summary),
-        sinceLabel(task, now))),
-    h('div', { class: 'task-actions' },
-      statusControl(task.status, { action: 'set-task-status', focusKey: `task-status-${task.id}`, ...ids }),
-      iconButton('edit', 'עריכת משימה', { action: 'edit-task', ...ids }),
-      iconButton('trash', 'מחיקת משימה', { action: 'delete-task', ...ids }, 'danger'))),
-  isExpanded && h('div', { class: 'task-body', id: bodyId },
-    task.description && h('p', { class: 'task-description' }, task.description),
-    summary.total > 0
-      ? h('ul', { class: 'subtasks' }, ...task.subtasks.map(subtask => renderSubtask(task, subtask, now)))
-      : h('p', { class: 'muted small no-subtasks' }, 'אין עדיין תתי משימות.'),
-    addSubtaskRow(task.id)));
+  container.replaceChildren(
+    h('header', { class: 'detail-head', cssVars: { '--cat-color': color } },
+      h('span', { class: 'detail-color', 'aria-hidden': 'true' }),
+      h('input', {
+        type: 'text', class: 'inline-edit detail-title', value: task.title, maxlength: LIMITS.title,
+        'aria-label': 'כותרת המשימה', id: 'detail-dialog-title',
+        dataset: { action: 'edit-task-title', focusKey: `detail-title-${task.id}`, original: task.title, ...ids },
+      }),
+      h('button', { type: 'button', class: 'icon-btn', dataset: { action: 'close-dialog' }, 'aria-label': 'סגירה', autofocus: true }, icon('x'))),
+    h('div', { class: 'field-row' },
+      h('label', { class: 'field' },
+        h('span', { class: 'field-label' }, 'קטגוריה'),
+        h('select', { class: 'select', value: task.categoryId ?? '', dataset: { action: 'set-task-category', focusKey: `detail-category-${task.id}`, ...ids } },
+          ...state.categories.map(item => h('option', { value: item.id }, item.name)),
+          h('option', { value: '' }, 'ללא קטגוריה'))),
+      h('label', { class: 'field' },
+        h('span', { class: 'field-label' }, 'סטטוס'),
+        h('select', { class: 'select', value: task.status, dataset: { action: 'set-task-status', focusKey: `detail-status-${task.id}`, ...ids } },
+          ...STATUS_ORDER.map(key => h('option', { value: key }, STATUSES[key].label))))),
+    h('label', { class: 'field' },
+      h('span', { class: 'field-label' }, 'תיאור ', h('small', {}, '(אופציונלי)')),
+      h('textarea', {
+        rows: 3, maxlength: LIMITS.description, value: task.description,
+        dataset: { action: 'edit-task-description', focusKey: `detail-description-${task.id}`, original: task.description, ...ids },
+      })),
+    h('section', { class: 'detail-subtasks', 'aria-label': 'תתי משימות' },
+      h('h3', {}, summary.total > 0 ? `תתי משימות (${summary.done}/${summary.total})` : 'תתי משימות'),
+      summary.total > 0
+        ? h('ul', { class: 'subtasks' }, ...task.subtasks.map(subtask => renderSubtask(task, subtask, now)))
+        : h('p', { class: 'muted small' }, 'אין עדיין תתי משימות.'),
+      addSubtaskRow(task.id)),
+    h('footer', { class: 'dialog-foot' },
+      h('button', { type: 'button', class: 'btn btn-danger-soft', dataset: { action: 'delete-task', ...ids } }, icon('trash', { size: 16 }), 'מחיקת המשימה'),
+      h('span', { class: 'spacer' }),
+      h('button', { type: 'button', class: 'btn btn-primary', dataset: { action: 'close-dialog' } }, 'סגירה')),
+  );
+  return true;
 }
 
 function renderSubtask(task, subtask, now) {
@@ -202,7 +260,11 @@ function renderSubtask(task, subtask, now) {
       'aria-label': toggleLabel,
     }, icon('check', { size: 14 })),
     h('div', { class: 'subtask-main' },
-      inlineInput(subtask.title, { action: 'edit-subtask-title', focusKey: `sub-title-${subtask.id}`, ...ids }, 'subtask-title', 'כותרת תת-המשימה')),
+      h('input', {
+        type: 'text', class: 'inline-edit subtask-title', value: subtask.title, maxlength: LIMITS.title,
+        'aria-label': 'כותרת תת-המשימה',
+        dataset: { action: 'edit-subtask-title', focusKey: `sub-title-${subtask.id}`, original: subtask.title, ...ids },
+      })),
     h('div', { class: 'subtask-side' },
       sinceLabel(subtask, now),
       statusControl(subtask.status, { action: 'set-subtask-status', focusKey: `sub-status-${subtask.id}`, ...ids }),
@@ -222,11 +284,32 @@ function addSubtaskRow(taskId) {
 }
 
 // ---------------------------------------------------------------------------
+// Sync status pill (top bar)
+// ---------------------------------------------------------------------------
+
+const SYNC_STATUS_VIEW = Object.freeze({
+  local: { iconName: 'monitor', label: 'שמור במכשיר בלבד', title: 'אין חיבור לחשבון - הנתונים נשמרים רק בדפדפן הזה' },
+  connecting: { iconName: 'cloud', label: 'מתחבר...', title: 'טוען את המשימות מהחשבון' },
+  saving: { iconName: 'cloud', label: 'שומר...', title: 'שומר את השינויים בחשבון' },
+  synced: { iconName: 'cloud', label: 'מסונכרן', title: 'כל השינויים שמורים בחשבון' },
+  offline: { iconName: 'cloud-off', label: 'לא מקוון', title: 'אין רשת - השינויים נשמרים במכשיר ויסונכרנו כשהרשת תחזור' },
+  error: { iconName: 'refresh', label: 'שגיאת סנכרון', title: 'השמירה בחשבון נכשלה - לחיצה לניסיון חוזר' },
+});
+
+export function renderSyncStatus(element, status) {
+  const view = SYNC_STATUS_VIEW[status] ?? SYNC_STATUS_VIEW.local;
+  element.dataset.syncStatus = status;
+  element.title = view.title;
+  element.setAttribute('aria-label', `${view.label}. ${view.title}`);
+  element.replaceChildren(icon(view.iconName, { size: 16 }), h('span', { class: 'sync-label' }, view.label));
+}
+
+// ---------------------------------------------------------------------------
 // Small building blocks
 // ---------------------------------------------------------------------------
 
-function statusControl(status, dataset) {
-  return h('span', { class: 'status-chip', dataset: { status } },
+function statusControl(status, dataset, extraClass = null) {
+  return h('span', { class: ['status-chip', extraClass], dataset: { status } },
     h('span', { class: 'dot', 'aria-hidden': 'true' }),
     h('select', {
       class: 'status-select', value: status, 'aria-label': 'סטטוס', title: STATUSES[status].hint, dataset,
@@ -246,13 +329,6 @@ function progressIndicator({ total, done }) {
     h('span', { class: 'progress-bar', 'aria-hidden': 'true' },
       h('span', { class: 'progress-fill', cssVars: { '--pct': `${percent}%` } })),
     h('span', { dir: 'ltr' }, `${done}/${total}`));
-}
-
-function inlineInput(value, dataset, className, label) {
-  return h('input', {
-    type: 'text', class: ['inline-edit', className], value, maxlength: LIMITS.title,
-    'aria-label': label, dataset: { ...dataset, original: value },
-  });
 }
 
 function iconButton(iconName, label, dataset, variant = null) {

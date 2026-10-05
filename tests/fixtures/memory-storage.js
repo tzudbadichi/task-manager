@@ -3,6 +3,8 @@
 export function createMemoryStorage(initialEntries = {}) {
   const entries = new Map(Object.entries(initialEntries));
   return {
+    get length() { return entries.size; },
+    key: index => [...entries.keys()][index] ?? null,
     getItem: key => (entries.has(key) ? entries.get(key) : null),
     setItem: (key, value) => {
       entries.set(key, String(value));

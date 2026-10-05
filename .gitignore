@@ -1,3 +1,6 @@
+# Local Supabase config (generated in CI from repository Variables; copy config.example.js for local dev)
+src/config.js
+
 # Backups exported from the app (may contain personal / work task data - never commit)
 *backup*.json
 

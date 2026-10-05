@@ -451,3 +451,54 @@ describe('limits and timestamps from untrusted data', () => {
     assert.equal(reduce(state, { type: 'subtask/add', taskId, title: 'one too many' }, { now: T0, makeId }), state);
   });
 });
+
+describe('replayable actions and manual order', () => {
+  test('dispatch assigns ids to add actions; adding an existing id again is a no-op', () => {
+    const changes = [];
+    const store = createStore({ storage: createMemoryStorage(), makeId: sequentialIds('gen') });
+    store.onCommit(change => changes.push(change));
+    store.dispatch({ type: 'task/add', title: 'a' });
+    const [change] = changes;
+    assert.equal(change.kind, 'action');
+    assert.equal(change.action.id, store.getState().tasks[0].id);
+    assert.equal(store.dispatch(change.action), false);
+
+    store.dispatch({ type: 'subtask/add', id: 'sub-fixed', taskId: change.action.id, title: 's' });
+    assert.equal(store.dispatch({ type: 'subtask/add', id: 'sub-fixed', taskId: change.action.id, title: 's' }), false);
+    store.dispatch({ type: 'category/add', id: 'cat-fixed', name: 'X' });
+    assert.equal(store.dispatch({ type: 'category/add', id: 'cat-fixed', name: 'Y' }), false);
+  });
+
+  test('tasks/reorder moves visible tasks among their own positions and keeps hidden ones in place', () => {
+    const harness = createHarness();
+    for (const title of ['d', 'c', 'b', 'a']) harness.run({ type: 'task/add', id: title, title });
+    // Order is a, b, c, d. Only a, c, d are visible (b is filtered out); the user drags d to the front.
+    harness.run({ type: 'tasks/reorder', orderedIds: ['d', 'a', 'c'] });
+    assert.deepEqual(harness.state.tasks.map(task => task.id), ['d', 'b', 'a', 'c']);
+  });
+
+  test('tasks/reorder ignores unknown and duplicate ids, and the same order is a no-op', () => {
+    const harness = createHarness();
+    for (const title of ['b', 'a']) harness.run({ type: 'task/add', id: title, title });
+    const before = harness.state;
+    assert.equal(harness.run({ type: 'tasks/reorder', orderedIds: ['a', 'b'] }), before);
+    assert.equal(harness.run({ type: 'tasks/reorder', orderedIds: 'nope' }), before);
+    harness.run({ type: 'tasks/reorder', orderedIds: ['b', 'ghost', 'b', 'a'] });
+    assert.deepEqual(harness.state.tasks.map(task => task.id), ['b', 'a']);
+  });
+
+  test('onCommit reports actions, replacements and remote updates; applyRemote is not a local change', () => {
+    const kinds = [];
+    const renders = [];
+    const store = createStore({ storage: createMemoryStorage() });
+    store.onCommit(change => kinds.push(change.kind));
+    store.subscribe((state, change) => renders.push(change?.kind));
+    store.dispatch({ type: 'task/add', title: 'a' });
+    store.replaceState({ categories: [], tasks: [] }, { undoable: true });
+    store.undo();
+    store.applyRemote(normalizeState({ categories: [], tasks: [{ title: 'from cloud' }] }, { now: T0 }));
+    assert.deepEqual(kinds, ['action', 'replace', 'replace', 'remote']);
+    assert.deepEqual(renders, ['action', 'replace', 'replace', 'remote']);
+    assert.equal(store.canUndo(), false);
+  });
+});

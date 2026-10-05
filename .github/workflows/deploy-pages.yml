@@ -1,7 +1,8 @@
 name: Deploy to GitHub Pages
 
 # On every push to main: run the unit tests, then publish the static app in src/ to GitHub Pages.
-# There is no build step and no configuration or secrets - the app keeps its data in the browser.
+# config.js (Supabase URL + publishable key) is generated here from repository Variables, so it is
+# never committed. Without those Variables the app simply runs in local-only mode.
 
 on:
   push:
@@ -48,6 +49,18 @@ jobs:
     steps:
       - name: Checkout
         uses: actions/checkout@v4
+
+      - name: Generate config.js from repository variables
+        env:
+          SUPABASE_URL: ${{ vars.SUPABASE_URL }}
+          SUPABASE_ANON_KEY: ${{ vars.SUPABASE_ANON_KEY }}
+        # JSON.stringify quotes the values safely, whatever characters they contain.
+        run: |
+          node -e '
+            const value = name => JSON.stringify(process.env[name] || "");
+            require("fs").writeFileSync("src/config.js",
+              `export const SUPABASE_URL = ${value("SUPABASE_URL")};\nexport const SUPABASE_ANON_KEY = ${value("SUPABASE_ANON_KEY")};\n`);
+          '
 
       - name: Configure Pages
         uses: actions/configure-pages@v5

@@ -21,13 +21,22 @@ const ICON_PATHS = Object.freeze({
   download: ['M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4', 'm7 10 5 5 5-5', 'M12 15V3'],
   upload: ['M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4', 'm17 8-5-5-5 5', 'M12 3v12'],
   shield: ['M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10Z'],
+  grip: ['M9 5h.01', 'M9 12h.01', 'M9 19h.01', 'M15 5h.01', 'M15 12h.01', 'M15 19h.01'],
+  cloud: ['M17.5 19H9a7 7 0 1 1 6.71-9h1.79a4.5 4.5 0 1 1 0 9Z'],
+  'cloud-off': ['M17.5 19H9a7 7 0 1 1 6.71-9h1.79a4.5 4.5 0 1 1 0 9Z', 'm3 3 18 18'],
+  refresh: ['M21 12a9 9 0 1 1-2.64-6.36L21 8', 'M21 3v5h-5'],
+  monitor: ['M4 4h16a1 1 0 0 1 1 1v10a1 1 0 0 1-1 1H4a1 1 0 0 1-1-1V5a1 1 0 0 1 1-1Z', 'M8 20h8', 'M12 16v4'],
+  'log-out': ['M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4', 'm16 17 5-5-5-5', 'M21 12H9'],
 });
+
+// Icons drawn as dots need a thicker stroke to be visible.
+const STROKE_WIDTH_OVERRIDES = Object.freeze({ grip: 3 });
 
 export function icon(name, { size = 18 } = {}) {
   const svg = document.createElementNS(SVG_NS, 'svg');
   const attributes = {
     viewBox: '0 0 24 24', width: size, height: size, fill: 'none', stroke: 'currentColor',
-    'stroke-width': 2, 'stroke-linecap': 'round', 'stroke-linejoin': 'round',
+    'stroke-width': STROKE_WIDTH_OVERRIDES[name] ?? 2, 'stroke-linecap': 'round', 'stroke-linejoin': 'round',
     'aria-hidden': 'true', focusable: 'false', class: 'icon',
   };
   for (const [key, value] of Object.entries(attributes)) svg.setAttribute(key, String(value));

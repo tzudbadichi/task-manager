@@ -2,24 +2,55 @@
 <html lang="he" dir="rtl">
 <head>
   <meta charset="utf-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1">
-  <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self'; style-src 'self'; img-src 'self' data:; connect-src 'self'; object-src 'none'; base-uri 'none'">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self'; style-src 'self'; img-src 'self' data:; connect-src 'self' https://*.supabase.co wss://*.supabase.co; object-src 'none'; base-uri 'none'">
   <meta name="referrer" content="no-referrer">
   <meta name="color-scheme" content="light dark">
-  <meta name="description" content="ניהול משימות ותתי משימות לפי סטטוס וקטגוריות צבעוניות">
+  <meta name="theme-color" content="#4f46e5">
+  <meta name="description" content="ניהול משימות ותתי משימות בריבועים שאפשר לגרור, עם סנכרון בין מכשירים">
   <title>ניהול משימות</title>
   <link rel="icon" href="favicon.svg" type="image/svg+xml">
+  <link rel="manifest" href="manifest.webmanifest">
   <link rel="stylesheet" href="css/styles.css">
   <script type="module" src="js/app.js"></script>
 </head>
-<body>
+<body data-view="loading">
+  <!-- Loading (startup, or first load of an account's tasks) -->
+  <div id="loading-screen" class="loading-screen" role="status">
+    <span class="spinner" aria-hidden="true"></span>
+    <p id="loading-message">טוען...</p>
+  </div>
+
+  <!-- Login (cloud mode only) -->
+  <section id="auth-screen" class="auth-screen" hidden>
+    <div class="auth-card">
+      <img src="favicon.svg" alt="" width="52" height="52">
+      <h1>ניהול משימות</h1>
+      <p id="auth-subtitle" class="muted">התחברות כדי לראות את המשימות מכל מכשיר</p>
+      <form id="auth-form" class="auth-form" novalidate>
+        <label class="field" data-auth-field="email">
+          <span class="field-label">אימייל</span>
+          <input name="email" type="email" autocomplete="email" inputmode="email" dir="ltr" required>
+        </label>
+        <label class="field" data-auth-field="password">
+          <span class="field-label">סיסמה</span>
+          <input name="password" type="password" autocomplete="current-password" minlength="6" dir="ltr" required>
+        </label>
+        <p id="auth-message" class="auth-message" role="alert" hidden></p>
+        <button type="submit" id="auth-submit" class="btn btn-primary btn-block">כניסה</button>
+        <div id="auth-links" class="auth-links"></div>
+      </form>
+    </div>
+  </section>
+
   <header class="topbar">
     <div class="brand">
       <img src="favicon.svg" alt="" class="brand-logo" width="30" height="30">
       <h1>ניהול משימות</h1>
     </div>
     <div class="topbar-actions">
-      <button type="button" class="btn btn-primary" data-action="open-new-task" title="משימה חדשה (קיצור מקלדת: N)">
+      <button type="button" id="sync-status" class="sync-status" data-action="sync-retry"></button>
+      <button type="button" class="btn btn-primary topbar-new" data-action="open-new-task" title="משימה חדשה (קיצור מקלדת: N)">
         <span data-icon="plus"></span><span class="btn-label">משימה חדשה</span>
       </button>
       <button type="button" class="btn btn-ghost" data-action="open-categories" title="קטגוריות וצבעים">
@@ -28,7 +59,7 @@
       <button type="button" class="icon-btn" data-action="toggle-theme" title="מצב בהיר / כהה" aria-label="מצב בהיר / כהה">
         <span data-icon="moon"></span>
       </button>
-      <button type="button" class="icon-btn" data-action="open-settings" title="הגדרות וגיבוי" aria-label="הגדרות וגיבוי">
+      <button type="button" class="icon-btn" data-action="open-settings" title="הגדרות וחשבון" aria-label="הגדרות וחשבון">
         <span data-icon="sliders"></span>
       </button>
     </div>
@@ -38,8 +69,11 @@
     <section id="dashboard" class="dashboard" aria-label="סיכום מצב"></section>
     <section id="filters" class="filters" aria-label="סינון ומיון"></section>
     <section id="backup-banner" aria-label="תזכורת גיבוי"></section>
-    <section id="task-list" class="task-list" aria-label="משימות"></section>
+    <section id="task-list" class="task-grid" aria-label="משימות"></section>
   </main>
+
+  <!-- Thumb-reachable "new task" button on phones -->
+  <button type="button" class="fab" data-action="open-new-task" aria-label="משימה חדשה"><span data-icon="plus"></span></button>
 
   <noscript>
     <p class="noscript">האפליקציה דורשת JavaScript.</p>
@@ -47,7 +81,7 @@
 
   <div id="toast-region" class="toast-region" aria-live="polite"></div>
 
-  <!-- New / edit task -->
+  <!-- New task -->
   <dialog id="task-dialog" aria-labelledby="task-dialog-title">
     <form id="task-form" class="dialog-body">
       <header class="dialog-head">
@@ -76,16 +110,20 @@
 
       <label class="field">
         <span class="field-label">תיאור <small>(אופציונלי)</small></span>
-        <textarea name="description" rows="4" maxlength="4000"></textarea>
+        <textarea name="description" rows="3" maxlength="4000"></textarea>
       </label>
 
       <footer class="dialog-foot">
-        <button type="button" id="task-dialog-delete" class="btn btn-danger-soft" data-action="delete-task-from-dialog" hidden>מחיקה</button>
         <span class="spacer"></span>
         <button type="button" class="btn btn-ghost" data-action="close-dialog">ביטול</button>
-        <button type="submit" class="btn btn-primary">שמירה</button>
+        <button type="submit" class="btn btn-primary">יצירה</button>
       </footer>
     </form>
+  </dialog>
+
+  <!-- Task details: title, category, status, description, subtasks -->
+  <dialog id="detail-dialog" class="detail-dialog" aria-labelledby="detail-dialog-title">
+    <div id="detail-body" class="dialog-body"></div>
   </dialog>
 
   <!-- Categories and colors -->
@@ -95,7 +133,7 @@
         <h2 id="categories-dialog-title">קטגוריות וצבעים</h2>
         <button type="button" class="icon-btn" data-action="close-dialog" aria-label="סגירה"><span data-icon="x"></span></button>
       </header>
-      <p class="muted small">כל משימה כללית משויכת לקטגוריה, והצבע של הקטגוריה מסמן אותה ברשימה. שינויים נשמרים מיד.</p>
+      <p class="muted small">כל משימה כללית משויכת לקטגוריה, והצבע של הקטגוריה מסמן אותה בגריד. שינויים נשמרים מיד.</p>
 
       <ul id="categories-list" class="categories-list"></ul>
 
@@ -116,13 +154,21 @@
     </div>
   </dialog>
 
-  <!-- Settings and backup -->
+  <!-- Settings, account and backup -->
   <dialog id="settings-dialog" aria-labelledby="settings-dialog-title">
     <form id="settings-form" class="dialog-body">
       <header class="dialog-head">
-        <h2 id="settings-dialog-title">הגדרות וגיבוי</h2>
+        <h2 id="settings-dialog-title">הגדרות וחשבון</h2>
         <button type="button" class="icon-btn" data-action="close-dialog" aria-label="סגירה"><span data-icon="x"></span></button>
       </header>
+
+      <section id="account-section" class="settings-section" hidden>
+        <h3>חשבון</h3>
+        <p class="small">חשבון מחובר: <span id="account-email" dir="ltr"></span></p>
+        <div class="button-row">
+          <button type="button" class="btn btn-soft" data-action="sign-out"><span data-icon="log-out"></span>התנתקות מהמכשיר הזה</button>
+        </div>
+      </section>
 
       <section class="settings-section">
         <h3>תצוגה</h3>
@@ -138,7 +184,7 @@
 
       <section class="settings-section">
         <h3>נתונים וגיבוי</h3>
-        <p class="muted small">הנתונים נשמרים רק בדפדפן הזה ולא נשלחים לשום שרת. כדי לא לאבד אותם, או כדי להעביר אותם למחשב אחר, מייצאים קובץ גיבוי ומייבאים אותו.</p>
+        <p id="storage-note" class="muted small"></p>
         <p id="storage-summary" class="small"></p>
         <p id="last-export-label" class="small muted"></p>
         <div class="button-row">

@@ -96,6 +96,16 @@ describe('selectVisibleTasks', () => {
       ['has active subtask', 'active', 'new todo', 'old todo', 'closed']);
   });
 
+  test('"my order" keeps the stored (drag-and-drop) order', () => {
+    const state = stateWith([
+      task({ title: 'third by date', createdAt: NOW - 3 * DAY }),
+      task({ title: 'done', status: 'done' }),
+      task({ title: 'newest', createdAt: NOW }),
+    ]);
+    assert.deepEqual(titles(selectVisibleTasks(state, filters({ sort: 'manual', showDone: true }))), ['third by date', 'done', 'newest']);
+    assert.deepEqual(titles(selectVisibleTasks(state, filters({ sort: 'unknown' }))), ['third by date', 'newest']);
+  });
+
   test('updated and created sorts', () => {
     const state = stateWith([
       task({ title: 'a', createdAt: NOW - 3 * DAY, updatedAt: NOW - MINUTE }),

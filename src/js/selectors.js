@@ -51,6 +51,7 @@ function matchesSearch(task, query, categoryName) {
 
 const byCreatedDesc = (a, b) => b.task.createdAt - a.task.createdAt;
 const SORT_COMPARATORS = {
+  manual: () => 0, // keep the drag-and-drop order (Array.prototype.sort is stable)
   status: (a, b) => a.rank - b.rank || byCreatedDesc(a, b),
   updated: (a, b) => b.task.updatedAt - a.task.updatedAt,
   created: byCreatedDesc,
@@ -77,7 +78,7 @@ export function selectVisibleTasks(state, filters) {
       rank: getTaskRank(task),
       categoryOrder: categoryOrder.get(task.categoryId) ?? Number.MAX_SAFE_INTEGER,
     }))
-    .sort(SORT_COMPARATORS[filters.sort] ?? SORT_COMPARATORS.status)
+    .sort(SORT_COMPARATORS[filters.sort] ?? SORT_COMPARATORS.manual)
     .map(entry => entry.task);
 }
 

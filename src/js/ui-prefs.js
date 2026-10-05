@@ -1,17 +1,17 @@
-// View preferences (filters, sort, which cards are expanded), saved separately from the data.
+// View preferences (filters and sort), saved separately from the data.
 // The search text is deliberately not saved, so a reload never hides tasks behind an old search.
 
 import { STATUSES } from './statuses.js';
 
 export const UI_PREFS_KEY = 'taskManager.ui.v1';
-export const SORT_KEYS = Object.freeze(['status', 'updated', 'created', 'category']);
+export const SORT_KEYS = Object.freeze(['manual', 'status', 'updated', 'created', 'category']);
 
 export const DEFAULT_FILTERS = Object.freeze({
   search: '',
   categoryIds: [],
   status: 'all',
   showDone: false,
-  sort: 'status',
+  sort: 'manual',
 });
 
 export function isValidStatusFilter(value) {
@@ -36,14 +36,13 @@ export function loadUiPrefs(storage) {
       showDone: filters.showDone === true,
       sort: SORT_KEYS.includes(filters.sort) ? filters.sort : DEFAULT_FILTERS.sort,
     },
-    expandedTaskIds: new Set(onlyStrings(raw?.expandedTaskIds)),
   };
 }
 
 export function saveUiPrefs(storage, prefs) {
   const { search, ...savedFilters } = prefs.filters;
   try {
-    storage?.setItem(UI_PREFS_KEY, JSON.stringify({ filters: savedFilters, expandedTaskIds: [...prefs.expandedTaskIds] }));
+    storage?.setItem(UI_PREFS_KEY, JSON.stringify({ filters: savedFilters }));
   } catch {
     // View preferences are a convenience - ignore quota / privacy-mode errors.
   }

@@ -44,26 +44,23 @@ describe('small helpers', () => {
 });
 
 describe('UI preferences', () => {
-  test('round-trips filters and expanded cards, but never the search text', () => {
+  test('round-trips filters and sort, but never the search text', () => {
     const storage = createMemoryStorage();
     saveUiPrefs(storage, {
       filters: { search: 'secret', categoryIds: ['dev'], status: 'in_progress', showDone: true, sort: 'category' },
-      expandedTaskIds: new Set(['t1', 't2']),
     });
     const prefs = loadUiPrefs(storage);
     assert.deepEqual(prefs.filters, { search: '', categoryIds: ['dev'], status: 'in_progress', showDone: true, sort: 'category' });
-    assert.deepEqual([...prefs.expandedTaskIds], ['t1', 't2']);
     assert.equal(storage.getItem(UI_PREFS_KEY).includes('secret'), false);
   });
 
-  test('invalid or corrupt saved preferences fall back to defaults', () => {
+  test('defaults to "my order"; invalid or corrupt saved preferences fall back to defaults', () => {
+    assert.equal(loadUiPrefs(null).filters.sort, 'manual');
     const corrupt = loadUiPrefs(createMemoryStorage({ [UI_PREFS_KEY]: '{oops' }));
     assert.equal(corrupt.filters.status, 'all');
     const invalid = loadUiPrefs(createMemoryStorage({
-      [UI_PREFS_KEY]: JSON.stringify({ filters: { status: 'attention', sort: 'attention', categoryIds: [1, 'ok'] }, expandedTaskIds: 'nope' }),
+      [UI_PREFS_KEY]: JSON.stringify({ filters: { status: 'attention', sort: 'attention', categoryIds: [1, 'ok'] }, expandedTaskIds: ['t1'] }),
     }));
-    assert.deepEqual(invalid.filters, { search: '', categoryIds: ['ok'], status: 'all', showDone: false, sort: 'status' });
-    assert.equal(invalid.expandedTaskIds.size, 0);
-    assert.equal(loadUiPrefs(null).filters.sort, 'status');
+    assert.deepEqual(invalid, { filters: { search: '', categoryIds: ['ok'], status: 'all', showDone: false, sort: 'manual' } });
   });
 });

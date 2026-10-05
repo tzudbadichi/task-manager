@@ -51,7 +51,14 @@ export function createInitialState({ makeId = createId } = {}) {
 // ---------------------------------------------------------------------------
 // Reducer: returns the SAME state object when an action changes nothing,
 // so callers can detect no-ops (and skip saving / re-rendering).
+//
+// Actions are replayable: "add" actions carry their new id (store.dispatch fills it in), and
+// adding an id that already exists is a no-op. Cloud sync relies on this to replay pending
+// changes on top of a newer cloud copy without duplicating anything.
 // ---------------------------------------------------------------------------
+
+// Actions that create an item and therefore need an id assigned before they are reduced.
+export const ID_ACTIONS = new Set(['task/add', 'subtask/add', 'category/add']);
 
 export function reduce(state, action, { now, makeId = createId }) {
   switch (action?.type) {
@@ -63,6 +70,8 @@ export function reduce(state, action, { now, makeId = createId }) {
       return mapTask(state, action.taskId, task => withStatus(task, action.status, now));
     case 'task/delete':
       return removeTask(state, action.taskId);
+    case 'tasks/reorder':
+      return reorderTasks(state, action.orderedIds);
     case 'subtask/add':
       return mapTask(state, action.taskId, task => addSubtask(task, action, now, makeId));
     case 'subtask/update':
@@ -85,9 +94,13 @@ export function reduce(state, action, { now, makeId = createId }) {
   }
 }
 
-function newItemBase(title, status, now, makeId) {
+function newItemId(action, makeId) {
+  return typeof action.id === 'string' && action.id ? action.id : makeId();
+}
+
+function newItemBase(id, title, status, now) {
   return {
-    id: makeId(),
+    id,
     title,
     status: isValidStatus(status) ? status : DEFAULT_STATUS,
     statusChangedAt: now,
@@ -98,9 +111,10 @@ function newItemBase(title, status, now, makeId) {
 
 function addTask(state, action, now, makeId) {
   const title = cleanText(action.title, LIMITS.title);
-  if (!title || state.tasks.length >= LIMITS.tasks) return state;
+  const id = newItemId(action, makeId);
+  if (!title || state.tasks.length >= LIMITS.tasks || state.tasks.some(task => task.id === id)) return state;
   const task = {
-    ...newItemBase(title, action.status, now, makeId),
+    ...newItemBase(id, title, action.status, now),
     description: cleanText(action.description, LIMITS.description, { multiline: true }),
     categoryId: resolveCategoryId(state, action.categoryId),
     subtasks: [],
@@ -110,14 +124,35 @@ function addTask(state, action, now, makeId) {
 
 function addSubtask(task, action, now, makeId) {
   const title = cleanText(action.title, LIMITS.title);
-  if (!title || task.subtasks.length >= LIMITS.subtasksPerTask) return task;
-  const subtask = newItemBase(title, action.status, now, makeId);
+  const id = newItemId(action, makeId);
+  if (!title || task.subtasks.length >= LIMITS.subtasksPerTask || task.subtasks.some(subtask => subtask.id === id)) return task;
+  const subtask = newItemBase(id, title, action.status, now);
   return { ...task, subtasks: [...task.subtasks, subtask], updatedAt: now };
 }
 
 function removeTask(state, taskId) {
   const tasks = state.tasks.filter(task => task.id !== taskId);
   return tasks.length === state.tasks.length ? state : { ...state, tasks };
+}
+
+/**
+ * Applies a drag-and-drop order. orderedIds is the new order of the tasks that were visible
+ * (possibly filtered): those tasks swap among the positions they already occupied, and every
+ * hidden task keeps its exact place.
+ */
+function reorderTasks(state, orderedIds) {
+  if (!Array.isArray(orderedIds)) return state;
+  const tasksById = new Map(state.tasks.map(task => [task.id, task]));
+  const seen = new Set();
+  const movedTasks = [];
+  for (const id of orderedIds) {
+    if (typeof id !== 'string' || seen.has(id) || !tasksById.has(id)) continue;
+    seen.add(id);
+    movedTasks.push(tasksById.get(id));
+  }
+  let nextMoved = 0;
+  const tasks = state.tasks.map(task => (seen.has(task.id) ? movedTasks[nextMoved++] : task));
+  return tasks.every((task, index) => task === state.tasks[index]) ? state : { ...state, tasks };
 }
 
 function removeSubtask(task, subtaskId, now) {
@@ -187,9 +222,11 @@ function hasCategoryName(categories, name, exceptId = null) {
 
 function addCategory(state, action, makeId) {
   const name = cleanText(action.name, LIMITS.categoryName);
-  if (!name || state.categories.length >= LIMITS.categories || hasCategoryName(state.categories, name)) return state;
+  const id = newItemId(action, makeId);
+  if (!name || state.categories.length >= LIMITS.categories || hasCategoryName(state.categories, name)
+    || state.categories.some(category => category.id === id)) return state;
   const color = isHexColor(action.color) ? action.color.toLowerCase() : FALLBACK_CATEGORY_COLOR;
-  return { ...state, categories: [...state.categories, { id: makeId(), name, color }] };
+  return { ...state, categories: [...state.categories, { id, name, color }] };
 }
 
 function updateCategory(state, categoryId, changes) {
@@ -383,6 +420,7 @@ export function createStore({ storage = null, clock = () => Date.now(), makeId =
   let state = loaded.state;
   let undoSnapshot = null;
   const listeners = new Set();
+  const commitListeners = new Set();
 
   const persist = () => {
     if (!storage) return;
@@ -393,14 +431,16 @@ export function createStore({ storage = null, clock = () => Date.now(), makeId =
     }
   };
 
-  const notifyListeners = () => {
-    for (const listener of listeners) listener(state);
+  const notifyListeners = (change = null) => {
+    for (const listener of listeners) listener(state, change);
   };
 
-  const commit = (next, { notify = true } = {}) => {
+  // change: { kind: 'action', action, now } | { kind: 'replace', state } | { kind: 'remote' }
+  const commit = (next, change, { notify = true } = {}) => {
     state = next;
     persist();
-    if (notify) notifyListeners();
+    if (notify) notifyListeners(change);
+    for (const listener of commitListeners) listener(change);
   };
 
   // Save a brand-new state right away so generated category ids stay stable across reloads,
@@ -410,9 +450,15 @@ export function createStore({ storage = null, clock = () => Date.now(), makeId =
   return {
     loadWarning: loaded.warning,
     getState: () => state,
+    /** Re-render listeners: listener(state, change). Skipped when a change is dispatched with notify: false. */
     subscribe(listener) {
       listeners.add(listener);
       return () => listeners.delete(listener);
+    },
+    /** Called after EVERY committed change, with what caused it (used by cloud sync). */
+    onCommit(listener) {
+      commitListeners.add(listener);
+      return () => commitListeners.delete(listener);
     },
     /**
      * Applies an action. Returns false when nothing changed.
@@ -420,24 +466,31 @@ export function createStore({ storage = null, clock = () => Date.now(), makeId =
      * notify: false skips re-render listeners (used when the DOM already shows the new value).
      */
     dispatch(action, { undoable = false, notify = true } = {}) {
-      const next = reduce(state, action, { now: clock(), makeId });
+      const now = clock();
+      const replayableAction = ID_ACTIONS.has(action?.type) && !action.id ? { ...action, id: makeId() } : action;
+      const next = reduce(state, replayableAction, { now, makeId });
       if (next === state) return false;
       undoSnapshot = undoable ? state : null;
-      commit(next, { notify });
+      commit(next, { kind: 'action', action: replayableAction, now }, { notify });
       return true;
     },
     /** Replaces everything (backup import). Throws on invalid data. */
     replaceState(rawState, { undoable = false } = {}) {
       const next = normalizeState(rawState, { now: clock(), makeId });
       undoSnapshot = undoable ? state : null;
-      commit(next);
+      commit(next, { kind: 'replace', state: next });
+    },
+    /** Adopts a state that came from the cloud (already normalized). Not recorded as a local change. */
+    applyRemote(next) {
+      undoSnapshot = null;
+      commit(next, { kind: 'remote' });
     },
     canUndo: () => undoSnapshot !== null,
     undo() {
       if (!undoSnapshot) return false;
       const previous = undoSnapshot;
       undoSnapshot = null;
-      commit(previous);
+      commit(previous, { kind: 'replace', state: previous });
       return true;
     },
     /**
