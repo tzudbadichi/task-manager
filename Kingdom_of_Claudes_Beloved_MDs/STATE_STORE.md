@@ -19,7 +19,7 @@
   categories: [{ id, name, color }],          // color בפורמט #rrggbb בלבד
   tasks: [{
     id, title, description, categoryId,       // categoryId = null -> "ללא קטגוריה"
-    status,                                    // todo | in_progress | done
+    status,                                    // todo | in_progress | waiting | done
     statusChangedAt, createdAt, updatedAt,     // ms epoch
     subtasks: [{ id, title, status, statusChangedAt, createdAt, updatedAt }],
   }],
@@ -64,7 +64,7 @@
 ## הסבה מגרסה 1
 
 גרסה 1 של הנתונים כללה סטטוסים של קלוד ומיילים ושדה איש קשר. `normalizeState` מסב אותה בכל טעינה או ייבוא:
-- סטטוסים: `claude_running` ו-`waiting_email` -> `in_progress`; `email_received` -> `todo` (`LEGACY_STATUS_MAP` ב-`statuses.js`).
+- סטטוסים: `claude_running` -> `in_progress`; `waiting_email` -> `waiting`; `email_received` -> `todo` (`LEGACY_STATUS_MAP` ב-`statuses.js`).
 - איש קשר נשמר כטקסט: במשימה נוסף לתיאור כשורה "איש קשר: ..."; בתת-משימה נוסף לכותרת אחרי מקף.
 - `lastCheckedAt` והגדרות הטיימרים וההתראות נזרקים.
 
@@ -100,3 +100,4 @@
 - ניקוי נתוני האתר בדפדפן מוחק את המשימות - לכן יש תזכורת גיבוי (ראו `STATUS_WORKFLOW.md`).
 - undo זוכר צעד אחד בלבד.
 - שתי לשוניות שעורכות בו-זמנית: השמירה האחרונה גוברת (אין מיזוג).
+- `normalizeState` הופך סטטוס לא מוכר ל-`todo`. לכן לשונית שעדיין מריצה גרסה ישנה של האתר (בלי סטטוס חדש) ממירה אותו ל"לביצוע", ובשינוי הבא שלה גם שומרת כך לענן. אחרי עדכון שמוסיף סטטוס צריך לרענן לשוניות פתוחות בכל המכשירים.

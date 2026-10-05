@@ -30,7 +30,7 @@ const SORT_OPTIONS = [
   { value: 'category', label: 'מיון: לפי קטגוריה' },
 ];
 
-const DASHBOARD_ICONS = Object.freeze({ todo: 'list', in_progress: 'clock', done: 'check' });
+const DASHBOARD_ICONS = Object.freeze({ todo: 'list', in_progress: 'user', waiting: 'hourglass', done: 'check' });
 
 // ---------------------------------------------------------------------------
 // Dashboard
@@ -322,11 +322,13 @@ function statusControl(status, dataset, extraClass = null) {
     }, ...STATUS_ORDER.map(key => h('option', { value: key, title: STATUSES[key].hint }, STATUSES[key].label))));
 }
 
-// How long an item has been in progress.
+// How long an item has been in its current in-progress status (working on it, or waiting for a reply).
 function sinceLabel(item, now) {
-  if (item.status !== 'in_progress') return null;
+  const prefix = STATUSES[item.status].since;
+  if (!prefix) return null;
   const elapsed = formatElapsed(now - item.statusChangedAt);
-  return h('span', { class: 'since', title: `בעבודה כבר ${elapsed}` }, icon('clock', { size: 13 }), elapsed);
+  return h('span', { class: 'since', title: `${prefix} ${elapsed}` },
+    icon(item.status === 'waiting' ? 'hourglass' : 'clock', { size: 13 }), elapsed);
 }
 
 function progressIndicator({ total, done }) {

@@ -101,6 +101,13 @@ describe('tasks', () => {
     assert.equal(task.status, 'in_progress');
     assert.equal(task.statusChangedAt, T0 + 10 * MINUTE);
     assert.equal(task.updatedAt, T0 + 10 * MINUTE);
+
+    // Switching between the two in-progress variants restarts the "how long" clock.
+    harness.advance(5 * MINUTE);
+    harness.run({ type: 'task/setStatus', taskId, status: 'waiting' });
+    assert.equal(harness.state.tasks[0].status, 'waiting');
+    assert.equal(harness.state.tasks[0].statusChangedAt, T0 + 15 * MINUTE);
+    assert.equal(normalizeState(harness.state, { now: T0 + 15 * MINUTE }).tasks[0].status, 'waiting');
   });
 
   test('setting the same status or an invalid status returns the same state', () => {
@@ -266,7 +273,7 @@ describe('normalizeState', () => {
 });
 
 describe('migration of version 1 data', () => {
-  test('old Claude / email statuses map onto the three statuses', () => {
+  test('old Claude / email statuses map onto the current statuses', () => {
     const state = normalizeState({
       categories: [],
       tasks: [
@@ -275,7 +282,7 @@ describe('migration of version 1 data', () => {
         { title: 'c', status: 'email_received', subtasks: [{ title: 'd', status: 'claude_running' }] },
       ],
     }, { now: T0 });
-    assert.deepEqual(state.tasks.map(task => task.status), ['in_progress', 'in_progress', 'todo']);
+    assert.deepEqual(state.tasks.map(task => task.status), ['in_progress', 'waiting', 'todo']);
     assert.equal(state.tasks[2].subtasks[0].status, 'in_progress');
   });
 

@@ -25,6 +25,7 @@
   /* Status colors */
   --st-todo: #64748b;
   --st-in_progress: #0284c7;
+  --st-waiting: #d97706;
   --st-done: #16a34a;
 
   color-scheme: light;
@@ -48,6 +49,7 @@
   --success: #4ade80;
   --st-todo: #94a3b8;
   --st-in_progress: #38bdf8;
+  --st-waiting: #fbbf24;
   --st-done: #4ade80;
   color-scheme: dark;
 }
@@ -70,6 +72,7 @@
 
 [data-status="todo"] { --st: var(--st-todo); }
 [data-status="in_progress"] { --st: var(--st-in_progress); }
+[data-status="waiting"] { --st: var(--st-waiting); }
 [data-status="done"] { --st: var(--st-done); }
 
 /* ==========================================================================
@@ -314,7 +317,7 @@ option { color: var(--text); background: var(--surface); }
 
 .dashboard {
   display: grid;
-  grid-template-columns: repeat(3, minmax(0, 1fr));
+  grid-template-columns: repeat(4, minmax(0, 1fr));
   gap: 12px;
 }
 
@@ -447,11 +450,14 @@ option { color: var(--text); background: var(--surface); }
   min-width: 0;
   padding: 12px 14px;
   overflow: hidden;
-  /* Top: category color (stripe + a short fade). Body and frame: status color (data-status sets --st). */
+  /* Top: category color (stripe + a short fade). Body and frame: status color (data-status sets --st).
+     To-do stays a plain card, so the active statuses stand out clearly against it. */
+  --tile-tint: 17%;
+  --tile-frame: 50%;
   background:
     linear-gradient(to bottom, color-mix(in srgb, var(--cat-color) 14%, transparent), transparent 26%),
-    color-mix(in srgb, var(--st, var(--st-todo)) 11%, var(--surface));
-  border: 1px solid color-mix(in srgb, var(--st, var(--st-todo)) 40%, var(--border));
+    color-mix(in srgb, var(--st, var(--st-todo)) var(--tile-tint), var(--surface));
+  border: 1px solid color-mix(in srgb, var(--st, var(--st-todo)) var(--tile-frame), var(--border));
   border-top: 5px solid var(--cat-color);
   border-radius: var(--radius);
   box-shadow: var(--shadow);
@@ -465,6 +471,7 @@ option { color: var(--text); background: var(--surface); }
   box-shadow: 0 0 0 1px color-mix(in srgb, var(--st, var(--st-todo)) 55%, var(--border-strong)), var(--shadow);
   transform: translateY(-1px);
 }
+.task-tile[data-status="todo"] { --tile-tint: 0%; --tile-frame: 20%; }
 .task-tile.is-done { opacity: 0.75; }
 .task-tile.is-done .tile-title { text-decoration: line-through; }
 
@@ -520,7 +527,7 @@ option { color: var(--text); background: var(--surface); }
 }
 .tile-subtask { display: flex; align-items: center; gap: 7px; min-width: 0; font-size: 0.86rem; }
 .tile-subtask-title { overflow: hidden; white-space: nowrap; text-overflow: ellipsis; }
-.tile-subtask[data-status="in_progress"] .tile-subtask-title { color: var(--st-in_progress); font-weight: 600; }
+.tile-subtask:is([data-status="in_progress"], [data-status="waiting"]) .tile-subtask-title { color: var(--st); font-weight: 600; }
 .tile-subtask[data-status="done"] .tile-subtask-title { color: var(--text-muted); text-decoration: line-through; }
 .tile-more { font-size: 0.78rem; color: var(--text-muted); }
 
@@ -789,6 +796,7 @@ dialog::backdrop { background: rgba(15, 23, 42, 0.45); backdrop-filter: blur(2px
   .topbar-new { display: none; }
   .fab { display: grid; }
   .layout { gap: 12px; padding: 12px 12px 110px; }
+  .dashboard { grid-template-columns: repeat(2, minmax(0, 1fr)); } /* four status cards: 2 x 2 */
 
   .filters-selects { flex: 1 1 100%; }
   .filters-selects .select { flex: 1; min-width: 0; }

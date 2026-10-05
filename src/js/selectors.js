@@ -1,7 +1,7 @@
 // Read-only derivations of the state: filtering, sorting and dashboard counts.
 // Pure functions (no DOM), covered by tests/selectors.test.js.
 
-import { STATUSES } from './statuses.js';
+import { STATUSES, STATUS_ORDER } from './statuses.js';
 import { DAY_MS } from './utils.js';
 
 // Category filter value for tasks without a category.
@@ -14,7 +14,7 @@ function itemsOf(task) {
   return [task, ...task.subtasks];
 }
 
-/** A task ranks by its most active item (in progress before to-do). A closed task sinks regardless of its subtasks. */
+/** A task ranks by its most active item (in progress, then waiting, then to-do). A closed task sinks regardless of its subtasks. */
 export function getTaskRank(task) {
   if (task.status === 'done') return STATUSES.done.rank;
   return Math.min(...itemsOf(task).map(item => STATUSES[item.status].rank));
@@ -32,7 +32,7 @@ export function summarizeSubtasks(task) {
  * subtasks (the parent is just a container). Closing a task closes its subtasks too.
  */
 export function getDashboardCounts(state) {
-  const counts = { todo: 0, in_progress: 0, done: 0 };
+  const counts = Object.fromEntries(STATUS_ORDER.map(status => [status, 0]));
   for (const task of state.tasks) {
     const workItems = task.subtasks.length > 0 ? task.subtasks : [task];
     for (const item of workItems) counts[task.status === 'done' ? 'done' : item.status] += 1;
