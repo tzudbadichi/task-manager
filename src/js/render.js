@@ -190,7 +190,8 @@ function renderTaskTile(task, category, now) {
           'aria-pressed': String(isDone),
           'aria-label': `${isDone ? 'החזרה לביצוע' : 'סימון כהושלם'}: ${subtask.title}`,
         }, icon('check', { size: 11 })),
-        h('span', { class: 'tile-subtask-title' }, subtask.title));
+        h('span', { class: 'tile-subtask-title' }, subtask.title),
+        miniStatusControl(subtask, { action: 'set-subtask-status', focusKey: `tile-status-${subtask.id}`, ...ids, subtaskId: subtask.id }));
     })),
   hiddenCount > 0 && h('span', { class: 'tile-more' }, `+${hiddenCount} נוספות`),
   h('div', { class: 'tile-bottom' },
@@ -316,12 +317,30 @@ export function renderSyncStatus(element, status) {
 // Small building blocks
 // ---------------------------------------------------------------------------
 
+function statusOptions() {
+  return STATUS_ORDER.map(key => h('option', { value: key, title: STATUSES[key].hint }, STATUSES[key].label));
+}
+
 function statusControl(status, dataset) {
   return h('span', { class: 'status-chip', dataset: { status } },
     h('span', { class: 'dot', 'aria-hidden': 'true' }),
     h('select', {
       class: 'status-select', value: status, 'aria-label': 'סטטוס', title: STATUSES[status].hint, dataset,
-    }, ...STATUS_ORDER.map(key => h('option', { value: key, title: STATUSES[key].hint }, STATUSES[key].label))));
+    }, ...statusOptions()));
+}
+
+// A subtask's status on a tile: a small colored button (dot + arrow). The native select is stretched
+// over it, invisible, so a click opens the status list (a picker sheet on phones).
+function miniStatusControl(subtask, dataset) {
+  const { label } = STATUSES[subtask.status];
+  return h('span', { class: 'status-mini no-drag', dataset: { status: subtask.status } },
+    h('span', { class: 'dot', 'aria-hidden': 'true' }),
+    icon('chevron-down', { size: 11 }),
+    h('select', {
+      class: 'status-mini-select', value: subtask.status, dataset,
+      title: `${label} - לחיצה לשינוי הסטטוס`,
+      'aria-label': `הסטטוס של ${subtask.title}: ${label}`,
+    }, ...statusOptions()));
 }
 
 // A task's status pill: read-only, because it is derived from the subtasks.
@@ -444,6 +463,6 @@ export function fillCategorySelect(select, categories, selectedId) {
 }
 
 export function fillStatusSelect(select, status) {
-  select.replaceChildren(...STATUS_ORDER.map(key => h('option', { value: key, title: STATUSES[key].hint }, STATUSES[key].label)));
+  select.replaceChildren(...statusOptions());
   select.value = status;
 }

@@ -523,6 +523,37 @@ option { color: var(--text); background: var(--surface); }
 .tile-subtask[data-status="done"] .tile-subtask-title { color: var(--text-muted); text-decoration: line-through; }
 .tile-more { font-size: 0.78rem; color: var(--text-muted); }
 
+/* Small status button at the end of each tile subtask: a status-colored dot and an arrow.
+   The real control is a native select stretched over it and made invisible. */
+.status-mini {
+  display: inline-flex;
+  align-items: center;
+  gap: 2px;
+  flex: none;
+  height: 20px;
+  margin-inline-start: auto;
+  padding-inline: 6px 4px;
+  color: var(--st);
+  background: color-mix(in srgb, var(--st) 13%, var(--surface));
+  border: 1px solid color-mix(in srgb, var(--st) 38%, transparent);
+  border-radius: 999px;
+}
+.status-mini .dot { width: 8px; height: 8px; background: var(--st); }
+.status-mini:hover { background: color-mix(in srgb, var(--st) 24%, var(--surface)); }
+.status-mini:focus-within { outline: 2px solid var(--primary); outline-offset: 1px; }
+.status-mini-select {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  margin: 0;
+  padding: 0;
+  opacity: 0;
+  cursor: pointer;
+  appearance: none;
+  -webkit-appearance: none;
+}
+
 .tile-bottom {
   display: flex;
   flex-wrap: wrap;
@@ -830,6 +861,7 @@ dialog::backdrop { background: rgba(15, 23, 42, 0.45); backdrop-filter: blur(2px
   .subtask-side { width: 100%; justify-content: flex-start; padding-inline-start: 30px; }
   .done-toggle { width: 26px; height: 26px; }
   .done-toggle.is-mini { width: 20px; height: 20px; }
+  .status-mini { padding-inline: 9px 6px; } /* wider to tap, same height as the checkbox so rows do not grow */
   .icon-btn { width: 40px; height: 40px; }
 }
 
