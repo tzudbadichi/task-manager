@@ -1,10 +1,11 @@
 // Application state: a pure reducer plus a small store that persists to localStorage.
 // No DOM access here - the unit tests run this module in Node with an in-memory storage.
 
-import { DEFAULT_STATUS, LEGACY_STATUS_MAP, isValidStatus } from './statuses.js';
+import { DEFAULT_STATUS, LEGACY_STATUS_MAP, deriveTaskStatus, isValidStatus } from './statuses.js';
 import { cleanText, createId, isHexColor, toTimestamp } from './utils.js';
 
-export const SCHEMA_VERSION = 2;
+// Version 3: every task has subtasks, and a task's status is derived from them.
+export const SCHEMA_VERSION = 3;
 // The key name is kept from version 1 so existing saved data keeps loading.
 export const STORAGE_KEY = 'taskManager.state.v1';
 
@@ -55,10 +56,26 @@ export function createInitialState({ makeId = createId } = {}) {
 // Actions are replayable: "add" actions carry their new id (store.dispatch fills it in), and
 // adding an id that already exists is a no-op. Cloud sync relies on this to replay pending
 // changes on top of a newer cloud copy without duplicating anything.
+//
+// Every task has at least one subtask, and only subtasks have a settable status. The task's
+// status is recomputed (deriveTaskStatus) whenever its subtasks change. The app never sets a
+// task's status; task/setStatus is only replayed from changes recorded by version 2 (see below).
 // ---------------------------------------------------------------------------
 
 // Actions that create an item and therefore need an id assigned before they are reduced.
 export const ID_ACTIONS = new Set(['task/add', 'subtask/add', 'category/add']);
+
+const needsId = item => Boolean(item) && typeof item === 'object' && !(typeof item.id === 'string' && item.id);
+
+/** Fills in the ids of the items an add action creates (including a new task's subtasks), so it replays identically. */
+function withNewIds(action, makeId) {
+  if (!ID_ACTIONS.has(action?.type)) return action;
+  let next = action.id ? action : { ...action, id: makeId() };
+  if (Array.isArray(action.subtasks) && action.subtasks.some(needsId)) {
+    next = { ...next, subtasks: action.subtasks.map(subtask => (needsId(subtask) ? { ...subtask, id: makeId() } : subtask)) };
+  }
+  return next;
+}
 
 export function reduce(state, action, { now, makeId = createId }) {
   switch (action?.type) {
@@ -67,7 +84,7 @@ export function reduce(state, action, { now, makeId = createId }) {
     case 'task/update':
       return mapTask(state, action.taskId, task => updateTaskFields(state, task, action.changes, now));
     case 'task/setStatus':
-      return mapTask(state, action.taskId, task => withStatus(task, action.status, now));
+      return mapTask(state, action.taskId, task => applyLegacyTaskStatus(task, action.status, now));
     case 'task/delete':
       return removeTask(state, action.taskId);
     case 'tasks/reorder':
@@ -109,15 +126,39 @@ function newItemBase(id, title, status, now) {
   };
 }
 
+/**
+ * The id of the subtask created from a task's own title when it has none. Derived from the task id
+ * (not random) so replaying the same add, or migrating the same old data on two devices, gives the same id.
+ */
+function firstSubtaskId(taskId) {
+  return `${taskId}:1`;
+}
+
+// action.subtasks: [{ id, title, status }]. Without any valid one, the task's own title (and
+// action.status) becomes its first subtask, so a task never exists without subtasks.
+function initialSubtasks(action, taskId, taskTitle, now, makeId) {
+  const subtasks = [];
+  for (const rawSubtask of Array.isArray(action.subtasks) ? action.subtasks : []) {
+    if (subtasks.length >= LIMITS.subtasksPerTask) break;
+    if (!rawSubtask || typeof rawSubtask !== 'object') continue;
+    const title = cleanText(rawSubtask.title, LIMITS.title);
+    const id = newItemId(rawSubtask, makeId);
+    if (!title || subtasks.some(subtask => subtask.id === id)) continue;
+    subtasks.push(newItemBase(id, title, rawSubtask.status, now));
+  }
+  return subtasks.length > 0 ? subtasks : [newItemBase(firstSubtaskId(taskId), taskTitle, action.status, now)];
+}
+
 function addTask(state, action, now, makeId) {
   const title = cleanText(action.title, LIMITS.title);
   const id = newItemId(action, makeId);
   if (!title || state.tasks.length >= LIMITS.tasks || state.tasks.some(task => task.id === id)) return state;
+  const subtasks = initialSubtasks(action, id, title, now, makeId);
   const task = {
-    ...newItemBase(id, title, action.status, now),
+    ...newItemBase(id, title, deriveTaskStatus(subtasks), now),
     description: cleanText(action.description, LIMITS.description, { multiline: true }),
     categoryId: resolveCategoryId(state, action.categoryId),
-    subtasks: [],
+    subtasks,
   };
   return { ...state, tasks: [task, ...state.tasks] };
 }
@@ -127,7 +168,7 @@ function addSubtask(task, action, now, makeId) {
   const id = newItemId(action, makeId);
   if (!title || task.subtasks.length >= LIMITS.subtasksPerTask || task.subtasks.some(subtask => subtask.id === id)) return task;
   const subtask = newItemBase(id, title, action.status, now);
-  return { ...task, subtasks: [...task.subtasks, subtask], updatedAt: now };
+  return withDerivedStatus({ ...task, subtasks: [...task.subtasks, subtask], updatedAt: now }, now);
 }
 
 function removeTask(state, taskId) {
@@ -155,9 +196,11 @@ function reorderTasks(state, orderedIds) {
   return tasks.every((task, index) => task === state.tasks[index]) ? state : { ...state, tasks };
 }
 
+// The last subtask cannot be removed: a task always keeps at least one (to drop it, delete the task).
 function removeSubtask(task, subtaskId, now) {
   const subtasks = task.subtasks.filter(subtask => subtask.id !== subtaskId);
-  return subtasks.length === task.subtasks.length ? task : { ...task, subtasks, updatedAt: now };
+  if (subtasks.length === task.subtasks.length || subtasks.length === 0) return task;
+  return withDerivedStatus({ ...task, subtasks, updatedAt: now }, now);
 }
 
 function mapTask(state, taskId, updater) {
@@ -171,7 +214,7 @@ function mapTask(state, taskId, updater) {
   return changed ? { ...state, tasks } : state;
 }
 
-// Updates one subtask and bumps the parent's updatedAt when something changed.
+// Updates one subtask; when something changed, bumps the parent's updatedAt and re-derives its status.
 function mapSubtask(state, taskId, subtaskId, now, updater) {
   return mapTask(state, taskId, task => {
     let changed = false;
@@ -181,7 +224,7 @@ function mapSubtask(state, taskId, subtaskId, now, updater) {
       if (next !== subtask) changed = true;
       return next;
     });
-    return changed ? { ...task, subtasks, updatedAt: now } : task;
+    return changed ? withDerivedStatus({ ...task, subtasks, updatedAt: now }, now) : task;
   });
 }
 
@@ -209,6 +252,24 @@ function updateTaskFields(state, task, changes, now) {
 function withStatus(item, status, now) {
   if (!isValidStatus(status) || item.status === status) return item;
   return { ...item, status, statusChangedAt: now, updatedAt: now };
+}
+
+/**
+ * Version 2 let a task's own status be set, and such a change may still wait in the sync queue (made
+ * offline before the upgrade). Instead of losing it, it is applied to the subtasks: "done" closes every
+ * open subtask; any other status goes to the subtask only when there is exactly one.
+ */
+function applyLegacyTaskStatus(task, status, now) {
+  if (status !== 'done' && task.subtasks.length !== 1) return task;
+  const subtasks = task.subtasks.map(subtask => withStatus(subtask, status, now));
+  if (subtasks.every((subtask, index) => subtask === task.subtasks[index])) return task;
+  return withDerivedStatus({ ...task, subtasks, updatedAt: now }, now);
+}
+
+// Re-derives a task's status from its subtasks; the task's clock restarts only when the derived status changes.
+function withDerivedStatus(task, now) {
+  const status = deriveTaskStatus(task.subtasks);
+  return status === task.status ? task : { ...task, status, statusChangedAt: now };
 }
 
 function resolveCategoryId(state, categoryId) {
@@ -303,6 +364,7 @@ export function normalizeState(raw, { now = Date.now(), makeId = createId } = {}
     categories.push({ id: uniqueId(rawCategory.id), name, color });
   }
   const categoryIds = new Set(categories.map(category => category.id));
+  const isOlderFormat = !(raw.schemaVersion >= SCHEMA_VERSION);
 
   // Same caps as the reducer, so an oversized or hostile file cannot freeze the page.
   const tasks = [];
@@ -310,13 +372,15 @@ export function normalizeState(raw, { now = Date.now(), makeId = createId } = {}
     if (tasks.length >= LIMITS.tasks) break;
     const base = normalizeItemBase(rawTask, uniqueId, now);
     if (!base) continue;
-    const subtasks = Array.isArray(rawTask.subtasks)
+    const storedSubtasks = Array.isArray(rawTask.subtasks)
       ? rawTask.subtasks.map(rawSubtask => normalizeSubtask(rawSubtask, uniqueId, now)).filter(Boolean).slice(0, LIMITS.subtasksPerTask)
       : [];
+    const subtasks = migrateTaskSubtasks(base, storedSubtasks, uniqueId, isOlderFormat);
     const description = cleanText(rawTask.description, LIMITS.description, { multiline: true });
     const contact = legacyContactOf(rawTask);
     tasks.push({
       ...base,
+      ...derivedStatusOf(base, subtasks),
       description: contact
         ? cleanText(`${description}\nאיש קשר: ${contact}`, LIMITS.description, { multiline: true })
         : description,
@@ -354,6 +418,42 @@ function normalizeSubtask(raw, uniqueId, now) {
   const base = normalizeItemBase(raw, uniqueId, now);
   const contact = legacyContactOf(raw);
   return base && contact ? { ...base, title: cleanText(`${base.title} - ${contact}`, LIMITS.title) } : base;
+}
+
+/**
+ * Before version 3 a task had a status of its own and could have no subtasks. Data of an older format
+ * keeps showing what it showed before:
+ * - a closed task closes its open subtasks (closing a task used to close its subtasks);
+ * - an open task whose own status its subtasks do not produce (say, "in progress" over to-do subtasks)
+ *   gets a first subtask that carries it.
+ * In any format, a task without (valid) subtasks gets that subtask, so no task is left without one.
+ * That subtask is made of the task's title, status and times, with a stable id (same on every device).
+ */
+function migrateTaskSubtasks(task, subtasks, uniqueId, isOlderFormat) {
+  const ownStatusSubtask = () => {
+    const { title, status, statusChangedAt, createdAt, updatedAt } = task;
+    return { id: uniqueId(firstSubtaskId(task.id)), title, status, statusChangedAt, createdAt, updatedAt };
+  };
+  if (subtasks.length === 0) return [ownStatusSubtask()];
+  if (!isOlderFormat) return subtasks;
+  if (task.status === 'done') {
+    return subtasks.map(subtask => (subtask.status === 'done'
+      ? subtask
+      : { ...subtask, status: 'done', statusChangedAt: Math.max(task.statusChangedAt, subtask.statusChangedAt) }));
+  }
+  const isOwnStatusShown = deriveTaskStatus([...subtasks, task]) === deriveTaskStatus(subtasks);
+  return isOwnStatusShown || subtasks.length >= LIMITS.subtasksPerTask ? subtasks : [ownStatusSubtask(), ...subtasks];
+}
+
+/**
+ * The stored task status is never trusted - it is derived again from the subtasks. When it differs,
+ * the clock starts when the subtasks entered it: the earliest of them, or the last one for "done".
+ */
+function derivedStatusOf(task, subtasks) {
+  const status = deriveTaskStatus(subtasks);
+  if (status === task.status) return { status, statusChangedAt: task.statusChangedAt };
+  const times = subtasks.filter(subtask => subtask.status === status).map(subtask => subtask.statusChangedAt);
+  return { status, statusChangedAt: status === 'done' ? Math.max(...times) : Math.min(...times) };
 }
 
 function normalizeStatus(value) {
@@ -467,7 +567,7 @@ export function createStore({ storage = null, clock = () => Date.now(), makeId =
      */
     dispatch(action, { undoable = false, notify = true } = {}) {
       const now = clock();
-      const replayableAction = ID_ACTIONS.has(action?.type) && !action.id ? { ...action, id: makeId() } : action;
+      const replayableAction = withNewIds(action, makeId);
       const next = reduce(state, replayableAction, { now, makeId });
       if (next === state) return false;
       undoSnapshot = undoable ? state : null;

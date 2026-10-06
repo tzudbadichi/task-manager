@@ -32,6 +32,8 @@ const SORT_OPTIONS = [
 
 const DASHBOARD_ICONS = Object.freeze({ todo: 'list', in_progress: 'user', waiting: 'hourglass', done: 'check' });
 
+export const ONLY_SUBTASK_MESSAGE = 'לכל משימה חייבת להיות לפחות תת-משימה אחת. כדי להסיר אותה, מוחקים את המשימה כולה.';
+
 // ---------------------------------------------------------------------------
 // Dashboard
 // ---------------------------------------------------------------------------
@@ -177,8 +179,7 @@ function renderTaskTile(task, category, now) {
     type: 'button', class: 'tile-open', dataset: { action: 'open-task', ...ids },
     'aria-label': `פתיחת המשימה ${task.title}`,
   }, h('span', { class: 'tile-title' }, task.title)),
-  summary.total === 0 && task.description && h('p', { class: 'tile-description' }, task.description),
-  summary.total > 0 && h('ul', { class: 'tile-subtasks', 'aria-label': 'תתי משימות' },
+  h('ul', { class: 'tile-subtasks', 'aria-label': 'תתי משימות' },
     ...preview.map(subtask => {
       const isDone = subtask.status === 'done';
       return h('li', { class: 'tile-subtask', dataset: { status: subtask.status } },
@@ -193,8 +194,8 @@ function renderTaskTile(task, category, now) {
     })),
   hiddenCount > 0 && h('span', { class: 'tile-more' }, `+${hiddenCount} נוספות`),
   h('div', { class: 'tile-bottom' },
-    statusControl(task.status, { action: 'set-task-status', focusKey: `tile-status-${task.id}`, ...ids }, 'no-drag'),
-    summary.total > 0 && progressIndicator(summary),
+    statusBadge(task.status),
+    progressIndicator(summary),
     sinceLabel(task, now)));
 }
 
@@ -227,10 +228,9 @@ export function renderTaskDetail(container, state, taskId, now) {
         h('select', { class: 'select', value: task.categoryId ?? '', dataset: { action: 'set-task-category', focusKey: `detail-category-${task.id}`, ...ids } },
           ...state.categories.map(item => h('option', { value: item.id }, item.name)),
           h('option', { value: '' }, 'ללא קטגוריה'))),
-      h('label', { class: 'field' },
-        h('span', { class: 'field-label' }, 'סטטוס'),
-        h('select', { class: 'select', value: task.status, dataset: { action: 'set-task-status', focusKey: `detail-status-${task.id}`, ...ids } },
-          ...STATUS_ORDER.map(key => h('option', { value: key }, STATUSES[key].label))))),
+      h('div', { class: 'field' },
+        h('span', { class: 'field-label' }, 'סטטוס ', h('small', {}, '(לפי תתי המשימות)')),
+        h('div', { class: 'field-value' }, statusBadge(task.status), sinceLabel(task, now)))),
     h('label', { class: 'field' },
       h('span', { class: 'field-label' }, 'תיאור ', h('small', {}, '(אופציונלי)')),
       h('textarea', {
@@ -238,10 +238,8 @@ export function renderTaskDetail(container, state, taskId, now) {
         dataset: { action: 'edit-task-description', focusKey: `detail-description-${task.id}`, original: task.description, ...ids },
       })),
     h('section', { class: 'detail-subtasks', 'aria-label': 'תתי משימות' },
-      h('h3', {}, summary.total > 0 ? `תתי משימות (${summary.done}/${summary.total})` : 'תתי משימות'),
-      summary.total > 0
-        ? h('ul', { class: 'subtasks' }, ...task.subtasks.map(subtask => renderSubtask(task, subtask, now)))
-        : h('p', { class: 'muted small' }, 'אין עדיין תתי משימות.'),
+      h('h3', {}, `תתי משימות (${summary.done}/${summary.total})`),
+      h('ul', { class: 'subtasks' }, ...task.subtasks.map(subtask => renderSubtask(task, subtask, now))),
       addSubtaskRow(task.id)),
     h('footer', { class: 'dialog-foot' },
       h('button', { type: 'button', class: 'btn btn-danger-soft', dataset: { action: 'delete-task', ...ids } }, icon('trash', { size: 16 }), 'מחיקת המשימה'),
@@ -255,6 +253,8 @@ function renderSubtask(task, subtask, now) {
   const ids = { taskId: task.id, subtaskId: subtask.id };
   const isDone = subtask.status === 'done';
   const toggleLabel = isDone ? 'החזרה לביצוע' : 'סימון כהושלם';
+  // A task always keeps at least one subtask; the button stays clickable to explain why (see app.js).
+  const isOnlySubtask = task.subtasks.length === 1;
 
   return h('li', { class: 'subtask', dataset: { status: subtask.status } },
     h('button', {
@@ -274,7 +274,9 @@ function renderSubtask(task, subtask, now) {
     h('div', { class: 'subtask-side' },
       sinceLabel(subtask, now),
       statusControl(subtask.status, { action: 'set-subtask-status', focusKey: `sub-status-${subtask.id}`, ...ids }),
-      iconButton('trash', 'מחיקת תת-משימה', { action: 'delete-subtask', ...ids }, 'danger')));
+      isOnlySubtask
+        ? iconButton('trash', ONLY_SUBTASK_MESSAGE, { action: 'delete-subtask', ...ids }, 'is-unavailable', { 'aria-disabled': 'true' })
+        : iconButton('trash', 'מחיקת תת-משימה', { action: 'delete-subtask', ...ids }, 'danger')));
 }
 
 function addSubtaskRow(taskId) {
@@ -314,12 +316,22 @@ export function renderSyncStatus(element, status) {
 // Small building blocks
 // ---------------------------------------------------------------------------
 
-function statusControl(status, dataset, extraClass = null) {
-  return h('span', { class: ['status-chip', extraClass], dataset: { status } },
+function statusControl(status, dataset) {
+  return h('span', { class: 'status-chip', dataset: { status } },
     h('span', { class: 'dot', 'aria-hidden': 'true' }),
     h('select', {
       class: 'status-select', value: status, 'aria-label': 'סטטוס', title: STATUSES[status].hint, dataset,
     }, ...STATUS_ORDER.map(key => h('option', { value: key, title: STATUSES[key].hint }, STATUSES[key].label))));
+}
+
+// A task's status pill: read-only, because it is derived from the subtasks.
+function statusBadge(status) {
+  return h('span', {
+    class: 'status-chip is-readonly', dataset: { status },
+    title: `${STATUSES[status].hint} - נקבע לפי תתי המשימות`,
+  },
+  h('span', { class: 'dot', 'aria-hidden': 'true' }),
+  h('span', { class: 'status-label' }, STATUSES[status].label));
 }
 
 // How long an item has been in its current in-progress status (working on it, or waiting for a reply).
@@ -339,8 +351,8 @@ function progressIndicator({ total, done }) {
     h('span', { dir: 'ltr' }, `${done}/${total}`));
 }
 
-function iconButton(iconName, label, dataset, variant = null) {
-  return h('button', { type: 'button', class: ['icon-btn', variant], dataset, title: label, 'aria-label': label }, icon(iconName));
+function iconButton(iconName, label, dataset, variant = null, extraAttributes = {}) {
+  return h('button', { type: 'button', class: ['icon-btn', variant], dataset, title: label, 'aria-label': label, ...extraAttributes }, icon(iconName));
 }
 
 function selectElement(options, value, dataset, label) {

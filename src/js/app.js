@@ -6,7 +6,7 @@ import { STORAGE_KEY, createInitialState, createStore } from './store.js';
 import { NO_CATEGORY, selectVisibleTasks } from './selectors.js';
 import { DEFAULT_FILTERS, loadUiPrefs, saveUiPrefs } from './ui-prefs.js';
 import {
-  fillCategorySelect, fillStatusSelect, renderBackupBanner, renderCategoriesList, renderDashboard,
+  ONLY_SUBTASK_MESSAGE, fillCategorySelect, fillStatusSelect, renderBackupBanner, renderCategoriesList, renderDashboard,
   renderFilters, renderSwatches, renderSyncStatus, renderTaskDetail, renderTaskGrid, suggestCategoryColor,
 } from './render.js';
 import { hydrateIcons } from './icons.js';
@@ -234,7 +234,14 @@ const clickActions = {
     const subtask = store.getState().tasks.find(task => task.id === taskId)?.subtasks.find(item => item.id === subtaskId);
     if (subtask) store.dispatch({ type: 'subtask/setStatus', taskId, subtaskId, status: subtask.status === 'done' ? 'todo' : 'done' });
   },
-  'delete-subtask': ({ taskId, subtaskId }) => deleteWithUndo({ type: 'subtask/delete', taskId, subtaskId }, 'תת-המשימה נמחקה'),
+  'delete-subtask': ({ taskId, subtaskId }) => {
+    // The store refuses to remove a task's last subtask; say why instead of silently doing nothing.
+    if (store.getState().tasks.find(task => task.id === taskId)?.subtasks.length === 1) {
+      showToast(ONLY_SUBTASK_MESSAGE, { tone: 'warning' });
+      return;
+    }
+    deleteWithUndo({ type: 'subtask/delete', taskId, subtaskId }, 'תת-המשימה נמחקה');
+  },
   'add-subtask-button': (_, element) => addSubtaskFromInput(element.closest('.add-subtask').querySelector('.add-subtask-input')),
   'dashboard-filter': ({ filter }) => setFilters({ status: ui.filters.status === filter ? 'all' : filter }),
   'filter-category': ({ categoryId }) => toggleCategoryFilter(categoryId),
@@ -271,7 +278,6 @@ const clickActions = {
 };
 
 const changeActions = {
-  'set-task-status': ({ taskId }, element) => store.dispatch({ type: 'task/setStatus', taskId, status: element.value }),
   'set-task-category': ({ taskId }, element) =>
     store.dispatch({ type: 'task/update', taskId, changes: { categoryId: element.value || null } }),
   'set-subtask-status': ({ taskId, subtaskId }, element) =>
@@ -400,6 +406,7 @@ function openTaskDialog() {
   const fields = els.taskForm.elements;
   els.taskForm.reset();
   fields.title.setCustomValidity('');
+  fields.subtaskTitle.setCustomValidity('');
   fillCategorySelect(fields.categoryId, state.categories, defaultCategoryForNewTask(state));
   fillStatusSelect(fields.status, 'todo');
   els.taskDialog.showModal();
@@ -422,6 +429,12 @@ els.taskForm.addEventListener('submit', event => {
     fields.title.reportValidity();
     return;
   }
+  const subtaskTitle = fields.subtaskTitle.value.trim();
+  if (!subtaskTitle) {
+    fields.subtaskTitle.setCustomValidity('לכל משימה צריכה להיות לפחות תת-משימה אחת');
+    fields.subtaskTitle.reportValidity();
+    return;
+  }
   const taskId = createId();
   const isAdded = store.dispatch({
     type: 'task/add',
@@ -429,16 +442,18 @@ els.taskForm.addEventListener('submit', event => {
     title,
     description: fields.description.value,
     categoryId: fields.categoryId.value || null,
-    status: fields.status.value,
+    subtasks: [{ title: subtaskTitle, status: fields.status.value }],
   });
   els.taskDialog.close();
   if (!isAdded) return;
   warnIfHiddenByFilters(taskId);
-  // Straight into the new task, ready for its subtasks.
+  // Straight into the new task, ready for more subtasks.
   openTaskDetail(taskId, { focusAddSubtask: true });
 });
 
-els.taskForm.elements.title.addEventListener('input', event => event.target.setCustomValidity(''));
+for (const field of [els.taskForm.elements.title, els.taskForm.elements.subtaskTitle]) {
+  field.addEventListener('input', event => event.target.setCustomValidity(''));
+}
 
 function warnIfHiddenByFilters(taskId) {
   const isVisible = selectVisibleTasks(store.getState(), ui.filters).some(task => task.id === taskId);

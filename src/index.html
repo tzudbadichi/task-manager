@@ -94,19 +94,26 @@
         <input name="title" type="text" required maxlength="200" autocomplete="off" placeholder="למשל: הקמת סביבת בדיקות לפרויקט">
       </label>
 
+      <!-- Every task has subtasks, and its status is derived from them - so the status is chosen per subtask -->
       <div class="field-row">
-        <label class="field">
-          <span class="field-label">
-            קטגוריה
-            <button type="button" class="btn btn-link btn-inline" data-action="open-categories">ניהול קטגוריות</button>
-          </span>
-          <select name="categoryId" class="select"></select>
+        <label class="field is-wide">
+          <span class="field-label">תת-משימה ראשונה</span>
+          <input name="subtaskTitle" type="text" required maxlength="200" autocomplete="off" placeholder="למשל: לבקש הרשאות לשרת">
         </label>
         <label class="field">
-          <span class="field-label">סטטוס</span>
+          <span class="field-label">הסטטוס שלה</span>
           <select name="status" class="select"></select>
         </label>
       </div>
+      <p class="field-hint">הסטטוס של המשימה נקבע לפי תתי המשימות שלה. אחרי היצירה אפשר להוסיף עוד.</p>
+
+      <label class="field">
+        <span class="field-label">
+          קטגוריה
+          <button type="button" class="btn btn-link btn-inline" data-action="open-categories">ניהול קטגוריות</button>
+        </span>
+        <select name="categoryId" class="select"></select>
+      </label>
 
       <label class="field">
         <span class="field-label">תיאור <small>(אופציונלי)</small></span>

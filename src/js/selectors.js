@@ -10,14 +10,9 @@ export const NO_CATEGORY = '__none__';
 const BACKUP_REMINDER_DAYS = 7;
 const BACKUP_REMINDER_MIN_ITEMS = 5;
 
-function itemsOf(task) {
-  return [task, ...task.subtasks];
-}
-
-/** A task ranks by its most active item (in progress, then waiting, then to-do). A closed task sinks regardless of its subtasks. */
+/** A task ranks by its status, which is derived from its subtasks: to-do, then in progress, then waiting, then done. */
 export function getTaskRank(task) {
-  if (task.status === 'done') return STATUSES.done.rank;
-  return Math.min(...itemsOf(task).map(item => STATUSES[item.status].rank));
+  return STATUSES[task.status].rank;
 }
 
 export function summarizeSubtasks(task) {
@@ -27,21 +22,18 @@ export function summarizeSubtasks(task) {
   };
 }
 
-/**
- * Work items per status. A task without subtasks counts itself; a task with subtasks counts its
- * subtasks (the parent is just a container). Closing a task closes its subtasks too.
- */
+/** Work items per status: the subtasks (a task's own status only sums them up). */
 export function getDashboardCounts(state) {
   const counts = Object.fromEntries(STATUS_ORDER.map(status => [status, 0]));
   for (const task of state.tasks) {
-    const workItems = task.subtasks.length > 0 ? task.subtasks : [task];
-    for (const item of workItems) counts[task.status === 'done' ? 'done' : item.status] += 1;
+    for (const subtask of task.subtasks) counts[subtask.status] += 1;
   }
   return counts;
 }
 
+// A task matches a status when any of its subtasks is in it - the same items the dashboard counts.
 function matchesStatusFilter(task, statusFilter) {
-  return statusFilter === 'all' || itemsOf(task).some(item => item.status === statusFilter);
+  return statusFilter === 'all' || task.subtasks.some(subtask => subtask.status === statusFilter);
 }
 
 function matchesSearch(task, query, categoryName) {

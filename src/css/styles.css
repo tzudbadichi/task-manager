@@ -156,6 +156,9 @@ body:not([data-view="app"]) .fab { display: none; }
 }
 .icon-btn:hover { background: var(--hover); color: var(--text); }
 .icon-btn.danger:hover { color: var(--danger); background: color-mix(in srgb, var(--danger) 10%, transparent); }
+/* Looks disabled but stays clickable, so a click can explain why the action is not available */
+.icon-btn.is-unavailable { opacity: 0.4; }
+.icon-btn.is-unavailable:hover { background: transparent; color: var(--text-muted); }
 
 .select,
 .field input,
@@ -500,17 +503,6 @@ option { color: var(--text); background: var(--surface); }
   font-weight: 700;
   line-height: 1.3;
 }
-.tile-description {
-  display: -webkit-box;
-  -webkit-box-orient: vertical;
-  -webkit-line-clamp: 4;
-  overflow: hidden;
-  margin: 0;
-  font-size: 0.85rem;
-  color: var(--text-muted);
-  white-space: pre-wrap;
-}
-
 /* Controls inside a tile sit above the stretched title button */
 .no-drag, .tile-subtask .done-toggle { position: relative; z-index: 2; }
 
@@ -596,6 +588,9 @@ body.is-dragging-tile { cursor: grabbing; user-select: none; -webkit-user-select
 }
 .status-select:focus { outline: none; }
 .status-chip:focus-within { outline: 2px solid var(--primary); outline-offset: 1px; }
+/* A task's status is derived from its subtasks, so its pill is a label, not a select */
+.status-chip.is-readonly { padding-inline: 10px; }
+.status-label { font-size: 0.84rem; font-weight: 700; white-space: nowrap; }
 
 .done-toggle {
   display: grid;
@@ -674,6 +669,9 @@ dialog::backdrop { background: rgba(15, 23, 42, 0.45); backdrop-filter: blur(2px
 .field { display: flex; flex-direction: column; gap: 5px; min-width: 0; }
 .field-label { display: flex; align-items: center; gap: 4px; font-weight: 600; font-size: 0.9rem; }
 .field-label small { color: var(--text-muted); font-weight: 400; }
+.field-value { display: flex; align-items: center; gap: 10px; min-height: 38px; color: var(--text-muted); font-size: 0.86rem; }
+.field-hint { margin: 0; color: var(--text-muted); font-size: 0.8rem; }
+.field-row .field.is-wide { flex-grow: 2; }
 .field textarea { resize: vertical; min-height: 70px; }
 .field-row { display: flex; flex-wrap: wrap; gap: 12px; }
 .field-row .field { flex: 1 1 200px; }
@@ -813,7 +811,7 @@ dialog::backdrop { background: rgba(15, 23, 42, 0.45); backdrop-filter: blur(2px
   .tile-subtask:nth-child(n + 3), .tile-more { display: none; }
   .tile-bottom .since { display: none; }
   .tile-bottom .status-chip { height: 28px; }
-  .tile-bottom .status-select { font-size: 0.78rem; }
+  .tile-bottom .status-label { font-size: 0.78rem; }
   .progress-bar { width: 40px; }
 
   /* Dialogs become full-screen sheets */

@@ -4,6 +4,7 @@ import {
   NO_CATEGORY, getBackupReminder, getDashboardCounts, getTaskRank, selectVisibleTasks,
 } from '../src/js/selectors.js';
 import { DEFAULT_SETTINGS } from '../src/js/store.js';
+import { deriveTaskStatus } from '../src/js/statuses.js';
 
 const NOW = Date.UTC(2026, 9, 4, 12, 0, 0);
 const MINUTE = 60_000;
@@ -18,8 +19,9 @@ function item(overrides = {}) {
     ...overrides,
   };
 }
-function task(overrides = {}, subtasks = []) {
-  return { ...item(overrides), description: '', categoryId: null, ...overrides, subtasks };
+/** A task as the store keeps it: with subtasks (default: one, in overrides.status) and the status derived from them. */
+function task(overrides = {}, subtasks = [item({ status: overrides.status ?? 'todo' })]) {
+  return { ...item(overrides), description: '', categoryId: null, ...overrides, status: deriveTaskStatus(subtasks), subtasks };
 }
 function stateWith(tasks, extra = {}) {
   return {
@@ -32,13 +34,33 @@ function stateWith(tasks, extra = {}) {
 const filters = (overrides = {}) => ({ search: '', categoryIds: [], status: 'all', showDone: false, sort: 'status', ...overrides });
 const titles = tasks => tasks.map(t => t.title);
 
+describe('deriveTaskStatus', () => {
+  const statusOf = (...statuses) => deriveTaskStatus(statuses.map(status => item({ status })));
+
+  test('any subtask in progress makes the whole task in progress', () => {
+    assert.equal(statusOf('todo', 'waiting', 'done', 'in_progress'), 'in_progress');
+  });
+
+  test('otherwise any waiting subtask makes it waiting', () => {
+    assert.equal(statusOf('todo', 'done', 'waiting'), 'waiting');
+  });
+
+  test('otherwise any to-do subtask makes it to-do', () => {
+    assert.equal(statusOf('done', 'todo', 'done'), 'todo');
+  });
+
+  test('only when every subtask is done is the task done', () => {
+    assert.equal(statusOf('done', 'done'), 'done');
+    assert.equal(statusOf(), 'todo');
+  });
+});
+
 describe('getTaskRank', () => {
-  test('in progress ranks first, then waiting, then to-do, and a done task sinks regardless of its subtasks', () => {
-    const active = task({ status: 'todo' }, [item({ status: 'done' }), item({ status: 'waiting' }), item({ status: 'in_progress' })]);
-    assert.equal(getTaskRank(active), 0);
-    assert.equal(getTaskRank(task({ status: 'todo' }, [item({ status: 'waiting' })])), 1);
-    assert.equal(getTaskRank(task({ status: 'todo' })), 2);
-    assert.equal(getTaskRank({ ...active, status: 'done' }), 3);
+  test('ranks by the derived task status: to-do first, then in progress, then waiting, then done', () => {
+    assert.equal(getTaskRank(task({ status: 'todo' })), 0);
+    assert.equal(getTaskRank(task({}, [item({ status: 'todo' }), item({ status: 'in_progress' })])), 1);
+    assert.equal(getTaskRank(task({}, [item({ status: 'todo' }), item({ status: 'waiting' })])), 2);
+    assert.equal(getTaskRank(task({}, [item({ status: 'done' }), item({ status: 'done' })])), 3);
   });
 });
 
@@ -50,16 +72,16 @@ describe('selectVisibleTasks', () => {
     assert.deepEqual(titles(selectVisibleTasks(state, filters({ status: 'done' }))), ['closed']);
   });
 
-  test('status filters match the task or any of its subtasks', () => {
+  test('status filters match a task when any of its subtasks is in that status', () => {
     const state = stateWith([
-      task({ title: 'parent with active subtask' }, [item({ status: 'in_progress' })]),
-      task({ title: 'active itself', status: 'in_progress' }),
+      task({ title: 'active, also has a to-do' }, [item({ status: 'todo' }), item({ status: 'in_progress' })]),
+      task({ title: 'active', status: 'in_progress' }),
       task({ title: 'plain' }),
     ]);
     assert.deepEqual(titles(selectVisibleTasks(state, filters({ status: 'in_progress' }))).sort(),
-      ['active itself', 'parent with active subtask']);
+      ['active', 'active, also has a to-do']);
     assert.deepEqual(titles(selectVisibleTasks(state, filters({ status: 'todo' }))).sort(),
-      ['parent with active subtask', 'plain']);
+      ['active, also has a to-do', 'plain']);
   });
 
   test('category filter supports several categories and "no category"', () => {
@@ -85,17 +107,17 @@ describe('selectVisibleTasks', () => {
     assert.deepEqual(search('hr'), ['alpha']);
   });
 
-  test('status sort: in progress first, then waiting, then to-do, newest first within a status', () => {
+  test('status sort: to-do first, then in progress, then waiting, then done, newest first within a status', () => {
     const state = stateWith([
       task({ title: 'old todo', createdAt: NOW - 3 * DAY }),
       task({ title: 'new todo', createdAt: NOW - DAY }),
       task({ title: 'waiting', status: 'waiting', createdAt: NOW }),
       task({ title: 'active', status: 'in_progress', createdAt: NOW - 5 * DAY }),
-      task({ title: 'has active subtask', createdAt: NOW - 4 * DAY }, [item({ status: 'in_progress' })]),
+      task({ title: 'active with a to-do subtask', createdAt: NOW - 4 * DAY }, [item({ status: 'todo' }), item({ status: 'in_progress' })]),
       task({ title: 'closed', status: 'done', createdAt: NOW }),
     ]);
     assert.deepEqual(titles(selectVisibleTasks(state, filters({ showDone: true }))),
-      ['has active subtask', 'active', 'waiting', 'new todo', 'old todo', 'closed']);
+      ['new todo', 'old todo', 'active with a to-do subtask', 'active', 'waiting', 'closed']);
   });
 
   test('"my order" keeps the stored (drag-and-drop) order', () => {
@@ -128,15 +150,14 @@ describe('selectVisibleTasks', () => {
 });
 
 describe('getDashboardCounts', () => {
-  test('counts tasks without subtasks, the subtasks of tasks that have them, and closes subtasks of done tasks', () => {
+  test('counts the subtasks by their own status', () => {
     const state = stateWith([
-      task({ status: 'in_progress' }, [item({ status: 'todo' }), item({ status: 'in_progress' }), item({ status: 'waiting' }), item({ status: 'done' })]),
+      task({}, [item({ status: 'todo' }), item({ status: 'in_progress' }), item({ status: 'waiting' }), item({ status: 'done' })]),
       task({ status: 'todo' }),
-      task({ status: 'in_progress' }),
       task({ status: 'waiting' }),
-      task({ status: 'done' }, [item({ status: 'todo' }), item({ status: 'waiting' })]),
+      task({}, [item({ status: 'done' }), item({ status: 'done' })]),
     ]);
-    assert.deepEqual(getDashboardCounts(state), { todo: 2, in_progress: 2, waiting: 2, done: 3 });
+    assert.deepEqual(getDashboardCounts(state), { todo: 2, in_progress: 1, waiting: 2, done: 3 });
   });
 });
 

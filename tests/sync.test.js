@@ -58,13 +58,16 @@ describe('replayOperations', () => {
     const { store } = setup();
     const base = store.getState();
     const operations = [
-      { kind: 'action', action: { type: 'task/add', id: 'task-a', title: 'A' }, now: T0 },
+      { kind: 'action', action: { type: 'task/add', id: 'task-a', title: 'A', subtasks: [{ id: 'sub-a0', title: 'A0' }] }, now: T0 },
       { kind: 'action', action: { type: 'subtask/add', id: 'sub-a', taskId: 'task-a', title: 'A1' }, now: T0 },
+      // Recorded by the previous version, before a new task had to come with subtasks.
+      { kind: 'action', action: { type: 'task/add', id: 'task-b', title: 'B' }, now: T0 },
     ];
     const once = replayOperations(base, operations);
     const twice = replayOperations(once, operations);
-    assert.deepEqual(titles(once), ['A']);
-    assert.equal(once.tasks[0].subtasks[0].id, 'sub-a');
+    assert.deepEqual(titles(once), ['B', 'A']);
+    assert.deepEqual(once.tasks[1].subtasks.map(subtask => subtask.id), ['sub-a0', 'sub-a']);
+    assert.deepEqual(once.tasks[0].subtasks.map(subtask => subtask.id), ['task-b:1']);
     assert.deepEqual(twice, once);
   });
 
@@ -192,7 +195,7 @@ describe('createSync - saving', () => {
 
     const saved = remote.document.data;
     assert.deepEqual(titles(saved), ['renamed elsewhere', 'from phone']);
-    assert.deepEqual(saved.tasks[0].subtasks.map(subtask => subtask.title), ['added here']);
+    assert.deepEqual(saved.tasks[0].subtasks.map(subtask => subtask.title), ['shared task', 'added here']);
     assert.deepEqual(store.getState(), normalizeState(saved, { now: T0 }));
     assert.equal(sync.hasPending(), false);
   });
@@ -324,7 +327,8 @@ describe('createSync - switching accounts and failures (review fixes)', () => {
     const a = setup({ storage, remote: remoteA, userId: 'user-a' });
     await a.sync.start();
     remoteA.failWith(new Error('Failed to fetch'));
-    a.store.dispatch({ type: 'task/setStatus', taskId: 'a1', status: 'in_progress' });
+    // 'a1:1' is the subtask every device derives for a cloud task that had none.
+    a.store.dispatch({ type: 'subtask/setStatus', taskId: 'a1', subtaskId: 'a1:1', status: 'in_progress' });
     await a.sync.flush();
     assert.equal(a.sync.hasPending(), true);
     a.sync.stop();
