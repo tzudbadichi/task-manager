@@ -47,6 +47,7 @@
     <div class="brand">
       <img src="favicon.svg" alt="" class="brand-logo" width="30" height="30">
       <h1>ניהול משימות</h1>
+      <span id="season-badge" class="season-badge" hidden></span>
     </div>
     <div class="topbar-actions">
       <button type="button" id="sync-status" class="sync-status" data-action="sync-retry"></button>
@@ -67,9 +68,11 @@
 
   <main class="layout">
     <section id="dashboard" class="dashboard" aria-label="סיכום מצב"></section>
+    <section id="today-bar" aria-label="היום שלי"></section>
     <section id="filters" class="filters" aria-label="סינון ומיון"></section>
     <section id="backup-banner" aria-label="תזכורת גיבוי"></section>
     <section id="task-list" class="task-grid" aria-label="משימות"></section>
+    <section id="people-scene" class="people-scene" aria-label="משימות - תצוגת דמויות" hidden></section>
   </main>
 
   <!-- Thumb-reachable "new task" button on phones -->
@@ -89,17 +92,24 @@
         <button type="button" class="icon-btn" data-action="close-dialog" aria-label="סגירה"><span data-icon="x"></span></button>
       </header>
 
-      <label class="field">
-        <span class="field-label">כותרת</span>
-        <input name="title" type="text" required maxlength="200" autocomplete="off" placeholder="למשל: הקמת סביבת בדיקות לפרויקט">
-      </label>
+      <!-- A div, not a label: the dictation button may not sit inside the field's label -->
+      <div class="field">
+        <label class="field-label" for="new-task-title">כותרת</label>
+        <span class="input-with-mic">
+          <input id="new-task-title" name="title" type="text" required maxlength="200" autocomplete="off" placeholder="למשל: הקמת סביבת בדיקות לפרויקט">
+          <button type="button" class="icon-btn mic-btn" data-action="dictate" data-voice-key="new-task-title" title="הכתבה קולית של הכותרת" aria-label="הכתבה קולית של הכותרת" aria-pressed="false" hidden><span data-icon="mic"></span></button>
+        </span>
+      </div>
 
       <!-- Every task has subtasks, and its status is derived from them - so the status is chosen per subtask -->
       <div class="field-row">
-        <label class="field is-wide">
-          <span class="field-label">תת-משימה ראשונה</span>
-          <input name="subtaskTitle" type="text" required maxlength="200" autocomplete="off" placeholder="למשל: לבקש הרשאות לשרת">
-        </label>
+        <div class="field is-wide">
+          <label class="field-label" for="new-task-subtask">תת-משימה ראשונה</label>
+          <span class="input-with-mic">
+            <input id="new-task-subtask" name="subtaskTitle" type="text" required maxlength="200" autocomplete="off" placeholder="למשל: לבקש הרשאות לשרת">
+            <button type="button" class="icon-btn mic-btn" data-action="dictate" data-voice-key="new-task-subtask" title="הכתבה קולית של תת-המשימה" aria-label="הכתבה קולית של תת-המשימה" aria-pressed="false" hidden><span data-icon="mic"></span></button>
+          </span>
+        </div>
         <label class="field">
           <span class="field-label">הסטטוס שלה</span>
           <select name="status" class="select"></select>
@@ -161,6 +171,49 @@
     </div>
   </dialog>
 
+  <!-- "What now?" - draws an open subtask to work on -->
+  <dialog id="next-dialog" class="next-dialog" aria-labelledby="next-dialog-title">
+    <div id="next-body" class="dialog-body"></div>
+  </dialog>
+
+  <!-- Status report: plain text to copy or send -->
+  <dialog id="report-dialog" aria-labelledby="report-dialog-title">
+    <form id="report-form" class="dialog-body">
+      <header class="dialog-head">
+        <h2 id="report-dialog-title">דוח מצב</h2>
+        <button type="button" class="icon-btn" data-action="close-dialog" aria-label="סגירה"><span data-icon="x"></span></button>
+      </header>
+      <div class="report-options">
+        <label class="setting-line">
+          <span>הושלם:</span>
+          <select name="period" class="select" data-action="report-option">
+            <option value="today">היום</option>
+            <option value="week" selected>ב-7 הימים האחרונים</option>
+            <option value="month">ב-30 הימים האחרונים</option>
+          </select>
+        </label>
+        <label class="setting-line">
+          <span>קטגוריות:</span>
+          <select name="scope" class="select" data-action="report-option">
+            <option value="all">כל הקטגוריות</option>
+            <option value="filtered">רק המסוננות כרגע</option>
+          </select>
+        </label>
+        <label class="toggle"><input type="checkbox" name="includeTodo" data-action="report-option">כולל "לביצוע"</label>
+      </div>
+      <label class="field">
+        <span class="field-label">הטקסט <small>(אפשר לערוך לפני השליחה)</small></span>
+        <textarea id="report-text" name="text" rows="12" dir="rtl"></textarea>
+      </label>
+      <footer class="dialog-foot report-actions">
+        <button type="button" class="btn btn-primary" data-action="report-copy"><span data-icon="copy"></span>העתקה</button>
+        <button type="button" id="report-share" class="btn btn-soft" data-action="report-share" hidden><span data-icon="share"></span>שיתוף</button>
+        <button type="button" class="btn btn-soft" data-action="report-whatsapp"><span data-icon="message"></span>ווטסאפ</button>
+        <button type="button" class="btn btn-soft" data-action="report-email"><span data-icon="mail"></span>מייל</button>
+      </footer>
+    </form>
+  </dialog>
+
   <!-- Settings, account and backup -->
   <dialog id="settings-dialog" aria-labelledby="settings-dialog-title">
     <form id="settings-form" class="dialog-body">
@@ -180,6 +233,13 @@
       <section class="settings-section">
         <h3>תצוגה</h3>
         <label class="setting-line">
+          <span>תצוגת המשימות</span>
+          <select name="view" class="select" data-action="setting-view">
+            <option value="grid">ריבועים</option>
+            <option value="people">דמויות מונפשות</option>
+          </select>
+        </label>
+        <label class="setting-line">
           <span>ערכת צבעים</span>
           <select name="theme" class="select" data-action="setting-theme">
             <option value="auto">לפי המערכת</option>
@@ -187,6 +247,22 @@
             <option value="dark">כהה</option>
           </select>
         </label>
+        <label class="setting-line">
+          <span>ערכה עונתית</span>
+          <select name="season" class="select" data-action="setting-season"></select>
+        </label>
+        <p id="season-hint" class="muted small"></p>
+      </section>
+
+      <section class="settings-section">
+        <h3>כיף ועזרים</h3>
+        <label class="toggle"><input type="checkbox" name="celebrate" data-action="setting-toggle" data-setting="celebrate">חגיגה (קונפטי) כשמסיימים משימה</label>
+        <label class="toggle"><input type="checkbox" name="sound" data-action="setting-toggle" data-setting="sound">צליל קצר בחגיגה</label>
+        <label class="toggle"><input type="checkbox" name="chatter" data-action="setting-toggle" data-setting="chatter">הדמויות מדברות ביניהן (בתצוגת הדמויות)</label>
+        <label class="toggle"><input type="checkbox" name="myDay" data-action="setting-toggle" data-setting="myDay">"היום שלי" - בחירה של עד 3 דברים להיום</label>
+        <label class="toggle"><input type="checkbox" name="voice" data-action="setting-toggle" data-setting="voice">כפתור הכתבה קולית בעברית</label>
+        <p id="voice-note" class="muted small"></p>
+        <p class="muted small">ההגדרות בחלק הזה, וגם התצוגה והערכה העונתית, נשמרות במכשיר הזה בלבד.</p>
       </section>
 
       <section class="settings-section">

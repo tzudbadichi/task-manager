@@ -1,7 +1,7 @@
 import { describe, test } from 'node:test';
 import assert from 'node:assert/strict';
-import { cleanText, dateStamp, formatElapsed, isHexColor } from '../src/js/utils.js';
-import { UI_PREFS_KEY, loadUiPrefs, saveUiPrefs } from '../src/js/ui-prefs.js';
+import { cleanText, dateStamp, formatElapsed, hashString, isDateStamp, isHexColor, truncate } from '../src/js/utils.js';
+import { DEFAULT_DISPLAY, UI_PREFS_KEY, loadUiPrefs, saveUiPrefs } from '../src/js/ui-prefs.js';
 import { createMemoryStorage } from './fixtures/memory-storage.js';
 
 const MINUTE = 60_000;
@@ -41,6 +41,20 @@ describe('small helpers', () => {
   test('dateStamp pads month and day', () => {
     assert.equal(dateStamp(new Date(2026, 0, 5)), '2026-01-05');
   });
+
+  test('isDateStamp accepts YYYY-MM-DD strings only', () => {
+    assert.equal(isDateStamp('2026-10-07'), true);
+    assert.equal(isDateStamp('2026-10-7'), false);
+    assert.equal(isDateStamp(20261007), false);
+    assert.equal(isDateStamp(null), false);
+  });
+
+  test('truncate shortens with an ellipsis; hashString is stable', () => {
+    assert.equal(truncate('short', 10), 'short');
+    assert.equal(truncate('a long title here', 8), 'a long…');
+    assert.equal(hashString('task-1'), hashString('task-1'));
+    assert.notEqual(hashString('task-1'), hashString('task-2'));
+  });
 });
 
 describe('UI preferences', () => {
@@ -61,6 +75,22 @@ describe('UI preferences', () => {
     const invalid = loadUiPrefs(createMemoryStorage({
       [UI_PREFS_KEY]: JSON.stringify({ filters: { status: 'attention', sort: 'attention', categoryIds: [1, 'ok'] }, expandedTaskIds: ['t1'] }),
     }));
-    assert.deepEqual(invalid, { filters: { search: '', categoryIds: ['ok'], status: 'all', showDone: false, sort: 'manual' } });
+    assert.deepEqual(invalid, {
+      filters: { search: '', categoryIds: ['ok'], status: 'all', showDone: false, sort: 'manual' },
+      display: { ...DEFAULT_DISPLAY },
+    });
+  });
+
+  test('display choices round-trip; unknown values fall back to the defaults', () => {
+    const storage = createMemoryStorage();
+    const display = { view: 'people', season: 'hanukkah', celebrate: false, sound: true, chatter: false, myDay: false, voice: false, voiceConsent: true };
+    saveUiPrefs(storage, { filters: loadUiPrefs(null).filters, display });
+    assert.deepEqual(loadUiPrefs(storage).display, display);
+    const invalid = loadUiPrefs(createMemoryStorage({
+      [UI_PREFS_KEY]: JSON.stringify({ display: { view: 'list', season: 'christmas', sound: 'yes', extra: 1 } }),
+    }));
+    assert.deepEqual(invalid.display, { ...DEFAULT_DISPLAY });
+    assert.equal(DEFAULT_DISPLAY.view, 'grid');
+    assert.equal(DEFAULT_DISPLAY.voiceConsent, false);
   });
 });

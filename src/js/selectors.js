@@ -1,7 +1,7 @@
 // Read-only derivations of the state: filtering, sorting and dashboard counts.
 // Pure functions (no DOM), covered by tests/selectors.test.js.
 
-import { STATUSES, STATUS_ORDER } from './statuses.js';
+import { STATUSES, STATUS_ORDER, STATUS_PRECEDENCE } from './statuses.js';
 import { DAY_MS } from './utils.js';
 
 // Category filter value for tasks without a category.
@@ -9,6 +9,12 @@ export const NO_CATEGORY = '__none__';
 
 const BACKUP_REMINDER_DAYS = 7;
 const BACKUP_REMINDER_MIN_ITEMS = 5;
+
+// An open task nobody touched for this many days gathers dust: level 1, 2 and 3.
+export const DUST_LEVEL_DAYS = Object.freeze([14, 30, 60]);
+
+// "What now?" draws an open subtask; these weights make some more likely to come up.
+const NEXT_PICK_WEIGHTS = Object.freeze({ todo: 1, in_progress: 2, myDayBonus: 2 });
 
 /** A task ranks by its status, which is derived from its subtasks: to-do, then in progress, then waiting, then done. */
 export function getTaskRank(task) {
@@ -72,6 +78,65 @@ export function selectVisibleTasks(state, filters) {
     }))
     .sort(SORT_COMPARATORS[filters.sort] ?? SORT_COMPARATORS.manual)
     .map(entry => entry.task);
+}
+
+/**
+ * Which subtask a task is "busy with": the one that gives the task its status (first in progress,
+ * else first waiting, else first to-do); for a finished task, the one closed last.
+ */
+export function findFocusSubtask(task) {
+  for (const status of STATUS_PRECEDENCE) {
+    const subtask = task.subtasks.find(item => item.status === status);
+    if (subtask) return subtask;
+  }
+  return task.subtasks.reduce((latest, subtask) => (subtask.statusChangedAt >= latest.statusChangedAt ? subtask : latest));
+}
+
+/** 0 (fresh) to 3: how long an open task has gone without any change. Finished tasks never gather dust. */
+export function getDustLevel(task, now) {
+  if (task.status === 'done') return 0;
+  const idleDays = (now - task.updatedAt) / DAY_MS;
+  return DUST_LEVEL_DAYS.filter(days => idleDays >= days).length;
+}
+
+/** The subtasks picked for "my day" on that date (open and already done), in task order. */
+export function selectMyDay(state, date) {
+  const picks = [];
+  for (const task of state.tasks) {
+    for (const subtask of task.subtasks) {
+      if (subtask.myDay === date) picks.push({ task, subtask });
+    }
+  }
+  return picks;
+}
+
+/**
+ * What "what now?" may draw: the open subtasks one can start working on (to-do or in progress - not
+ * waiting for someone else) of the tasks the current filters show. Weighted: work already in progress
+ * and picks for today come up more often.
+ */
+export function listNextCandidates(state, filters, date) {
+  const candidates = [];
+  for (const task of selectVisibleTasks(state, filters)) {
+    for (const subtask of task.subtasks) {
+      if (subtask.status !== 'todo' && subtask.status !== 'in_progress') continue;
+      const weight = NEXT_PICK_WEIGHTS[subtask.status] + (subtask.myDay === date ? NEXT_PICK_WEIGHTS.myDayBonus : 0);
+      candidates.push({ task, subtask, weight });
+    }
+  }
+  return candidates;
+}
+
+/** Draws one candidate in proportion to its weight. random() returns a number in [0, 1). */
+export function pickWeighted(candidates, random = Math.random) {
+  const total = candidates.reduce((sum, candidate) => sum + candidate.weight, 0);
+  if (total <= 0) return null;
+  let remaining = random() * total;
+  for (const candidate of candidates) {
+    remaining -= candidate.weight;
+    if (remaining < 0) return candidate;
+  }
+  return candidates[candidates.length - 1];
 }
 
 /**

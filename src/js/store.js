@@ -2,7 +2,7 @@
 // No DOM access here - the unit tests run this module in Node with an in-memory storage.
 
 import { DEFAULT_STATUS, LEGACY_STATUS_MAP, deriveTaskStatus, isValidStatus } from './statuses.js';
-import { cleanText, createId, isHexColor, toTimestamp } from './utils.js';
+import { cleanText, createId, isDateStamp, isHexColor, toTimestamp } from './utils.js';
 
 // Version 3: every task has subtasks, and a task's status is derived from them.
 export const SCHEMA_VERSION = 3;
@@ -16,6 +16,8 @@ export const LIMITS = Object.freeze({
   categories: 50,
   tasks: 2000,
   subtasksPerTask: 300,
+  // Open (not done) subtasks that can be picked for the same day in "my day".
+  myDay: 3,
 });
 
 export const FALLBACK_CATEGORY_COLOR = '#64748b';
@@ -85,6 +87,10 @@ export function reduce(state, action, { now, makeId = createId }) {
       return mapTask(state, action.taskId, task => updateTaskFields(state, task, action.changes, now));
     case 'task/setStatus':
       return mapTask(state, action.taskId, task => applyLegacyTaskStatus(task, action.status, now));
+    case 'task/complete':
+      return mapTask(state, action.taskId, task => setAllSubtaskStatuses(task, 'done', now, action.subtaskIds));
+    case 'task/touch':
+      return mapTask(state, action.taskId, task => (now > task.updatedAt ? { ...task, updatedAt: now } : task));
     case 'task/delete':
       return removeTask(state, action.taskId);
     case 'tasks/reorder':
@@ -95,7 +101,10 @@ export function reduce(state, action, { now, makeId = createId }) {
       return mapSubtask(state, action.taskId, action.subtaskId, now,
         subtask => applyTextChanges(subtask, action.changes, SUBTASK_TEXT_FIELDS, now));
     case 'subtask/setStatus':
-      return mapSubtask(state, action.taskId, action.subtaskId, now, subtask => withStatus(subtask, action.status, now));
+      return mapSubtask(state, action.taskId, action.subtaskId, now,
+        subtask => keepMyDayLimit(state, subtask, withStatus(subtask, action.status, now)));
+    case 'subtask/setMyDay':
+      return setSubtaskMyDay(state, action, now);
     case 'subtask/delete':
       return mapTask(state, action.taskId, task => removeSubtask(task, action.subtaskId, now));
     case 'category/add':
@@ -261,9 +270,54 @@ function withStatus(item, status, now) {
  */
 function applyLegacyTaskStatus(task, status, now) {
   if (status !== 'done' && task.subtasks.length !== 1) return task;
-  const subtasks = task.subtasks.map(subtask => withStatus(subtask, status, now));
+  return setAllSubtaskStatuses(task, status, now);
+}
+
+/**
+ * Also task/complete: "close the whole task" (offered for a task nobody touched in weeks) marks its subtasks done.
+ * onlyIds: the subtasks the user saw when closing it, so a replay on a newer cloud copy does not also close
+ * subtasks another device added since. Without it (or for the legacy action), every subtask.
+ */
+function setAllSubtaskStatuses(task, status, now, onlyIds = null) {
+  const selected = Array.isArray(onlyIds) ? new Set(onlyIds) : null;
+  const subtasks = task.subtasks.map(subtask => (selected && !selected.has(subtask.id) ? subtask : withStatus(subtask, status, now)));
   if (subtasks.every((subtask, index) => subtask === task.subtasks[index])) return task;
   return withDerivedStatus({ ...task, subtasks, updatedAt: now }, now);
+}
+
+/** Open subtasks picked for that day, optionally not counting one of them (the one being changed). */
+export function countOpenMyDay(state, date, exceptSubtaskId = null) {
+  let count = 0;
+  for (const task of state.tasks) {
+    for (const subtask of task.subtasks) {
+      if (subtask.myDay === date && subtask.status !== 'done' && subtask.id !== exceptSubtaskId) count += 1;
+    }
+  }
+  return count;
+}
+
+// Reopening a finished "my day" pick must not push that day over its limit: then it leaves the list.
+function keepMyDayLimit(state, before, after) {
+  if (after === before || !after.myDay || before.status !== 'done' || after.status === 'done') return after;
+  if (countOpenMyDay(state, after.myDay, after.id) < LIMITS.myDay) return after;
+  const { myDay: _dropped, ...rest } = after;
+  return rest;
+}
+
+/**
+ * "My day": action.date is the local day (YYYY-MM-DD) the subtask is picked for, or null to unpick it.
+ * A pick from an earlier day simply stops counting the next morning, so nothing has to reset it.
+ * Picking beyond LIMITS.myDay open subtasks for that day is a no-op (the app explains it first).
+ */
+function setSubtaskMyDay(state, action, now) {
+  const { date } = action;
+  if (date !== null && !isDateStamp(date)) return state;
+  if (date !== null && countOpenMyDay(state, date, action.subtaskId) >= LIMITS.myDay) return state;
+  return mapSubtask(state, action.taskId, action.subtaskId, now, subtask => {
+    if ((subtask.myDay ?? null) === date) return subtask;
+    const { myDay: _previous, ...rest } = subtask;
+    return date === null ? { ...rest, updatedAt: now } : { ...rest, myDay: date, updatedAt: now };
+  });
 }
 
 // Re-derives a task's status from its subtasks; the task's clock restarts only when the derived status changes.
@@ -416,8 +470,21 @@ function normalizeItemBase(raw, uniqueId, now) {
 
 function normalizeSubtask(raw, uniqueId, now) {
   const base = normalizeItemBase(raw, uniqueId, now);
+  if (!base) return null;
   const contact = legacyContactOf(raw);
-  return base && contact ? { ...base, title: cleanText(`${base.title} - ${contact}`, LIMITS.title) } : base;
+  const subtask = contact ? { ...base, title: cleanText(`${base.title} - ${contact}`, LIMITS.title) } : base;
+  // myDay is optional: only a subtask picked for "my day" carries it. Picks of long-gone days are dropped.
+  return isRecentMyDay(raw.myDay, now) ? { ...subtask, myDay: raw.myDay } : subtask;
+}
+
+// A "my day" pick is kept for MY_DAY_KEEP_DAYS after its day, then it is only clutter in the document.
+const MY_DAY_KEEP_DAYS = 30;
+function isRecentMyDay(value, now) {
+  if (!isDateStamp(value)) return false;
+  const [year, month, day] = value.split('-').map(Number);
+  const pickedDay = new Date(year, month - 1, day);
+  if (pickedDay.getMonth() !== month - 1 || pickedDay.getDate() !== day) return false; // not a real date (2026-02-31)
+  return now - pickedDay.getTime() < MY_DAY_KEEP_DAYS * 24 * 60 * 60 * 1000;
 }
 
 /**

@@ -656,3 +656,107 @@ describe('replayable actions and manual order', () => {
     assert.equal(store.canUndo(), false);
   });
 });
+
+describe('closing a whole task, shaking off dust and "my day"', () => {
+  const addTaskWith = (harness, subtasks) => {
+    harness.run({ type: 'task/add', id: 't', title: 'task', subtasks });
+    return () => harness.state.tasks.find(task => task.id === 't');
+  };
+
+  test('task/complete marks every subtask done (so the task is done), and is a no-op when it already is', () => {
+    const harness = createHarness();
+    const current = addTaskWith(harness, [{ id: 'a', title: 'a', status: 'waiting' }, { id: 'b', title: 'b', status: 'done' }]);
+    harness.advance(MINUTE);
+    harness.run({ type: 'task/complete', taskId: 't' });
+    assert.deepEqual(current().subtasks.map(subtask => subtask.status), ['done', 'done']);
+    assert.equal(current().status, 'done');
+    assert.equal(current().updatedAt, T0 + MINUTE);
+    const before = harness.state;
+    assert.equal(harness.run({ type: 'task/complete', taskId: 't' }), before);
+  });
+
+  test('task/complete with subtaskIds closes only those (a replay leaves subtasks added since alone)', () => {
+    const harness = createHarness();
+    const current = addTaskWith(harness, [{ id: 'a', title: 'a' }, { id: 'b', title: 'b' }]);
+    harness.run({ type: 'subtask/add', taskId: 't', id: 'late', title: 'added on another device' });
+    harness.run({ type: 'task/complete', taskId: 't', subtaskIds: ['a', 'b'] });
+    assert.deepEqual(current().subtasks.map(subtask => subtask.status), ['done', 'done', 'todo']);
+    assert.equal(current().status, 'todo');
+  });
+
+  test('task/touch only moves updatedAt forward', () => {
+    const harness = createHarness();
+    const current = addTaskWith(harness, [{ id: 'a', title: 'a' }]);
+    harness.advance(5 * MINUTE);
+    harness.run({ type: 'task/touch', taskId: 't' });
+    assert.equal(current().updatedAt, T0 + 5 * MINUTE);
+    const before = harness.state;
+    assert.equal(harness.run({ type: 'task/touch', taskId: 't' }), before, 'same moment again: nothing to change');
+    assert.equal(harness.run({ type: 'task/touch', taskId: 'missing' }), before);
+  });
+
+  test('subtask/setMyDay picks and unpicks a subtask for a day; invalid dates are ignored', () => {
+    const harness = createHarness();
+    const current = addTaskWith(harness, [{ id: 'a', title: 'a' }]);
+    harness.run({ type: 'subtask/setMyDay', taskId: 't', subtaskId: 'a', date: '2026-10-07' });
+    assert.equal(current().subtasks[0].myDay, '2026-10-07');
+    const before = harness.state;
+    assert.equal(harness.run({ type: 'subtask/setMyDay', taskId: 't', subtaskId: 'a', date: '2026-10-07' }), before);
+    assert.equal(harness.run({ type: 'subtask/setMyDay', taskId: 't', subtaskId: 'a', date: 'tomorrow' }), before);
+    assert.equal(harness.run({ type: 'subtask/setMyDay', taskId: 't', subtaskId: 'a' }), before, 'a missing date is not "unpick"');
+    harness.run({ type: 'subtask/setMyDay', taskId: 't', subtaskId: 'a', date: null });
+    assert.equal(Object.hasOwn(current().subtasks[0], 'myDay'), false);
+  });
+
+  test(`at most ${LIMITS.myDay} open subtasks per day; done ones and other days do not count`, () => {
+    const harness = createHarness();
+    const ids = ['a', 'b', 'c', 'd', 'e'];
+    addTaskWith(harness, ids.map(id => ({ id, title: id })));
+    const pick = (subtaskId, date = '2026-10-07') => harness.run({ type: 'subtask/setMyDay', taskId: 't', subtaskId, date });
+    pick('a');
+    pick('b');
+    pick('c');
+    const full = harness.state;
+    assert.equal(pick('d'), full, 'the fourth open pick is refused');
+    harness.run({ type: 'subtask/setStatus', taskId: 't', subtaskId: 'a', status: 'done' });
+    pick('d');
+    const picked = harness.state.tasks[0].subtasks.filter(subtask => subtask.myDay === '2026-10-07').map(subtask => subtask.id);
+    assert.deepEqual(picked, ['a', 'b', 'c', 'd']);
+    pick('e', '2026-10-08');
+    assert.equal(harness.state.tasks[0].subtasks.find(subtask => subtask.id === 'e').myDay, '2026-10-08');
+    // Reopening the finished pick would make 4 open picks: it leaves the day's list instead.
+    harness.run({ type: 'subtask/setStatus', taskId: 't', subtaskId: 'a', status: 'todo' });
+    const reopened = harness.state.tasks[0].subtasks.find(subtask => subtask.id === 'a');
+    assert.equal(reopened.status, 'todo');
+    assert.equal(Object.hasOwn(reopened, 'myDay'), false);
+  });
+
+  test('reopening a finished pick keeps it when the day has room', () => {
+    const harness = createHarness();
+    addTaskWith(harness, [{ id: 'a', title: 'a' }]);
+    harness.run({ type: 'subtask/setMyDay', taskId: 't', subtaskId: 'a', date: '2026-10-07' });
+    harness.run({ type: 'subtask/setStatus', taskId: 't', subtaskId: 'a', status: 'done' });
+    harness.run({ type: 'subtask/setStatus', taskId: 't', subtaskId: 'a', status: 'in_progress' });
+    assert.equal(harness.state.tasks[0].subtasks[0].myDay, '2026-10-07');
+  });
+
+  test('normalizeState keeps a valid, recent myDay and drops anything else', () => {
+    const state = normalizeState({
+      categories: [],
+      tasks: [{
+        id: 't', title: 'task', createdAt: T0, updatedAt: T0,
+        subtasks: [
+          { id: 'a', title: 'a', status: 'todo', myDay: '2026-10-07' },
+          { id: 'b', title: 'b', status: 'todo', myDay: 'not a date' },
+          { id: 'c', title: 'c', status: 'todo', myDay: 20261007 },
+          { id: 'd', title: 'd', status: 'todo', myDay: '2026-02-31' },
+          { id: 'e', title: 'e', status: 'todo', myDay: '2026-08-01' },
+          { id: 'f', title: 'f', status: 'todo', myDay: '2026-09-20' },
+        ],
+      }],
+    }, { now: T0, makeId: sequentialIds() });
+    assert.deepEqual(state.tasks[0].subtasks.map(subtask => subtask.myDay ?? null),
+      ['2026-10-07', null, null, null, null, '2026-09-20'], 'not a real date, or over 30 days old: dropped');
+    assert.equal(Object.hasOwn(state.tasks[0].subtasks[1], 'myDay'), false);
+  });
+});

@@ -7,7 +7,7 @@
 ## קבצים
 
 - `src/js/statuses.js` - קטלוג הסטטוסים, `deriveTaskStatus` ומיפוי סטטוסים ישנים
-- `src/js/selectors.js` - `getTaskRank`, `selectVisibleTasks`, `getDashboardCounts`, `getBackupReminder`
+- `src/js/selectors.js` - `getTaskRank`, `selectVisibleTasks`, `getDashboardCounts`, `getBackupReminder`. בנוסף, נגזרות של הפיצ'רים הנוספים: `findFocusSubtask` (תת-המשימה שקובעת את הסטטוס - הדמויות והשיחות שלהן, ראו `PEOPLE_VIEW.md`), `getDustLevel` (ראו `DUST.md`), `selectMyDay`, `listNextCandidates` ו-`pickWeighted` (ראו `MY_DAY_AND_NEXT.md`)
 - `tests/selectors.test.js`
 
 ## הסטטוסים

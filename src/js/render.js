@@ -5,7 +5,11 @@ import { h } from './dom.js';
 import { icon } from './icons.js';
 import { STATUSES, STATUS_ORDER } from './statuses.js';
 import { LIMITS } from './store.js';
-import { NO_CATEGORY, getBackupReminder, getDashboardCounts, selectVisibleTasks, summarizeSubtasks } from './selectors.js';
+import {
+  NO_CATEGORY, getBackupReminder, getDashboardCounts, getDustLevel, selectMyDay, selectVisibleTasks, summarizeSubtasks,
+} from './selectors.js';
+import { SEASONS, SEASON_KEYS } from './seasons.js';
+import { createSeasonEmblem } from './art.js';
 import { formatElapsed } from './utils.js';
 
 export const UNCATEGORIZED_COLOR = '#94a3b8';
@@ -55,6 +59,71 @@ export function renderDashboard(container, state, filters) {
       h('span', { class: 'dash-sub' }, STATUSES[status].hint)),
     h('span', { class: 'dash-value' }, String(counts[status])));
   }));
+}
+
+// ---------------------------------------------------------------------------
+// Today bar: "my day" picks, plus the "what now?" and "status report" buttons
+// ---------------------------------------------------------------------------
+
+export function renderTodayBar(container, state, { today, showMyDay }) {
+  const tools = h('div', { class: 'today-tools' },
+    h('button', {
+      type: 'button', class: 'btn btn-soft btn-sm', dataset: { action: 'open-next', focusKey: 'today-next' },
+      title: 'הגרלה של תת-משימה פתוחה לעבוד עליה עכשיו',
+    }, icon('dice', { size: 16 }), 'מה עכשיו?'),
+    h('button', {
+      type: 'button', class: 'btn btn-soft btn-sm', dataset: { action: 'open-report', focusKey: 'today-report' },
+      title: 'סיכום מצב להעתקה ולשליחה בווטסאפ, במייל או ב-Teams',
+    }, icon('clipboard', { size: 16 }), 'דוח מצב'));
+  if (!showMyDay) {
+    container.replaceChildren(h('div', { class: 'today-bar is-tools-only' }, tools));
+    return;
+  }
+
+  const picks = selectMyDay(state, today);
+  const openCount = picks.filter(({ subtask }) => subtask.status !== 'done').length;
+  const categoriesById = new Map(state.categories.map(category => [category.id, category]));
+  const content = picks.length > 0
+    ? h('ul', { class: 'today-list' }, ...picks.map(({ task, subtask }) => todayItem(task, subtask, categoriesById.get(task.categoryId))))
+    : h('p', { class: 'today-empty' },
+      `עוד לא נבחר כלום להיום. אפשר לבחור עד ${LIMITS.myDay} תתי משימות - בסמל השמש שבחלון המשימה, או דרך "מה עכשיו?".`);
+
+  container.replaceChildren(h('div', { class: 'today-bar' },
+    h('div', { class: 'today-head' },
+      h('span', { class: 'today-icon', 'aria-hidden': 'true' }, icon('sun')),
+      h('h2', {}, 'היום שלי'),
+      h('span', { class: 'today-count', title: `נבחרו ${openCount} דברים פתוחים מתוך ${LIMITS.myDay} אפשריים` },
+        h('span', { dir: 'ltr' }, `${openCount}/${LIMITS.myDay}`))),
+    content,
+    tools));
+}
+
+function todayItem(task, subtask, category) {
+  const ids = { taskId: task.id, subtaskId: subtask.id };
+  const isDone = subtask.status === 'done';
+  return h('li', {
+    class: ['today-item', isDone && 'is-done'],
+    cssVars: { '--chip-color': category?.color ?? UNCATEGORIZED_COLOR },
+    dataset: { status: subtask.status },
+  },
+  h('button', {
+    type: 'button',
+    class: ['done-toggle', 'is-mini', isDone && 'is-checked'],
+    dataset: { action: 'toggle-subtask-done', focusKey: `today-done-${subtask.id}`, ...ids },
+    'aria-pressed': String(isDone),
+    'aria-label': `${isDone ? 'החזרה לביצוע' : 'סימון כהושלם'}: ${subtask.title}`,
+  }, icon('check', { size: 11 })),
+  h('button', {
+    type: 'button', class: 'today-item-open', title: 'פתיחת המשימה',
+    dataset: { action: 'open-task', focusKey: `today-open-${subtask.id}`, taskId: task.id },
+  },
+    h('span', { class: 'dot', 'aria-hidden': 'true' }),
+    h('span', { class: 'today-item-title' }, subtask.title),
+    subtask.title !== task.title && h('span', { class: 'today-item-task' }, task.title)),
+  h('button', {
+    type: 'button', class: 'icon-btn today-item-remove', dataset: { action: 'my-day-toggle', focusKey: `today-remove-${subtask.id}`, ...ids },
+    title: 'הסרה מהיום שלי', 'aria-label': `הסרה מהיום שלי: ${subtask.title}`,
+  }, icon('x', { size: 14 })));
 }
 
 // ---------------------------------------------------------------------------
@@ -137,39 +206,53 @@ export function renderBackupBanner(container, state, now, isHidden) {
 // Task grid (square tiles)
 // ---------------------------------------------------------------------------
 
-export function renderTaskGrid(container, state, filters, now) {
+/**
+ * Shows the "no tasks yet" or "nothing matches the filters" message (shared by the tiles and the
+ * people view). Returns true when it did, so there is nothing else to draw.
+ */
+export function renderTasksEmptyState(container, state, visibleCount) {
   if (state.tasks.length === 0) {
     container.replaceChildren(emptyState(
       'אין עדיין משימות',
       'אפשר להתחיל עם "משימה חדשה" ולהוסיף לה תתי משימות. את הריבועים אפשר לגרור ולסדר איך שנוח.',
       h('button', { type: 'button', class: 'btn btn-primary', dataset: { action: 'open-new-task' } }, icon('plus'), 'משימה חדשה')));
-    return;
+    return true;
   }
-  const visibleTasks = selectVisibleTasks(state, filters);
-  if (visibleTasks.length === 0) {
+  if (visibleCount === 0) {
     container.replaceChildren(emptyState(
       'אין משימות שמתאימות לסינון',
       '',
       h('button', { type: 'button', class: 'btn btn-soft', dataset: { action: 'filter-reset' } }, 'ניקוי סינון')));
-    return;
+    return true;
   }
-  const categoriesById = new Map(state.categories.map(category => [category.id, category]));
-  container.replaceChildren(...visibleTasks.map(task => renderTaskTile(task, categoriesById.get(task.categoryId) ?? null, now)));
+  return false;
 }
 
-function renderTaskTile(task, category, now) {
+/** today: the local date (YYYY-MM-DD) whose "my day" picks get a sun mark, or null to show none. */
+export function renderTaskGrid(container, state, filters, now, { today = null } = {}) {
+  const visibleTasks = selectVisibleTasks(state, filters);
+  if (renderTasksEmptyState(container, state, visibleTasks.length)) return;
+  const categoriesById = new Map(state.categories.map(category => [category.id, category]));
+  container.replaceChildren(...visibleTasks.map(task => renderTaskTile(task, categoriesById.get(task.categoryId) ?? null, now, today)));
+}
+
+function renderTaskTile(task, category, now, today) {
   const color = category?.color ?? UNCATEGORIZED_COLOR;
   const summary = summarizeSubtasks(task);
   const preview = task.subtasks.slice(0, TILE_PREVIEW_COUNT);
   const hiddenCount = summary.total - preview.length;
   const ids = { taskId: task.id };
+  const dustLevel = getDustLevel(task, now);
 
   // The top stripe takes the category color; data-status tints the rest of the tile by status.
+  // data-dust (1-3) fades a task nobody touched for weeks and covers it with dust (and cobwebs).
   return h('article', {
     class: ['task-tile', task.status === 'done' && 'is-done'],
     cssVars: { '--cat-color': color },
-    dataset: { taskId: task.id, status: task.status },
+    dataset: { taskId: task.id, status: task.status, dust: dustLevel || null },
   },
+  dustLevel > 0 && h('span', { class: 'tile-dust', 'aria-hidden': 'true' }),
+  dustLevel >= 2 && h('span', { class: 'tile-cobweb', 'aria-hidden': 'true' }),
   h('div', { class: 'tile-top' },
     h('span', { class: 'cat-chip', cssVars: { '--chip-color': color } },
       h('span', { class: 'dot', 'aria-hidden': 'true' }), category?.name ?? 'ללא קטגוריה'),
@@ -191,27 +274,38 @@ function renderTaskTile(task, category, now) {
           'aria-label': `${isDone ? 'החזרה לביצוע' : 'סימון כהושלם'}: ${subtask.title}`,
         }, icon('check', { size: 11 })),
         h('span', { class: 'tile-subtask-title' }, subtask.title),
+        subtask.myDay === today && h('span', { class: 'tile-myday', title: 'ב"היום שלי"' }, icon('sun', { size: 12 })),
         miniStatusControl(subtask, { action: 'set-subtask-status', focusKey: `tile-status-${subtask.id}`, ...ids, subtaskId: subtask.id }));
     })),
   hiddenCount > 0 && h('span', { class: 'tile-more' }, `+${hiddenCount} נוספות`),
   h('div', { class: 'tile-bottom' },
     statusBadge(task.status),
     progressIndicator(summary),
-    sinceLabel(task, now)));
+    sinceLabel(task, now),
+    dustLevel > 0 && dustLabel(task, now)));
+}
+
+function dustLabel(task, now) {
+  const idle = formatElapsed(now - task.updatedAt);
+  return h('span', { class: 'dust-label', title: `אף אחד לא נגע במשימה ${idle}` }, icon('wind', { size: 13 }), idle);
 }
 
 // ---------------------------------------------------------------------------
 // Task detail (dialog content)
 // ---------------------------------------------------------------------------
 
-/** Renders the detail view of one task. Returns false when the task no longer exists. */
-export function renderTaskDetail(container, state, taskId, now) {
+/**
+ * Renders the detail view of one task. Returns false when the task no longer exists.
+ * options: today (the date for "my day" sun buttons, or null to hide them), voice (show the dictation button).
+ */
+export function renderTaskDetail(container, state, taskId, now, { today = null, voice = false } = {}) {
   const task = state.tasks.find(item => item.id === taskId);
   if (!task) return false;
   const category = state.categories.find(item => item.id === task.categoryId) ?? null;
   const color = category?.color ?? UNCATEGORIZED_COLOR;
   const summary = summarizeSubtasks(task);
   const ids = { taskId: task.id };
+  const dustLevel = getDustLevel(task, now);
 
   container.replaceChildren(
     h('header', { class: 'detail-head', cssVars: { '--cat-color': color } },
@@ -232,6 +326,7 @@ export function renderTaskDetail(container, state, taskId, now) {
       h('div', { class: 'field' },
         h('span', { class: 'field-label' }, 'סטטוס ', h('small', {}, '(לפי תתי המשימות)')),
         h('div', { class: 'field-value' }, statusBadge(task.status), sinceLabel(task, now)))),
+    dustLevel > 0 && dustBanner(task, dustLevel, now),
     h('label', { class: 'field' },
       h('span', { class: 'field-label' }, 'תיאור ', h('small', {}, '(אופציונלי)')),
       h('textarea', {
@@ -240,8 +335,8 @@ export function renderTaskDetail(container, state, taskId, now) {
       })),
     h('section', { class: 'detail-subtasks', 'aria-label': 'תתי משימות' },
       h('h3', {}, `תתי משימות (${summary.done}/${summary.total})`),
-      h('ul', { class: 'subtasks' }, ...task.subtasks.map(subtask => renderSubtask(task, subtask, now))),
-      addSubtaskRow(task.id)),
+      h('ul', { class: 'subtasks' }, ...task.subtasks.map(subtask => renderSubtask(task, subtask, now, today))),
+      addSubtaskRow(task.id, voice)),
     h('footer', { class: 'dialog-foot' },
       h('button', { type: 'button', class: 'btn btn-danger-soft', dataset: { action: 'delete-task', ...ids } }, icon('trash', { size: 16 }), 'מחיקת המשימה'),
       h('span', { class: 'spacer' }),
@@ -250,12 +345,27 @@ export function renderTaskDetail(container, state, taskId, now) {
   return true;
 }
 
-function renderSubtask(task, subtask, now) {
+// An open task nobody touched for weeks: still relevant (shake off the dust), or close it.
+function dustBanner(task, dustLevel, now) {
+  const ids = { taskId: task.id };
+  return h('div', { class: 'dust-banner', role: 'note', dataset: { dust: dustLevel } },
+    icon('wind'),
+    h('span', { class: 'dust-banner-text' }, `אף אחד לא נגע במשימה ${formatElapsed(now - task.updatedAt)}. היא עדיין רלוונטית?`),
+    h('div', { class: 'dust-actions' },
+      h('button', { type: 'button', class: 'btn btn-soft btn-sm', dataset: { action: 'dust-off', ...ids } }, icon('sparkles', { size: 16 }), 'כן, לנער את האבק'),
+      h('button', { type: 'button', class: 'btn btn-soft btn-sm', dataset: { action: 'complete-task', ...ids } }, icon('check', { size: 16 }), 'לסגור את כולה')));
+}
+
+function renderSubtask(task, subtask, now, today) {
   const ids = { taskId: task.id, subtaskId: subtask.id };
   const isDone = subtask.status === 'done';
   const toggleLabel = isDone ? 'החזרה לביצוע' : 'סימון כהושלם';
   // A task always keeps at least one subtask; the button stays clickable to explain why (see app.js).
   const isOnlySubtask = task.subtasks.length === 1;
+
+  const isPickedToday = today !== null && subtask.myDay === today;
+  // "My day" is for open work; a done subtask keeps its sun only so it can be taken off the list.
+  const showMyDayButton = today !== null && (!isDone || isPickedToday);
 
   return h('li', { class: 'subtask', dataset: { status: subtask.status } },
     h('button', {
@@ -275,21 +385,106 @@ function renderSubtask(task, subtask, now) {
     h('div', { class: 'subtask-side' },
       sinceLabel(subtask, now),
       statusControl(subtask.status, { action: 'set-subtask-status', focusKey: `sub-status-${subtask.id}`, ...ids }),
+      showMyDayButton && iconButton('sun', isPickedToday ? 'הסרה מהיום שלי' : 'הוספה להיום שלי',
+        { action: 'my-day-toggle', focusKey: `sub-myday-${subtask.id}`, ...ids }, ['my-day-btn', isPickedToday && 'is-on'],
+        { 'aria-pressed': String(isPickedToday) }),
       isOnlySubtask
         ? iconButton('trash', ONLY_SUBTASK_MESSAGE, { action: 'delete-subtask', ...ids }, 'is-unavailable', { 'aria-disabled': 'true' })
         : iconButton('trash', 'מחיקת תת-משימה', { action: 'delete-subtask', ...ids }, 'danger')));
 }
 
-function addSubtaskRow(taskId) {
+function addSubtaskRow(taskId, voice) {
+  const focusKey = `add-subtask-${taskId}`;
   return h('div', { class: 'add-subtask' },
     h('input', {
       type: 'text', class: 'add-subtask-input', maxlength: LIMITS.title,
       placeholder: 'תת-משימה חדשה...',
       'aria-label': 'הוספת תת-משימה',
-      dataset: { action: 'add-subtask', focusKey: `add-subtask-${taskId}`, taskId },
+      dataset: { action: 'add-subtask', focusKey, taskId },
     }),
+    voice && micButton(focusKey, 'הכתבה קולית של תת-משימה'),
     h('button', { type: 'button', class: 'btn btn-soft btn-sm', dataset: { action: 'add-subtask-button', taskId } },
       icon('plus', { size: 16 }), 'הוספה'));
+}
+
+/** Dictation button for a text field; voiceKey is the field's id or data-focus-key (app.js finds it by either). */
+export function micButton(voiceKey, label) {
+  return h('button', {
+    type: 'button', class: 'icon-btn mic-btn', dataset: { action: 'dictate', voiceKey },
+    title: label, 'aria-label': label, 'aria-pressed': 'false',
+  }, icon('mic'));
+}
+
+// ---------------------------------------------------------------------------
+// "What now?" dialog content
+// ---------------------------------------------------------------------------
+
+/**
+ * view: { phase: 'empty' } | { phase: 'spinning', text } | { phase: 'result', task, subtask, category, isPickedToday, showMyDay }.
+ * While spinning, app.js only swaps the text of .next-reel-text.
+ */
+export function renderNextPick(container, view) {
+  const head = h('header', { class: 'dialog-head' },
+    h('h2', { id: 'next-dialog-title' }, 'מה עכשיו?'),
+    h('button', { type: 'button', class: 'icon-btn', dataset: { action: 'close-dialog' }, 'aria-label': 'סגירה' }, icon('x')));
+
+  if (view.phase === 'empty') {
+    container.replaceChildren(head,
+      h('p', { class: 'next-empty' }, 'אין כרגע תתי משימות פתוחות (לביצוע או בעבודה אצלי) במשימות שמוצגות. אולי כדאי לנקות את הסינון?'),
+      h('footer', { class: 'dialog-foot' }, h('span', { class: 'spacer' }),
+        h('button', { type: 'button', class: 'btn btn-primary', dataset: { action: 'close-dialog' } }, 'סגירה')));
+    return;
+  }
+  if (view.phase === 'spinning') {
+    container.replaceChildren(head, h('div', { class: 'next-reel is-spinning' },
+      h('span', { class: 'next-dice', 'aria-hidden': 'true' }, icon('dice', { size: 30 })),
+      h('span', { class: 'next-reel-text' }, view.text)));
+    return;
+  }
+
+  const { task, subtask, category, isPickedToday, showMyDay } = view;
+  const ids = { taskId: task.id, subtaskId: subtask.id };
+  const color = category?.color ?? UNCATEGORIZED_COLOR;
+  const isInProgress = subtask.status === 'in_progress';
+  container.replaceChildren(head,
+    h('div', { class: 'next-result', role: 'status', cssVars: { '--cat-color': color } },
+      h('span', { class: 'next-dice is-landed', 'aria-hidden': 'true' }, icon('dice', { size: 30 })),
+      h('span', { class: 'next-kicker' }, 'הגורל בחר:'),
+      h('strong', { class: 'next-subtask' }, subtask.title),
+      subtask.title !== task.title && h('span', { class: 'next-task' }, `מתוך: ${task.title}`),
+      h('span', { class: 'next-meta' },
+        h('span', { class: 'cat-chip', cssVars: { '--chip-color': color } }, h('span', { class: 'dot', 'aria-hidden': 'true' }), category?.name ?? 'ללא קטגוריה'),
+        statusBadge(subtask.status))),
+    h('div', { class: 'next-actions' },
+      h('button', { type: 'button', class: 'btn btn-primary', dataset: { action: 'next-start', ...ids } },
+        icon('play', { size: 16 }), isInProgress ? 'ממשיכים!' : 'יאללה, מתחילים'),
+      showMyDay && h('button', {
+        type: 'button', class: ['btn', 'btn-soft', isPickedToday && 'is-on'], dataset: { action: 'next-my-day', ...ids }, 'aria-pressed': String(isPickedToday),
+      }, icon('sun', { size: 16 }), isPickedToday ? 'ב"היום שלי"' : 'להיום שלי'),
+      h('button', { type: 'button', class: 'btn btn-soft', dataset: { action: 'next-again' } }, icon('refresh', { size: 16 }), 'עוד סיבוב'),
+      h('button', { type: 'button', class: 'btn btn-link', dataset: { action: 'next-open', taskId: task.id } }, 'פתיחת המשימה')));
+}
+
+// ---------------------------------------------------------------------------
+// Seasonal theme: the badge in the top bar, and the options in the settings
+// ---------------------------------------------------------------------------
+
+export function renderSeasonBadge(element, seasonKey) {
+  const season = seasonKey ? SEASONS[seasonKey] : null;
+  element.hidden = !season;
+  if (!season) {
+    element.replaceChildren();
+    return;
+  }
+  element.title = season.greeting;
+  element.replaceChildren(createSeasonEmblem(seasonKey, { size: 24 }), h('span', { class: 'season-greeting' }, season.greeting));
+}
+
+export function fillSeasonSelect(select) {
+  select.replaceChildren(
+    h('option', { value: 'auto' }, 'אוטומטית לפי הלוח העברי'),
+    h('option', { value: 'off' }, 'כבויה'),
+    h('optgroup', { label: 'תצוגה מקדימה' }, ...SEASON_KEYS.map(key => h('option', { value: key }, SEASONS[key].label))));
 }
 
 // ---------------------------------------------------------------------------
@@ -370,8 +565,9 @@ function progressIndicator({ total, done }) {
     h('span', { dir: 'ltr' }, `${done}/${total}`));
 }
 
+// variant: a class name, or a list of them.
 function iconButton(iconName, label, dataset, variant = null, extraAttributes = {}) {
-  return h('button', { type: 'button', class: ['icon-btn', variant], dataset, title: label, 'aria-label': label, ...extraAttributes }, icon(iconName));
+  return h('button', { type: 'button', class: ['icon-btn', ...[variant].flat()], dataset, title: label, 'aria-label': label, ...extraAttributes }, icon(iconName));
 }
 
 function selectElement(options, value, dataset, label) {

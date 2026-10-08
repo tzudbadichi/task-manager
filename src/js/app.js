@@ -1,25 +1,45 @@
 // Entry point: connects the store to the DOM, handles all user events (delegated), the task
-// grid with drag-and-drop, dialogs, backup import/export, and - when Supabase is configured -
-// login and cloud sync.
+// grid with drag-and-drop (or the animated people view), dialogs, "my day", "what now?", the status
+// report, celebrations, seasonal themes, voice dictation, backup import/export, and - when Supabase
+// is configured - login and cloud sync.
 
-import { STORAGE_KEY, createInitialState, createStore } from './store.js';
-import { NO_CATEGORY, selectVisibleTasks } from './selectors.js';
-import { DEFAULT_FILTERS, loadUiPrefs, saveUiPrefs } from './ui-prefs.js';
+import { LIMITS, STORAGE_KEY, countOpenMyDay, createInitialState, createStore } from './store.js';
+import { NO_CATEGORY, listNextCandidates, pickWeighted, selectVisibleTasks } from './selectors.js';
+import { DEFAULT_FILTERS, DISPLAY_TOGGLE_KEYS, loadUiPrefs, saveUiPrefs } from './ui-prefs.js';
 import {
-  ONLY_SUBTASK_MESSAGE, fillCategorySelect, fillStatusSelect, renderBackupBanner, renderCategoriesList, renderDashboard,
-  renderFilters, renderSwatches, renderSyncStatus, renderTaskDetail, renderTaskGrid, suggestCategoryColor,
+  ONLY_SUBTASK_MESSAGE, fillCategorySelect, fillSeasonSelect, fillStatusSelect, renderBackupBanner, renderCategoriesList,
+  renderDashboard, renderFilters, renderNextPick, renderSeasonBadge, renderSwatches, renderSyncStatus, renderTaskDetail,
+  renderTaskGrid, renderTasksEmptyState, renderTodayBar, suggestCategoryColor,
 } from './render.js';
 import { hydrateIcons } from './icons.js';
 import { h } from './dom.js';
-import { createId, dateStamp } from './utils.js';
+import { createId, dateStamp, truncate } from './utils.js';
 import { createCloud, loadCloudConfig } from './cloud.js';
 import { createAuthView } from './auth-view.js';
 import { enableGridDrag } from './drag.js';
 import { clearAccountCopies, createSync, loadSyncMeta } from './sync.js';
+import { buildStatusReport } from './report.js';
+import { SEASONS, getSeasonForDate, resolveSeason } from './seasons.js';
+import { buildPersona } from './people-model.js';
+import { MAX_PEOPLE, createChatter, renderPeopleScene } from './people-view.js';
+import { burstConfetti, playChime, prefersReducedMotion } from './celebrate.js';
+import { isVoiceSupported, startDictation, voiceErrorMessage } from './voice.js';
 
 const TICK_INTERVAL_MS = 30_000;
 const MAX_IMPORT_BYTES = 5 * 1024 * 1024;
 const MAX_VISIBLE_TOASTS = 3;
+// "What now?": how many names flash by before the pick lands.
+const NEXT_SPIN_STEPS = 14;
+const CHEERS = Object.freeze([
+  title => `"${title}" הושלמה. כל הכבוד!`,
+  title => `וי גדול על "${title}"!`,
+  title => `"${title}" סגורה. איזה כיף!`,
+]);
+const DUST_COLORS = Object.freeze(['#a8a29e', '#d6d3d1', '#78716c']);
+const VOICE_NOTICE = 'ההכתבה משתמשת בשירות זיהוי הדיבור של הדפדפן, והקול נשלח לעיבוד בשרתים של יצרן הדפדפן '
+  + '(גוגל בכרום, מיקרוסופט באדג\', אפל בספארי).\n\nלא כדאי להכתיב מידע רגיש או סודי.\n\nלהמשיך?';
+// Links longer than this (wa.me, mailto:) may be cut off by some apps; the report then suggests copying.
+const MAX_SHARE_URL_LENGTH = 1800;
 
 const els = {
   dashboard: byId('dashboard'),
@@ -42,6 +62,17 @@ const els = {
   categorySwatches: byId('category-swatches'),
   settingsDialog: byId('settings-dialog'),
   settingsForm: byId('settings-form'),
+  seasonHint: byId('season-hint'),
+  voiceNote: byId('voice-note'),
+  todayBar: byId('today-bar'),
+  peopleScene: byId('people-scene'),
+  seasonBadge: byId('season-badge'),
+  nextDialog: byId('next-dialog'),
+  nextBody: byId('next-body'),
+  reportDialog: byId('report-dialog'),
+  reportForm: byId('report-form'),
+  reportText: byId('report-text'),
+  reportShare: byId('report-share'),
   accountSection: byId('account-section'),
   accountEmail: byId('account-email'),
   storageNote: byId('storage-note'),
@@ -65,6 +96,11 @@ let paletteCategoryId = null; // category whose color palette is open in the cat
 let hasPendingStorageReload = false;
 let isRenderDeferred = false;
 let isDragging = false;
+let currentSeason = null; // the holiday theme shown now (or null)
+let lastPointer = null; // where the last press happened - a celebration starts there when its button is gone
+let nextSpinTimer = null;
+let dictation = null; // { key, session, isInterim } while a field is being dictated
+let renderedDay = null; // the date the "my day" marks on screen were drawn for
 
 // Cloud mode
 let mode = 'local'; // 'local' | 'cloud'
@@ -93,6 +129,21 @@ function getLocalStorage() {
   }
 }
 
+// The characters of the people view chat from time to time (people-view.js).
+const chatter = createChatter({
+  scene: els.peopleScene,
+  getPersona: taskId => {
+    const state = store.getState();
+    const task = state.tasks.find(item => item.id === taskId);
+    if (!task) return null;
+    const now = Date.now();
+    return buildPersona(task, state.categories.find(category => category.id === task.categoryId) ?? null, { now, today: myDayDate(now) });
+  },
+  // Only on the app screen (not behind login or loading), and nobody needs it behind an open dialog.
+  canTalk: () => document.body.dataset.view === 'app' && !document.querySelector('dialog[open]'),
+  getGreeting: () => (currentSeason ? SEASONS[currentSeason].greeting : null),
+});
+
 // ---------------------------------------------------------------------------
 // Rendering
 // ---------------------------------------------------------------------------
@@ -106,16 +157,72 @@ function render() {
   isRenderDeferred = false;
   const state = store.getState();
   const now = Date.now();
+  const today = myDayDate(now);
+  renderedDay = dateStamp(new Date(now));
   const focusSnapshot = captureFocus();
   pruneCategoryFilter(state);
   applyTheme(state.settings.theme);
+  applySeason(now);
   renderDashboard(els.dashboard, state, ui.filters);
+  renderTodayBar(els.todayBar, state, { today: dateStamp(new Date(now)), showMyDay: ui.display.myDay });
   renderFilters(els.filters, state, ui.filters);
   renderBackupBanner(els.backupBanner, state, now, isBackupBannerDismissed || mode === 'cloud');
-  renderTaskGrid(els.taskList, state, ui.filters, now);
+  renderTasks(state, now, today);
   if (els.categoriesDialog.open) renderCategoriesList(els.categoriesList, state, paletteCategoryId);
-  if (els.detailDialog.open && !renderTaskDetail(els.detailBody, state, detailTaskId, now)) els.detailDialog.close();
+  if (els.detailDialog.open && !renderTaskDetail(els.detailBody, state, detailTaskId, now, detailOptions(today))) els.detailDialog.close();
+  syncDictationButtons();
   restoreFocus(focusSnapshot);
+}
+
+/** The tiles, or - when chosen in the settings - the animated characters. */
+function renderTasks(state, now, today) {
+  if (ui.display.view !== 'people') {
+    chatter.stop();
+    els.peopleScene.hidden = true;
+    els.peopleScene.replaceChildren();
+    els.taskList.hidden = false;
+    renderTaskGrid(els.taskList, state, ui.filters, now, { today });
+    return;
+  }
+  els.taskList.hidden = true;
+  els.taskList.replaceChildren();
+  els.peopleScene.hidden = false;
+  const visibleTasks = selectVisibleTasks(state, ui.filters);
+  if (renderTasksEmptyState(els.peopleScene, state, visibleTasks.length)) {
+    chatter.stop();
+    return;
+  }
+  const categoriesById = new Map(state.categories.map(category => [category.id, category]));
+  const shownTasks = visibleTasks.slice(0, MAX_PEOPLE);
+  const personas = shownTasks.map(task => buildPersona(task, categoriesById.get(task.categoryId) ?? null, { now, today }));
+  renderPeopleScene(els.peopleScene, personas, {
+    seasonKey: currentSeason, hiddenCount: visibleTasks.length - shownTasks.length, hour: new Date(now).getHours(),
+  });
+  if (ui.display.chatter) chatter.start();
+  else chatter.stop();
+}
+
+/** Today's date for "my day" marks, or null while "my day" is turned off in the settings. */
+function myDayDate(now = Date.now()) {
+  return ui.display.myDay ? dateStamp(new Date(now)) : null;
+}
+
+function detailOptions(today) {
+  return { today, voice: isVoiceAvailable() };
+}
+
+function isVoiceAvailable() {
+  return ui.display.voice && isVoiceSupported();
+}
+
+/** Holiday theme (seasons.js): colors via html[data-season], plus the badge in the top bar. */
+function applySeason(now) {
+  const seasonKey = resolveSeason(ui.display.season, new Date(now));
+  if (seasonKey === currentSeason) return;
+  currentSeason = seasonKey;
+  if (seasonKey) document.documentElement.dataset.season = seasonKey;
+  else delete document.documentElement.dataset.season;
+  renderSeasonBadge(els.seasonBadge, seasonKey);
 }
 
 // Changes from another device must not wipe text the user is typing - those wait until the field is left.
@@ -175,6 +282,15 @@ function setFilters(changes) {
   render();
 }
 
+/** Display preferences from the settings dialog (per device). */
+function updateDisplay(changes) {
+  Object.assign(ui.display, changes);
+  persistUi();
+  if (changes.voice === false) dictation?.session?.stop();
+  render();
+  syncSettingsForm();
+}
+
 function applyTheme(theme) {
   const effectiveTheme = theme === 'auto' ? (darkSchemeQuery.matches ? 'dark' : 'light') : theme;
   if (document.documentElement.dataset.theme !== effectiveTheme) document.documentElement.dataset.theme = effectiveTheme;
@@ -230,10 +346,29 @@ const clickActions = {
     if (els.detailDialog.open && detailTaskId === taskId) els.detailDialog.close();
     deleteWithUndo({ type: 'task/delete', taskId }, 'המשימה נמחקה');
   },
-  'toggle-subtask-done': ({ taskId, subtaskId }) => {
-    const subtask = store.getState().tasks.find(task => task.id === taskId)?.subtasks.find(item => item.id === subtaskId);
-    if (subtask) store.dispatch({ type: 'subtask/setStatus', taskId, subtaskId, status: subtask.status === 'done' ? 'todo' : 'done' });
+  'toggle-subtask-done': ({ taskId, subtaskId }, element) => {
+    const subtask = findTask(taskId)?.subtasks.find(item => item.id === subtaskId);
+    if (subtask) setSubtaskStatus(taskId, subtaskId, subtask.status === 'done' ? 'todo' : 'done', element);
   },
+  'my-day-toggle': ({ taskId, subtaskId }) => toggleMyDay(taskId, subtaskId),
+  'dust-off': ({ taskId }, element) => dustOff(taskId, element),
+  'complete-task': ({ taskId }, element) => completeTask(taskId, element),
+  'open-next': () => openNextDialog(),
+  'next-start': ({ taskId, subtaskId }, element) => startNextPick(taskId, subtaskId, element),
+  'next-my-day': ({ taskId, subtaskId }) => {
+    if (toggleMyDay(taskId, subtaskId)) showNextResult(taskId, subtaskId);
+  },
+  'next-again': () => spinNext(),
+  'next-open': ({ taskId }) => {
+    els.nextDialog.close();
+    openTaskDetail(taskId);
+  },
+  'open-report': () => openReportDialog(),
+  'report-copy': () => copyReport(),
+  'report-share': () => shareReport(),
+  'report-whatsapp': () => openReportLink(`https://wa.me/?text=${encodeURIComponent(els.reportText.value)}`),
+  'report-email': () => openMailDraft(),
+  dictate: ({ voiceKey }) => toggleDictation(voiceKey),
   'delete-subtask': ({ taskId, subtaskId }) => {
     // The store refuses to remove a task's last subtask; say why instead of silently doing nothing.
     if (store.getState().tasks.find(task => task.id === taskId)?.subtasks.length === 1) {
@@ -281,7 +416,7 @@ const changeActions = {
   'set-task-category': ({ taskId }, element) =>
     store.dispatch({ type: 'task/update', taskId, changes: { categoryId: element.value || null } }),
   'set-subtask-status': ({ taskId, subtaskId }, element) =>
-    store.dispatch({ type: 'subtask/setStatus', taskId, subtaskId, status: element.value }),
+    setSubtaskStatus(taskId, subtaskId, element.value, element.closest('.status-mini, .status-chip') ?? element),
   'edit-task-title': ({ taskId }, element) =>
     commitInlineEdit(element, { type: 'task/update', taskId, changes: { title: element.value } }),
   'edit-task-description': ({ taskId }, element) =>
@@ -302,6 +437,12 @@ const changeActions = {
     store.dispatch({ type: 'settings/update', changes: { theme: element.value } });
     syncSettingsForm();
   },
+  'setting-view': (_, element) => updateDisplay({ view: element.value }),
+  'setting-season': (_, element) => updateDisplay({ season: element.value }),
+  'setting-toggle': ({ setting }, element) => {
+    if (DISPLAY_TOGGLE_KEYS.includes(setting)) updateDisplay({ [setting]: element.checked });
+  },
+  'report-option': () => regenerateReport(),
   'import-file': (_, element) => importBackup(element),
 };
 
@@ -352,6 +493,19 @@ document.addEventListener('keydown', event => {
   }
 });
 
+// Remember where presses happen, so a celebration can start there even after its button was re-rendered.
+document.addEventListener('pointerdown', event => {
+  lastPointer = { x: event.clientX, y: event.clientY };
+}, true);
+
+// Hovering a character makes it say something about its task.
+els.peopleScene.addEventListener('pointerover', event => {
+  if (event.pointerType !== 'mouse' || !ui.display.chatter) return;
+  const person = event.target.closest('.person');
+  if (!person || person.contains(event.relatedTarget)) return;
+  chatter.sayAbout(person.dataset.taskId);
+});
+
 // Leaving a field is the moment to apply anything that waited for the typing to end.
 document.addEventListener('focusout', () => {
   setTimeout(() => {
@@ -386,6 +540,307 @@ function toggleCategoryFilter(categoryId) {
   setFilters({ categoryIds: [...selected] });
 }
 
+function findTask(taskId) {
+  return store.getState().tasks.find(task => task.id === taskId) ?? null;
+}
+
+// ---------------------------------------------------------------------------
+// Status changes and celebrations
+// ---------------------------------------------------------------------------
+
+/** Where an effect starts: the middle of the control that was used, else where the last press happened. */
+function effectOrigin(element) {
+  const rect = element?.isConnected ? element.getBoundingClientRect() : null;
+  if (rect && rect.width > 0) return { x: rect.left + rect.width / 2, y: rect.top + rect.height / 2 };
+  return lastPointer ?? { x: window.innerWidth / 2, y: window.innerHeight / 3 };
+}
+
+/** Every subtask status change made in this app goes through here, so finishing things can be celebrated. */
+function setSubtaskStatus(taskId, subtaskId, status, originElement = null) {
+  const taskBefore = findTask(taskId);
+  const origin = effectOrigin(originElement); // measured now: the dispatch re-renders the control
+  if (!taskBefore || !store.dispatch({ type: 'subtask/setStatus', taskId, subtaskId, status })) return false;
+  celebrateProgress(taskBefore, origin, status === 'done');
+  return true;
+}
+
+/**
+ * "Close the whole task" marks many subtasks done at once (losing their previous statuses), so it can be undone.
+ * The action lists the subtasks shown now, so a replay does not close ones another device added since.
+ */
+function completeTask(taskId, originElement) {
+  const taskBefore = findTask(taskId);
+  const origin = effectOrigin(originElement);
+  const subtaskIds = taskBefore?.subtasks.map(subtask => subtask.id) ?? [];
+  if (!taskBefore || !store.dispatch({ type: 'task/complete', taskId, subtaskIds }, { undoable: true })) return;
+  celebrateProgress(taskBefore, origin, true, { announce: false });
+  const title = truncate(taskBefore.title, 40);
+  showToast(ui.display.celebrate ? CHEERS[Math.floor(Math.random() * CHEERS.length)](title) : `"${title}" נסגרה`, {
+    tone: 'success',
+    actionLabel: 'ביטול',
+    durationMs: 8000,
+    onAction: () => {
+      if (!store.undo()) showToast('כבר אי אפשר לבטל - בוצע שינוי נוסף מאז', { tone: 'warning' });
+    },
+  });
+}
+
+/**
+ * A whole task just finished: confetti, an optional chime and a cheer (announce: false when the caller
+ * shows its own message). A single subtask: a small pop.
+ */
+function celebrateProgress(taskBefore, origin, isSubtaskClosed, { announce = true } = {}) {
+  if (!ui.display.celebrate) return;
+  const state = store.getState();
+  const taskAfter = state.tasks.find(task => task.id === taskBefore.id);
+  if (!taskAfter) return;
+  const categoryColor = state.categories.find(category => category.id === taskAfter.categoryId)?.color ?? null;
+  if (taskBefore.status !== 'done' && taskAfter.status === 'done') {
+    burstConfetti({ ...origin, size: 'big', colors: [categoryColor, seasonAccent()] });
+    if (ui.display.sound) playChime();
+    chatter.cheer(taskAfter.id);
+    if (announce) showToast(CHEERS[Math.floor(Math.random() * CHEERS.length)](truncate(taskAfter.title, 40)), { tone: 'success' });
+  } else if (isSubtaskClosed) {
+    burstConfetti({ ...origin, size: 'small', colors: [categoryColor] });
+  }
+}
+
+// During a holiday the confetti also takes the holiday's accent color.
+function seasonAccent() {
+  return currentSeason ? getComputedStyle(document.documentElement).getPropertyValue('--primary').trim() || null : null;
+}
+
+// An old task is still relevant: "touching" it clears the dust.
+function dustOff(taskId, element) {
+  const origin = effectOrigin(element);
+  if (!store.dispatch({ type: 'task/touch', taskId })) return;
+  if (ui.display.celebrate) burstConfetti({ ...origin, size: 'small', colors: DUST_COLORS });
+  showToast('פוף! האבק נוער, והמשימה חזרה לחיים', { tone: 'success' });
+}
+
+// ---------------------------------------------------------------------------
+// "My day" and "what now?"
+// ---------------------------------------------------------------------------
+
+/** Adds a subtask to today's picks or takes it off. Returns true when something changed. */
+function toggleMyDay(taskId, subtaskId) {
+  const state = store.getState();
+  const subtask = state.tasks.find(task => task.id === taskId)?.subtasks.find(item => item.id === subtaskId);
+  if (!subtask) return false;
+  const today = dateStamp(new Date());
+  // Right after midnight the screen may still show yesterday's picks (until the next render): a click on
+  // such a sun means "take it off", like the screen says, not "pick it for the new day".
+  if (subtask.myDay && (subtask.myDay === today || subtask.myDay === renderedDay)) {
+    return store.dispatch({ type: 'subtask/setMyDay', taskId, subtaskId, date: null });
+  }
+  if (subtask.status === 'done') {
+    showToast('תת-המשימה הזו כבר הושלמה', { tone: 'warning' });
+    return false;
+  }
+  if (countOpenMyDay(state, today, subtaskId) >= LIMITS.myDay) {
+    showToast(`ב"היום שלי" יש כבר ${LIMITS.myDay} דברים פתוחים. כדי להוסיף, מסיימים או מסירים אחד מהם.`, { tone: 'warning', durationMs: 7000 });
+    return false;
+  }
+  const isAdded = store.dispatch({ type: 'subtask/setMyDay', taskId, subtaskId, date: today });
+  if (isAdded) showToast('נוסף ל"היום שלי"', { tone: 'success', durationMs: 2500 });
+  return isAdded;
+}
+
+function openNextDialog() {
+  if (!els.nextDialog.open) els.nextDialog.showModal();
+  spinNext();
+}
+
+/** Draws an open subtask of the visible tasks; the names flash by, slowing down, before it lands. */
+function spinNext() {
+  clearTimeout(nextSpinTimer);
+  const candidates = listNextCandidates(store.getState(), ui.filters, myDayDate());
+  if (candidates.length === 0) {
+    showNextEmpty();
+    return;
+  }
+  const pick = pickWeighted(candidates);
+  if (prefersReducedMotion() || candidates.length === 1) {
+    showNextResult(pick.task.id, pick.subtask.id);
+    return;
+  }
+  renderNextPick(els.nextBody, { phase: 'spinning', text: pick.subtask.title });
+  const reelText = els.nextBody.querySelector('.next-reel-text');
+  let step = 0;
+  const advance = () => {
+    if (!els.nextDialog.open) return;
+    step += 1;
+    if (step >= NEXT_SPIN_STEPS) {
+      showNextResult(pick.task.id, pick.subtask.id);
+      return;
+    }
+    reelText.textContent = candidates[Math.floor(Math.random() * candidates.length)].subtask.title;
+    nextSpinTimer = setTimeout(advance, 50 + step * step * 1.6);
+  };
+  advance();
+}
+
+function showNextResult(taskId, subtaskId) {
+  const state = store.getState();
+  const task = state.tasks.find(item => item.id === taskId);
+  const subtask = task?.subtasks.find(item => item.id === subtaskId);
+  if (!subtask) {
+    showNextEmpty();
+    return;
+  }
+  renderNextPick(els.nextBody, {
+    phase: 'result', task, subtask,
+    category: state.categories.find(category => category.id === task.categoryId) ?? null,
+    isPickedToday: subtask.myDay === dateStamp(new Date()),
+    showMyDay: ui.display.myDay,
+  });
+  els.nextBody.querySelector('[data-action="next-start"]')?.focus();
+}
+
+// The button that had focus was replaced; keep keyboard focus inside the dialog.
+function showNextEmpty() {
+  renderNextPick(els.nextBody, { phase: 'empty' });
+  els.nextBody.querySelector('.dialog-foot [data-action="close-dialog"]')?.focus();
+}
+
+function startNextPick(taskId, subtaskId, element) {
+  const subtask = findTask(taskId)?.subtasks.find(item => item.id === subtaskId);
+  if (!subtask) return;
+  if (subtask.status !== 'in_progress') setSubtaskStatus(taskId, subtaskId, 'in_progress', element);
+  els.nextDialog.close();
+  showToast(`יאללה! בהצלחה עם "${truncate(subtask.title, 40)}"`, { tone: 'success' });
+}
+
+els.nextDialog.addEventListener('close', () => clearTimeout(nextSpinTimer));
+
+// ---------------------------------------------------------------------------
+// Status report
+// ---------------------------------------------------------------------------
+
+function openReportDialog() {
+  const scopeSelect = els.reportForm.elements.scope;
+  const hasCategoryFilter = ui.filters.categoryIds.length > 0;
+  scopeSelect.querySelector('option[value="filtered"]').disabled = !hasCategoryFilter;
+  if (!hasCategoryFilter) scopeSelect.value = 'all';
+  els.reportShare.hidden = typeof navigator.share !== 'function';
+  regenerateReport();
+  els.reportDialog.showModal();
+}
+
+function regenerateReport() {
+  const fields = els.reportForm.elements;
+  els.reportText.value = buildStatusReport(store.getState(), {
+    now: Date.now(),
+    period: fields.period.value,
+    includeTodo: fields.includeTodo.checked,
+    categoryIds: fields.scope.value === 'filtered' ? ui.filters.categoryIds : [],
+  });
+}
+
+async function copyReport() {
+  try {
+    await navigator.clipboard.writeText(els.reportText.value);
+  } catch {
+    // No clipboard API (or it was refused): fall back to copying the selected text.
+    els.reportText.select();
+    if (!document.execCommand?.('copy')) {
+      showToast('ההעתקה נחסמה. אפשר לסמן את הטקסט ולהעתיק ידנית.', { tone: 'warning' });
+      return;
+    }
+  }
+  showToast('הדוח הועתק', { tone: 'success', durationMs: 2500 });
+}
+
+async function shareReport() {
+  try {
+    await navigator.share({ title: 'עדכון סטטוס', text: els.reportText.value });
+  } catch (error) {
+    if (error?.name !== 'AbortError') showToast('השיתוף לא הצליח', { tone: 'warning' });
+  }
+}
+
+function openMailDraft() {
+  const href = `mailto:?subject=${encodeURIComponent('עדכון סטטוס')}&body=${encodeURIComponent(els.reportText.value)}`;
+  warnIfLinkTooLong(href);
+  const link = h('a', { href });
+  els.reportDialog.append(link); // inside the open dialog: the rest of the page is inert
+  link.click();
+  link.remove();
+}
+
+function openReportLink(url) {
+  warnIfLinkTooLong(url);
+  window.open(url, '_blank', 'noopener,noreferrer');
+}
+
+function warnIfLinkTooLong(url) {
+  if (url.length <= MAX_SHARE_URL_LENGTH) return;
+  showToast('הדוח ארוך, ויש אפליקציות שחותכות טקסט ארוך כזה. אם הוא נחתך - עדיף "העתקה".', { tone: 'warning', durationMs: 8000 });
+}
+
+els.reportForm.addEventListener('submit', event => event.preventDefault());
+
+// ---------------------------------------------------------------------------
+// Voice dictation (voice.js)
+// ---------------------------------------------------------------------------
+
+// A dictation button names its field by id (static dialogs) or by data-focus-key (re-rendered fields).
+function resolveVoiceTarget(key) {
+  return document.getElementById(key) ?? document.querySelector(`[data-focus-key="${CSS.escape(key)}"]`);
+}
+
+function toggleDictation(key) {
+  if (dictation) {
+    dictation.session?.stop(); // a second click stops the recording
+    return;
+  }
+  if (!isVoiceSupported()) {
+    showToast('הדפדפן הזה לא תומך בהכתבה קולית. אפשר לנסות בכרום, באדג\' או בספארי.', { tone: 'warning' });
+    return;
+  }
+  if (!ui.display.voiceConsent) {
+    if (!window.confirm(VOICE_NOTICE)) return;
+    ui.display.voiceConsent = true;
+    persistUi();
+  }
+  const input = resolveVoiceTarget(key);
+  if (!input) return;
+  // Focus keeps the periodic re-render from replacing the field while it is being dictated.
+  input.focus({ preventScroll: true });
+  const baseText = input.value.trim();
+  const maxLength = input.maxLength > 0 ? input.maxLength : Infinity;
+  const write = (spokenText, isFinal) => {
+    const target = resolveVoiceTarget(key);
+    if (!target) return;
+    target.value = (baseText ? `${baseText} ${spokenText}` : spokenText).slice(0, maxLength);
+    if (dictation) dictation.isInterim = !isFinal;
+    // Like typing: lets the form clear a "required" message it showed earlier.
+    if (isFinal) target.dispatchEvent(new Event('input', { bubbles: true }));
+  };
+  dictation = { key, session: null, isInterim: false };
+  const session = startDictation({
+    onInterim: text => write(text, false),
+    onFinal: text => write(text, true),
+    onError: code => showToast(voiceErrorMessage(code), { tone: 'warning' }),
+    onEnd: () => {
+      // Recognition can end on words heard but never confirmed; they stay in the field as typed text.
+      if (dictation?.isInterim) resolveVoiceTarget(key)?.dispatchEvent(new Event('input', { bubbles: true }));
+      dictation = null;
+      syncDictationButtons();
+    },
+  });
+  if (session && dictation) dictation.session = session;
+  syncDictationButtons();
+}
+
+function syncDictationButtons() {
+  for (const button of document.querySelectorAll('[data-action="dictate"]')) {
+    const isRecording = dictation?.key === button.dataset.voiceKey;
+    button.classList.toggle('is-recording', isRecording);
+    button.setAttribute('aria-pressed', String(isRecording));
+  }
+}
+
 function deleteWithUndo(action, message) {
   if (!store.dispatch(action, { undoable: true })) return;
   showToast(message, {
@@ -409,6 +864,7 @@ function openTaskDialog() {
   fields.subtaskTitle.setCustomValidity('');
   fillCategorySelect(fields.categoryId, state.categories, defaultCategoryForNewTask(state));
   fillStatusSelect(fields.status, 'todo');
+  for (const micButton of els.taskForm.querySelectorAll('.mic-btn')) micButton.hidden = !isVoiceAvailable();
   els.taskDialog.showModal();
   fields.title.focus();
 }
@@ -466,7 +922,7 @@ function warnIfHiddenByFilters(taskId) {
 
 function openTaskDetail(taskId, { focusAddSubtask = false } = {}) {
   detailTaskId = taskId;
-  if (!renderTaskDetail(els.detailBody, store.getState(), taskId, Date.now())) return;
+  if (!renderTaskDetail(els.detailBody, store.getState(), taskId, Date.now(), detailOptions(myDayDate()))) return;
   if (!els.detailDialog.open) els.detailDialog.showModal();
   // On touch screens this would pop up the keyboard uninvited.
   if (focusAddSubtask && finePointerQuery.matches) els.detailBody.querySelector('.add-subtask-input')?.focus();
@@ -526,7 +982,21 @@ function openSettingsDialog() {
 function syncSettingsForm() {
   const state = store.getState();
   const { settings } = state;
-  els.settingsForm.elements.theme.value = settings.theme;
+  const fields = els.settingsForm.elements;
+  fields.theme.value = settings.theme;
+  fields.view.value = ui.display.view;
+  fields.season.value = ui.display.season;
+  for (const key of DISPLAY_TOGGLE_KEYS) fields[key].checked = ui.display[key];
+  fields.sound.disabled = !ui.display.celebrate;
+  const voiceSupported = isVoiceSupported();
+  fields.voice.disabled = !voiceSupported;
+  els.voiceNote.textContent = voiceSupported
+    ? 'ההכתבה עוברת דרך שירות זיהוי הדיבור של הדפדפן (בשרתים של גוגל, מיקרוסופט או אפל, לפי הדפדפן), ולכן לא כדאי להכתיב בה מידע רגיש.'
+    : 'הדפדפן הזה לא תומך בהכתבה קולית. היא עובדת בכרום, באדג\' ובספארי.';
+  const todaySeason = getSeasonForDate(new Date());
+  els.seasonHint.textContent = todaySeason
+    ? `לפי הלוח העברי, היום: ${SEASONS[todaySeason].label}.`
+    : 'היום אין חג בלוח. ב"תצוגה מקדימה" אפשר לראות כל אחת מהערכות.';
   els.accountSection.hidden = mode !== 'cloud' || !currentUser;
   els.accountEmail.textContent = currentUser?.email ?? '';
   els.storageNote.textContent = mode === 'cloud'
@@ -781,6 +1251,8 @@ for (const dialog of document.querySelectorAll('dialog')) {
     pressStartedOnBackdrop = false;
   });
   dialog.addEventListener('close', placeToastRegion);
+  // Dictation belongs to a field in a dialog; closing the dialog ends it.
+  dialog.addEventListener('close', () => dictation?.session?.stop());
 }
 
 // ---------------------------------------------------------------------------
@@ -804,6 +1276,7 @@ function onTick() {
 
 async function start() {
   hydrateIcons();
+  fillSeasonSelect(els.settingsForm.elements.season);
   setupDragAndDrop();
   store.subscribe(onStoreChange);
   render();

@@ -1,7 +1,8 @@
 import { describe, test } from 'node:test';
 import assert from 'node:assert/strict';
 import {
-  NO_CATEGORY, getBackupReminder, getDashboardCounts, getTaskRank, selectVisibleTasks,
+  DUST_LEVEL_DAYS, NO_CATEGORY, findFocusSubtask, getBackupReminder, getDashboardCounts, getDustLevel, getTaskRank,
+  listNextCandidates, pickWeighted, selectMyDay, selectVisibleTasks,
 } from '../src/js/selectors.js';
 import { DEFAULT_SETTINGS } from '../src/js/store.js';
 import { deriveTaskStatus } from '../src/js/statuses.js';
@@ -178,5 +179,52 @@ describe('getBackupReminder', () => {
     assert.deepEqual(getBackupReminder(changed, NOW), { lastExportAt });
     const recent = stateWith([task({ updatedAt: NOW })], { settings: { ...DEFAULT_SETTINGS, lastExportAt: NOW - DAY } });
     assert.equal(getBackupReminder(recent, NOW), null);
+  });
+});
+
+describe('dust, focus subtask, "my day" and "what now?"', () => {
+  test('an open task gathers dust after 14, 30 and 60 days without changes; a finished one never does', () => {
+    const idleFor = days => task({ updatedAt: NOW - days * DAY });
+    assert.deepEqual(DUST_LEVEL_DAYS, [14, 30, 60]);
+    assert.equal(getDustLevel(idleFor(13), NOW), 0);
+    assert.equal(getDustLevel(idleFor(14), NOW), 1);
+    assert.equal(getDustLevel(idleFor(45), NOW), 2);
+    assert.equal(getDustLevel(idleFor(90), NOW), 3);
+    assert.equal(getDustLevel(task({ status: 'done', updatedAt: NOW - 90 * DAY }), NOW), 0);
+  });
+
+  test('the focus subtask is the one that gives the task its status; for a done task, the last one closed', () => {
+    const subtasks = [item({ status: 'todo' }), item({ status: 'waiting' }), item({ status: 'in_progress', title: 'busy' })];
+    assert.equal(findFocusSubtask(task({}, subtasks)).title, 'busy');
+    const closed = [item({ status: 'done', statusChangedAt: NOW - DAY }), item({ status: 'done', title: 'last', statusChangedAt: NOW })];
+    assert.equal(findFocusSubtask(task({}, closed)).title, 'last');
+  });
+
+  test('selectMyDay lists the subtasks picked for that date only, open and done', () => {
+    const picked = item({ title: 'today', myDay: '2026-10-04' });
+    const pickedDone = item({ title: 'done today', status: 'done', myDay: '2026-10-04' });
+    const yesterday = item({ title: 'yesterday', myDay: '2026-10-03' });
+    const state = stateWith([task({}, [picked, yesterday]), task({}, [pickedDone])]);
+    assert.deepEqual(selectMyDay(state, '2026-10-04').map(({ subtask }) => subtask.title), ['today', 'done today']);
+  });
+
+  test('"what now?" draws only to-do and in-progress subtasks of the visible tasks, with weights', () => {
+    const todo = item({ title: 'todo' });
+    const working = item({ title: 'working', status: 'in_progress' });
+    const pickedToday = item({ title: 'picked', myDay: '2026-10-04' });
+    const waiting = item({ title: 'waiting', status: 'waiting' });
+    const hr = task({ categoryId: 'hr' }, [item({ title: 'hr only' })]);
+    const state = stateWith([task({ categoryId: 'dev' }, [todo, working, pickedToday, waiting]), hr]);
+    const candidates = listNextCandidates(state, filters({ categoryIds: ['dev'] }), '2026-10-04');
+    assert.deepEqual(candidates.map(({ subtask, weight }) => [subtask.title, weight]), [['todo', 1], ['working', 2], ['picked', 3]]);
+  });
+
+  test('pickWeighted draws in proportion to the weights', () => {
+    const candidates = [{ name: 'a', weight: 1 }, { name: 'b', weight: 3 }];
+    assert.equal(pickWeighted(candidates, () => 0).name, 'a');
+    assert.equal(pickWeighted(candidates, () => 0.24).name, 'a');
+    assert.equal(pickWeighted(candidates, () => 0.26).name, 'b');
+    assert.equal(pickWeighted(candidates, () => 0.999).name, 'b');
+    assert.equal(pickWeighted([], () => 0.5), null);
   });
 });

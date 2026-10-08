@@ -6,6 +6,7 @@ export const HOUR_MS = 60 * MINUTE_MS;
 export const DAY_MS = 24 * HOUR_MS;
 
 const HEX_COLOR_PATTERN = /^#[0-9a-f]{6}$/i;
+const DATE_STAMP_PATTERN = /^\d{4}-\d{2}-\d{2}$/;
 
 export function createId() {
   if (globalThis.crypto?.randomUUID) return globalThis.crypto.randomUUID();
@@ -47,8 +48,28 @@ export function formatElapsed(elapsedMs) {
   return days === 2 ? 'יומיים' : `${days} ימים`;
 }
 
-/** Local date as YYYY-MM-DD (used in backup file names). */
+/** Local date as YYYY-MM-DD (backup file names, and the day a subtask was picked for "my day"). */
 export function dateStamp(date) {
   const pad = number => String(number).padStart(2, '0');
   return `${date.getFullYear()}-${pad(date.getMonth() + 1)}-${pad(date.getDate())}`;
+}
+
+export function isDateStamp(value) {
+  return typeof value === 'string' && DATE_STAMP_PATTERN.test(value);
+}
+
+/** Shortens text for tight spots (speech bubbles, report lines), ending with an ellipsis. */
+export function truncate(text, maxLength) {
+  const value = String(text ?? '');
+  return value.length <= maxLength ? value : `${value.slice(0, maxLength - 1).trimEnd()}…`;
+}
+
+/** Small stable hash (FNV-1a), e.g. to give each task's character the same look on every render. */
+export function hashString(text) {
+  let hash = 0x811c9dc5;
+  for (let index = 0; index < text.length; index += 1) {
+    hash ^= text.charCodeAt(index);
+    hash = Math.imul(hash, 0x01000193);
+  }
+  return hash >>> 0;
 }

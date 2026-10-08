@@ -24,8 +24,8 @@ export const LEGACY_STATUS_MAP = Object.freeze({
 });
 
 // Which subtask status decides the task's status, strongest first. When no subtask is in any
-// of these, every subtask is done and so is the task.
-const DERIVATION_PRECEDENCE = Object.freeze(['in_progress', 'waiting', 'todo']);
+// of these, every subtask is done and so is the task. (Also picks the subtask a task is "busy with".)
+export const STATUS_PRECEDENCE = Object.freeze(['in_progress', 'waiting', 'todo']);
 
 export function isValidStatus(status) {
   return typeof status === 'string' && Object.hasOwn(STATUSES, status);
@@ -37,5 +37,5 @@ export function isValidStatus(status) {
  */
 export function deriveTaskStatus(subtasks) {
   if (subtasks.length === 0) return DEFAULT_STATUS;
-  return DERIVATION_PRECEDENCE.find(status => subtasks.some(subtask => subtask.status === status)) ?? 'done';
+  return STATUS_PRECEDENCE.find(status => subtasks.some(subtask => subtask.status === status)) ?? 'done';
 }
