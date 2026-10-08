@@ -1,7 +1,8 @@
 import { describe, test } from 'node:test';
 import assert from 'node:assert/strict';
 import {
-  DEFAULT_ACTIVITY, buildPersona, composeConversation, composeMonologue, detectActivity, getMood, lookOf,
+  CHARACTER_KINDS, DEFAULT_ACTIVITY, HAIR_STYLE_COUNT, buildPersona, composeConversation, composeMonologue, composePoseLine,
+  detectActivity, getMood, lookOf, nextBehavior,
 } from '../src/js/people-model.js';
 import { deriveTaskStatus } from '../src/js/statuses.js';
 
@@ -73,6 +74,21 @@ describe('what a character does', () => {
     assert.ok(lookOf('task-1').skin.startsWith('#'));
   });
 
+  test('looks vary widely: kinds, hair, outfits, sizes - and fit the kind', () => {
+    const looks = Array.from({ length: 300 }, (_, index) => lookOf(`task-${index}`));
+    const distinct = key => new Set(looks.map(look => look[key])).size;
+    assert.ok(distinct('kind') >= 10, 'humans, animals, robots and aliens');
+    assert.ok(new Set(looks.filter(look => look.kind === 'human').map(look => look.hairStyle)).size >= HAIR_STYLE_COUNT - 1);
+    assert.ok(distinct('outfit') >= 8);
+    assert.ok(distinct('headwear') >= 6);
+    const fingerprints = new Set(looks.map(look => [look.kind, look.skin, look.hairStyle, look.outfit, look.headwear, look.eyewear, look.build].join('|')));
+    assert.ok(fingerprints.size >= 290, 'almost no two characters look the same');
+    assert.ok(looks.every(look => CHARACTER_KINDS.includes(look.kind)));
+    assert.ok(looks.every(look => look.size >= 0.86 && look.size <= 1.12));
+    assert.ok(looks.filter(look => look.kind !== 'human').every(look => look.facialHair === null), 'beards are for humans');
+    assert.ok(looks.filter(look => ['robot', 'alien', 'frog', 'penguin'].includes(look.kind)).every(look => look.eyewear === null));
+  });
+
   test('buildPersona describes the task through the subtask it is busy with', () => {
     const busy = subtask('להתקשר לספק', 'in_progress', NOW - 2 * HOUR, { myDay: '2026-10-07' });
     const persona = buildPersona(task('הזמנת ציוד', [subtask('לבחור דגם', 'done'), busy]), { name: 'רכש', color: '#16a34a' },
@@ -119,5 +135,48 @@ describe('what characters say', () => {
   test('titles are inserted as they are, even with "$&" or a placeholder in them', () => {
     const [line] = composeMonologue(persona({ mood: 'idle', subtaskTitle: 'pay $& now {total}' }), { random: () => 0 });
     assert.equal(line.text, 'מתי מתחילים עם "pay $& now {total}"?');
+  });
+});
+
+describe('what a character does next', () => {
+  const always = value => () => value;
+
+  test('work in progress: back to the desk, mostly working there, sometimes a coffee break', () => {
+    assert.equal(nextBehavior('working', { atHome: false }, always(0.5)).go, 'home');
+    assert.equal(nextBehavior('working', { atHome: true }, always(0.9)).pose, 'work');
+    const coffeeBreak = nextBehavior('working', { atHome: true }, always(0.05));
+    assert.equal(coffeeBreak.pose, 'sip');
+    assert.ok(['coffee', 'cooler'].includes(coffeeBreak.go));
+  });
+
+  test('to-do characters roam; waiting ones stay near their desk; bored ones take the sofa', () => {
+    assert.equal(nextBehavior('idle', {}, always(0.1)).go, 'wander');
+    const waiting = nextBehavior('waiting', { atHome: true }, always(0.9));
+    assert.deepEqual([waiting.go, waiting.pose], ['nearHome', 'wait']);
+    const bored = nextBehavior('bored', { seatFree: true }, always(0.1));
+    assert.deepEqual([bored.go, bored.pose], ['sofa', 'sit']);
+    assert.equal(nextBehavior('bored', { seatFree: false }, always(0.1)).go, 'nearHome');
+  });
+
+  test('a dusty task sleeps at its desk; a finished one dances', () => {
+    assert.deepEqual(nextBehavior('sleeping', { atHome: true }, always(0.5)), { go: null, pose: 'sleep', durationMs: 60000 });
+    assert.equal(nextBehavior('sleeping', { atHome: false }, always(0.5)).go, 'home');
+    assert.equal(nextBehavior('celebrating', {}, always(0.2)).pose, 'dance');
+  });
+
+  test('every behavior lasts a while', () => {
+    for (const mood of ['idle', 'working', 'sweating', 'waiting', 'bored', 'sleeping', 'celebrating']) {
+      for (const roll of [0, 0.3, 0.6, 0.99]) {
+        const plan = nextBehavior(mood, { atHome: roll > 0.5, seatFree: roll < 0.5 }, always(roll));
+        assert.ok(plan.durationMs >= 2000, `${mood} ${roll}`);
+      }
+    }
+  });
+
+  test('a character comments on what it is doing', () => {
+    const persona = { title: 'גרסה 2.0', subtaskTitle: 'בדיקות', progress: { done: 0, total: 1 } };
+    assert.equal(composePoseLine('sip', persona, { random: () => 0 }), 'רק קפה אחד וחוזרים לעבודה');
+    assert.equal(composePoseLine('think', persona, { random: () => 0 }), 'רגע, מאיפה מתחילים עם "בדיקות"?');
+    assert.equal(composePoseLine('walk', persona), null);
   });
 });

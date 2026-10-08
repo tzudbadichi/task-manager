@@ -1078,142 +1078,148 @@ dialog.next-dialog { width: min(480px, calc(100vw - 24px)); }
 .report-actions { flex-wrap: wrap; }
 
 /* ==========================================================================
-   People view: a room of little characters (people-view.js, art.js)
+   People view: an office of little characters (people-view.js, art.js, world-layout.js)
    ========================================================================== */
 
 .people-scene {
   display: flex;
   flex-direction: column;
   overflow: hidden;
-  background: var(--surface-2);
+  background: var(--surface);
   border: 1px solid var(--border);
   border-radius: 20px;
   box-shadow: var(--shadow);
 }
 .people-scene:has(> .empty-state) { overflow: visible; background: none; border: none; box-shadow: none; }
+/* Full screen: the office covers the page (dialogs and toasts still open above it) */
+.people-scene.is-fullscreen { position: fixed; inset: 0; z-index: 30; overflow: auto; border: none; border-radius: 0; }
+body:has(.people-scene.is-fullscreen) { overflow: hidden; }
+.people-root { display: flex; flex-direction: column; }
 
-/* The sky over the room follows the time of day */
-.scene-sky {
-  position: relative;
+.scene-bar {
+  position: sticky;
+  top: 0;
+  z-index: 1;
   display: flex;
   flex-wrap: wrap;
   align-items: center;
   gap: 8px 10px;
-  min-height: 76px;
-  padding: 14px 20px;
+  padding: 10px 16px;
+  background: var(--surface);
+  border-bottom: 1px solid var(--border);
+}
+.scene-title { font-size: 1.02rem; font-weight: 800; }
+.scene-count { padding: 2px 10px; font-size: 0.8rem; font-weight: 700; color: var(--text-muted); background: var(--surface-2); border: 1px solid var(--border); border-radius: 999px; }
+.scene-note { margin: 0; padding: 10px 16px; font-size: 0.84rem; color: var(--text-muted); border-top: 1px solid var(--border); }
+
+/* The room: a wall with a trim on top, a wooden floor below. Its own stacking context keeps the
+   characters' depth (z-index = how low they stand) inside it. */
+.people-world {
+  --wall: #e0e7ff;
+  --wall-trim: #c7d2fe;
+  --floor-a: #f1e3cf;
+  --floor-b: #e8d6bd;
+  position: relative;
+  isolation: isolate;
   overflow: hidden;
-  color: #0f172a;
-  background: linear-gradient(to bottom, #7dd3fc, #e0f2fe);
-}
-.scene-sky[data-time="morning"] { background: linear-gradient(to bottom, #fde68a, #fef3c7 65%, #e0f2fe); }
-.scene-sky[data-time="evening"] { background: linear-gradient(to bottom, #fb923c, #fda4af 60%, #c4b5fd); }
-.scene-sky[data-time="night"] {
-  color: #e2e8f0;
   background:
-    radial-gradient(1.5px 1.5px at 18% 30%, #fff, transparent),
-    radial-gradient(1px 1px at 38% 62%, #fff, transparent),
-    radial-gradient(1.5px 1.5px at 62% 22%, #fff, transparent),
-    radial-gradient(1px 1px at 80% 58%, #fff, transparent),
-    radial-gradient(1px 1px at 92% 30%, #fff, transparent),
-    linear-gradient(to bottom, #0f172a, #312e81);
+    linear-gradient(to bottom, var(--wall) 0 calc(var(--wall-h, 120px) - 8px), var(--wall-trim) calc(var(--wall-h, 120px) - 8px) var(--wall-h, 120px), transparent var(--wall-h, 120px)),
+    repeating-linear-gradient(90deg, var(--floor-a) 0 88px, var(--floor-b) 88px 90px),
+    var(--floor-a);
 }
-.scene-celestial {
-  position: absolute;
-  top: 12px;
-  inset-inline-end: 9%;
-  width: 42px;
-  height: 42px;
-  border-radius: 50%;
-  background: radial-gradient(circle at 40% 40%, #fffbeb, #fde047 60%, #f59e0b);
-  box-shadow: 0 0 28px #fde047;
+:root[data-theme="dark"] .people-world { --wall: #1e293b; --wall-trim: #334155; --floor-a: #2b2533; --floor-b: #241f2b; }
+:root[data-season] .people-world { --wall: color-mix(in srgb, var(--season-a) 13%, #eef2ff); --wall-trim: color-mix(in srgb, var(--season-a) 35%, #c7d2fe); }
+:root[data-theme="dark"][data-season] .people-world { --wall: color-mix(in srgb, var(--season-a) 14%, #1e293b); --wall-trim: color-mix(in srgb, var(--season-a) 30%, #334155); }
+.people-world > * { position: absolute; top: 0; left: 0; }
+.decor, .station { pointer-events: none; }
+:is(.decor, .station) > svg { display: block; width: 100%; height: auto; overflow: visible; }
+
+/* Windows show the time of day; the clock tells the real time (people-view.js) */
+.win-sky { fill: #7dd3fc; }
+.people-world[data-time="morning"] .win-sky { fill: #fde68a; }
+.people-world[data-time="evening"] .win-sky { fill: #fb923c; }
+.people-world[data-time="night"] .win-sky { fill: #1e1b4b; }
+.win-sun { fill: #fde047; }
+.people-world[data-time="evening"] .win-sun { fill: #f97316; transform: translateY(16px); }
+.win-moon { fill: #f1f5f9; }
+.win-city { fill: #94a3b8; }
+.people-world[data-time="night"] .win-city { fill: #312e81; }
+.people-world:not([data-time="night"]) :is(.win-moon, .win-stars) { display: none; }
+.people-world[data-time="night"] .win-sun { display: none; }
+.people-world[data-time="night"] .win-cloud { opacity: 0.2; }
+.win-cloud { animation: cloud-sway 14s ease-in-out infinite alternate; }
+@keyframes cloud-sway { to { transform: translateX(9px); } }
+.decor-coffee .p-steam { animation: steam 1.8s ease-in-out infinite; }
+.cooler-bubble { animation: bubble-rise 3s ease-in infinite; }
+.cooler-bubble-2 { animation-delay: 1.4s; }
+@keyframes bubble-rise {
+  0% { opacity: 0; transform: translateY(6px); }
+  30% { opacity: 1; }
+  100% { opacity: 0; transform: translateY(-18px); }
 }
-.scene-sky[data-time="evening"] .scene-celestial { top: 38px; background: radial-gradient(circle, #fed7aa, #f97316); box-shadow: 0 0 26px #fb923c; }
-.scene-sky[data-time="night"] .scene-celestial { background: radial-gradient(circle at 62% 38%, #f8fafc, #cbd5e1); box-shadow: 0 0 20px rgba(226, 232, 240, 0.55); }
-.scene-cloud {
-  position: absolute;
-  left: -90px;
-  height: 15px;
-  background: rgba(255, 255, 255, 0.85);
-  border-radius: 999px;
-  animation: cloud-drift 70s linear infinite;
-}
-.scene-cloud::before {
+/* A desk of a task untouched for weeks gathers cobwebs too */
+.station.is-dusty::after {
   content: "";
   position: absolute;
-  bottom: 30%;
-  left: 22%;
+  top: 30%;
+  right: 0;
   width: 46%;
-  height: 170%;
-  background: inherit;
-  border-radius: 50%;
+  aspect-ratio: 1;
+  background: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 60 60' fill='none' stroke='rgb(120,113,108)' stroke-opacity='0.6' stroke-width='0.9'%3E%3Cpath d='M60 0L0 0M60 0L5 23M60 0L18 42M60 0L37 55M60 0L60 60'/%3E%3Cpath d='M42 0Q45 3 43.4 6.9Q46.5 9.5 47.3 12.7Q50.5 13.5 53.1 16.6Q57 15 60 18'/%3E%3Cpath d='M26 0Q31 5 28.6 13Q34 18 36 24Q42 26 47 31.4Q55 29 60 34'/%3E%3C/svg%3E") no-repeat 0 0 / contain;
 }
-.scene-cloud-1 { top: 16px; width: 74px; }
-.scene-cloud-2 { top: 44px; width: 52px; animation-duration: 95s; animation-delay: -45s; }
-.scene-sky[data-time="night"] .scene-cloud { opacity: 0.15; }
-@keyframes cloud-drift { to { transform: translateX(1500px); } }
-.scene-title { position: relative; font-size: 1.05rem; font-weight: 800; }
-.scene-count { position: relative; padding: 2px 10px; font-size: 0.8rem; font-weight: 700; background: rgba(255, 255, 255, 0.6); border-radius: 999px; }
-.scene-sky[data-time="night"] .scene-count { background: rgba(15, 23, 42, 0.45); }
-.scene-sky .season-emblem { position: relative; }
 
-.scene-floor {
-  display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(170px, 1fr));
-  gap: 8px 10px;
-  padding: 18px 14px 20px;
-  background:
-    repeating-linear-gradient(90deg, transparent 0 79px, color-mix(in srgb, var(--border) 60%, transparent) 79px 80px),
-    linear-gradient(to bottom, color-mix(in srgb, var(--primary) 5%, var(--surface-2)), var(--surface-2));
-}
-.scene-note { margin: 0; padding: 0 16px 14px; font-size: 0.84rem; color: var(--text-muted); }
-
-/* One character: the whole cell is a button that opens the task */
-.person {
-  position: relative;
-  display: flex;
-  flex-direction: column;
-  gap: 2px;
-  min-width: 0;
-  padding: 4px 4px 8px;
+/* --- A character: a button positioned by people-view.js; only its drawn shapes and its name tag
+       catch the pointer, so empty space around it does not block the ones behind --- */
+.character {
+  width: var(--character-w, 80px);
+  margin: 0;
+  padding: 0;
   color: var(--text);
-  text-align: center;
   background: none;
   border: none;
-  border-radius: 16px;
-  transition: background-color 0.15s;
+  pointer-events: none;
+  will-change: transform;
 }
-.person:hover { background: color-mix(in srgb, var(--cat-color) 9%, transparent); }
-.person:focus-visible { outline: 2px solid var(--primary); outline-offset: 0; }
-.person-stage { position: relative; display: block; }
-.person-art { display: block; width: 100%; height: auto; overflow: visible; }
-.person-tag { display: flex; flex-direction: column; align-items: center; gap: 3px; padding: 0 4px; }
-.person-title {
-  display: -webkit-box;
-  -webkit-box-orient: vertical;
-  -webkit-line-clamp: 2;
-  overflow: hidden;
-  font-size: 0.9rem;
+.character .person-art { display: block; width: 100%; height: auto; overflow: visible; }
+.character .person-art :is(path, rect, circle, ellipse, line) { pointer-events: visiblePainted; cursor: pointer; }
+.character .person-art :is(.p-shadow, .p-overlay *) { pointer-events: none; }
+.character:focus-visible { outline: 2px solid var(--primary); outline-offset: 2px; border-radius: 14px; }
+.character.is-leaving, .character.is-leaving * { pointer-events: none !important; }
+.character-tag {
+  position: absolute;
+  top: calc(100% - 6px);
+  left: 50%;
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  max-width: 150px;
+  padding: 1px 7px;
+  font-size: 0.68rem;
   font-weight: 700;
-  line-height: 1.3;
+  white-space: nowrap;
+  color: var(--text);
+  background: color-mix(in srgb, var(--surface) 88%, transparent);
+  border: 1px solid color-mix(in srgb, var(--cat-color) 50%, transparent);
+  border-radius: 999px;
+  transform: translateX(-50%);
+  pointer-events: auto;
+  cursor: pointer;
 }
-.person-myday { display: inline-block; margin-inline-end: 4px; color: #f59e0b; vertical-align: -2px; }
-.person-myday .icon { display: inline-block; }
-.person-meta { display: flex; flex-wrap: wrap; align-items: center; justify-content: center; gap: 2px 8px; font-size: 0.74rem; color: var(--text-muted); }
-.person-status { display: inline-flex; align-items: center; gap: 4px; font-weight: 700; color: var(--st); }
-.person-status .dot { width: 7px; height: 7px; }
-.person[data-dust] .person-art { filter: grayscale(0.45) sepia(0.3); }
-.person[data-dust="3"] .person-art { filter: grayscale(0.8) sepia(0.4); opacity: 0.85; }
-.person-cobweb { z-index: 2; border-top-left-radius: 16px; }
+.character-tag-text { overflow: hidden; text-overflow: ellipsis; }
+.character-tag .dot { width: 6px; height: 6px; background: var(--st); }
+.character-tag .icon { color: #f59e0b; }
+.character[data-dust] .person-art { filter: grayscale(0.45) sepia(0.3); }
+.character[data-dust="3"] .person-art { filter: grayscale(0.8) sepia(0.4); opacity: 0.85; }
 
-/* Speech bubbles (above the head: the figure stands at a third of the stage's width).
-   --bubble-shift (people-view.js) slides a bubble back inside the scene near its edges; the tail stays on the head. */
+/* Speech bubbles, above the head. --bubble-shift (people-view.js) slides a bubble back inside the
+   office near its walls; the tail stays on the head. */
 .bubble {
   position: absolute;
-  top: 26px;
-  left: 33%;
+  top: calc(var(--character-w, 80px) * 0.22);
+  left: 50%;
   z-index: 5;
   width: max-content;
-  max-width: 190px;
+  max-width: 200px;
   padding: 6px 10px;
   font-size: 0.8rem;
   font-weight: 600;
@@ -1247,10 +1253,12 @@ dialog.next-dialog { width: min(480px, calc(100vw - 24px)); }
 }
 
 /* --- The figure's parts. Transform origins are in viewBox units (art.js): shoulders, hips, neck --- */
-.person-art .p-shadow { fill: rgba(15, 23, 42, 0.14); }
+.person-art .p-shadow { fill: rgba(15, 23, 42, 0.16); }
 .person-art .p-torso { fill: var(--cat-color); }
-.person-art .p-sleeve { stroke: color-mix(in srgb, var(--cat-color) 78%, #000); }
-.person-art :is(.p-walker, .p-bob, .p-figure, .p-arm, .p-leg, .p-head) { transform-box: view-box; }
+.person-art .p-torso-dark { fill: color-mix(in srgb, var(--cat-color) 70%, #000); }
+.person-art .p-torso-dark-stroke { stroke: color-mix(in srgb, var(--cat-color) 62%, #000); }
+.person-art .p-sleeve { stroke: color-mix(in srgb, var(--cat-color) 85%, #000); }
+.person-art :is(.p-bob, .p-figure, .p-arm, .p-leg, .p-head) { transform-box: view-box; }
 .person-art .p-figure { transform-origin: 46px 0; }
 .person-art .p-arm-back { transform-origin: 37px 62px; }
 .person-art .p-arm-front { transform-origin: 55px 62px; }
@@ -1258,66 +1266,66 @@ dialog.next-dialog { width: min(480px, calc(100vw - 24px)); }
 .person-art .p-leg-front { transform-origin: 51px 88px; }
 .person-art .p-head { transform-origin: 46px 55px; }
 .person-art :is(.p-blink, .p-mouth, .p-hourglass, .p-sparkle, .p-z, .p-screen-line, .p-sweat, .p-paint) { transform-box: fill-box; transform-origin: center; }
-.person-art .p-screen-line { transform-origin: left center; }
+.station-art :is(.p-screen-line, .p-paint, .p-check) { transform-box: fill-box; transform-origin: center; }
+.station-art .p-screen-line { transform-origin: left center; }
 
-/* Facing the one it talks to (default: towards its station, on the right) */
-.person[data-facing="left"] .p-figure { transform: scaleX(-1); }
+.character[data-facing="left"] .p-figure { transform: scaleX(-1); }
 
-/* Always: blink and breathe (delays vary so the room is not in sync) */
+/* What shows when: the activity's prop only at the desk, the cup on a break, the thought while
+   looking around, the sweat while working, z-z-z when sitting or asleep */
+.character:not([data-pose="work"]) :is(.p-hand-prop, .p-sweat) { display: none; }
+.person-art .p-cup { display: none; }
+.character[data-pose="sip"] .p-cup { display: inline; }
+.character:not(:is([data-pose="look"], [data-pose="think"])) .p-thought { display: none; }
+.character:not(:is([data-pose="sit"], [data-pose="sleep"])) .p-z { display: none; }
+
+/* Always: blink and breathe (delays vary so the office is not in sync) */
 .person-art .p-blink { animation: blink 4.6s infinite; }
 .person-art .p-bob { animation: bob 3.2s ease-in-out infinite; }
-.person:nth-child(3n + 1) .p-blink { animation-delay: -1.7s; }
-.person:nth-child(3n + 2) .p-blink { animation-delay: -3.1s; }
-.person:nth-child(2n) .p-bob { animation-delay: -1.3s; }
+.character:nth-of-type(3n + 1) .p-blink { animation-delay: -1.7s; }
+.character:nth-of-type(3n + 2) .p-blink { animation-delay: -3.1s; }
+.character:nth-of-type(2n) .p-bob { animation-delay: -1.3s; }
+.person-art .p-antenna { animation: antenna 1.6s steps(2) infinite; }
 @keyframes blink {
   0%, 93%, 100% { transform: scaleY(1); }
   95% { transform: scaleY(0.1); }
 }
 @keyframes bob { 50% { transform: translateY(1.5px); } }
+@keyframes antenna { 50% { opacity: 0.35; } }
 
-/* Idle (to-do): pacing in front of the station, marching legs, a "?" thought during the pause */
-.person[data-mood="idle"] .p-walker { animation: pace 9s ease-in-out infinite; }
-.person[data-mood="idle"] .p-figure { animation: pace-face 9s linear infinite; }
-.person[data-mood="idle"] .p-leg-back,
-.person[data-mood="idle"] .p-arm-front { animation: swing 0.6s ease-in-out infinite alternate; }
-.person[data-mood="idle"] .p-leg-front,
-.person[data-mood="idle"] .p-arm-back { animation: swing 0.6s ease-in-out infinite alternate-reverse; }
-.person[data-mood="idle"] .p-thought { animation: thought 9s ease-in-out infinite; }
-.person:nth-child(2n) .p-walker,
-.person:nth-child(2n) .p-figure,
-.person:nth-child(2n) .p-thought { animation-delay: -4s; }
-@keyframes pace {
-  0%, 8% { transform: translateX(0); }
-  42%, 58% { transform: translateX(-20px); }
-  92%, 100% { transform: translateX(0); }
-}
-@keyframes pace-face {
-  0%, 7.9% { transform: none; }
-  8%, 41.9% { transform: scaleX(-1); }
-  42%, 100% { transform: none; }
-}
+/* Walking */
+.character[data-pose="walk"] :is(.p-leg-back, .p-arm-front) { animation: swing 0.42s ease-in-out infinite alternate; }
+.character[data-pose="walk"] :is(.p-leg-front, .p-arm-back) { animation: swing 0.42s ease-in-out infinite alternate-reverse; }
+.character[data-pose="walk"] .p-bob { animation: walk-bob 0.21s ease-in-out infinite alternate; }
 @keyframes swing {
-  from { transform: rotate(-13deg); }
-  to { transform: rotate(13deg); }
+  from { transform: rotate(-16deg); }
+  to { transform: rotate(16deg); }
 }
+@keyframes walk-bob { to { transform: translateY(-2px); } }
+
+/* Looking around and thinking (with a "?" thought for to-do characters) */
+.character[data-pose="look"] .p-head { animation: look-around 5s ease-in-out infinite; }
+.character[data-pose="think"] .p-arm-front { transform: rotate(-145deg); }
+.character[data-pose="think"] .p-head { transform: rotate(6deg); }
+.person-art .p-thought { animation: thought 6s ease-in-out infinite; }
 @keyframes thought {
-  0%, 44% { opacity: 0; }
-  48%, 58% { opacity: 1; }
-  62%, 100% { opacity: 0; }
+  0%, 20% { opacity: 0; }
+  30%, 75% { opacity: 1; }
+  85%, 100% { opacity: 0; }
 }
 
-/* Working (in progress): hands busy towards the station; long-running work also sweats */
-.person:is([data-mood="working"], [data-mood="sweating"]) .p-arm-front { transform: rotate(-62deg); animation: type-front 0.34s ease-in-out infinite alternate; }
-.person:is([data-mood="working"], [data-mood="sweating"]) .p-arm-back { transform: rotate(-46deg); animation: type-back 0.34s ease-in-out infinite alternate-reverse; }
-.person:is([data-mood="working"], [data-mood="sweating"]) .p-head { animation: nod 1.6s ease-in-out infinite; }
-.person:is([data-mood="working"], [data-mood="sweating"]) .p-screen-line { animation: screen-type 1.2s steps(3) infinite; }
-.person:is([data-mood="working"], [data-mood="sweating"]) .p-fly { animation: fly 2.4s ease-in infinite; }
-.person:is([data-mood="working"], [data-mood="sweating"]) .p-steam { animation: steam 1.8s ease-in-out infinite; }
-.person:is([data-mood="working"], [data-mood="sweating"]) .p-check { animation: check-in 3s ease-out infinite; }
-.person:is([data-mood="working"], [data-mood="sweating"]) .p-check-1 { animation-delay: 0.6s; }
-.person:is([data-mood="working"], [data-mood="sweating"]) .p-check-2 { animation-delay: 1.2s; }
-.person:is([data-mood="working"], [data-mood="sweating"]) .p-paint { animation: paint-pulse 2s ease-in-out infinite; }
+/* Working at the desk: hands busy towards it, a pose per activity, and the desk comes alive */
+.character[data-pose="work"] .p-arm-front { transform: rotate(-62deg); animation: type-front 0.34s ease-in-out infinite alternate; }
+.character[data-pose="work"] .p-arm-back { transform: rotate(-46deg); animation: type-back 0.34s ease-in-out infinite alternate-reverse; }
+.character[data-pose="work"] .p-head { animation: nod 1.6s ease-in-out infinite; }
 .person-art .p-sweat { animation: sweat 1.6s ease-in infinite; }
+.station.is-busy .p-screen-line { animation: screen-type 1.2s steps(3) infinite; }
+.station.is-busy .p-fly { animation: fly 2.4s ease-in infinite; }
+.station.is-busy .p-steam { animation: steam 1.8s ease-in-out infinite; }
+.station.is-busy .p-check { animation: check-in 3s ease-out infinite; }
+.station.is-busy .p-check-1 { animation-delay: 0.6s; }
+.station.is-busy .p-check-2 { animation-delay: 1.2s; }
+.station.is-busy .p-paint { animation: paint-pulse 2s ease-in-out infinite; }
 @keyframes type-front {
   from { transform: rotate(-56deg); }
   to { transform: rotate(-70deg); }
@@ -1351,23 +1359,16 @@ dialog.next-dialog { width: min(480px, calc(100vw - 24px)); }
   20% { opacity: 1; }
   100% { opacity: 0; transform: translateY(10px); }
 }
-
-/* Activity poses while working */
-.person[data-activity="phone"]:is([data-mood="working"], [data-mood="sweating"]) .p-arm-front { transform: rotate(-152deg); animation: phone-hold 2.2s ease-in-out infinite; }
-.person[data-activity="phone"]:is([data-mood="working"], [data-mood="sweating"]) .p-arm-back { transform: rotate(-30deg); animation: gesture 1.6s ease-in-out infinite alternate; }
-.person[data-activity="cleaning"]:is([data-mood="working"], [data-mood="sweating"]) .p-arm-front,
-.person[data-activity="cleaning"]:is([data-mood="working"], [data-mood="sweating"]) .p-arm-back { transform: rotate(-25deg); animation: sweep 0.55s ease-in-out infinite alternate; }
-.person[data-activity="design"]:is([data-mood="working"], [data-mood="sweating"]) .p-arm-front { transform: rotate(-100deg); animation: paint-stroke 1.4s ease-in-out infinite; }
-.person[data-activity="testing"]:is([data-mood="working"], [data-mood="sweating"]) .p-arm-front { transform: rotate(-90deg); animation: inspect 1.9s ease-in-out infinite; }
-.person[data-activity="sport"]:is([data-mood="working"], [data-mood="sweating"]) .p-arm-front { transform: rotate(-80deg); animation: curl 0.9s ease-in-out infinite alternate; }
-.person[data-activity="coffee"]:is([data-mood="working"], [data-mood="sweating"]) .p-arm-front { transform: rotate(-40deg); animation: sip 4s ease-in-out infinite; }
-.person[data-activity="people"]:is([data-mood="working"], [data-mood="sweating"]) .p-arm-front { transform: rotate(-55deg); animation: none; }
-.person[data-activity="people"]:is([data-mood="working"], [data-mood="sweating"]) .p-arm-back { transform: rotate(-20deg); animation: gesture 1.4s ease-in-out infinite alternate; }
-.person[data-activity="delivery"]:is([data-mood="working"], [data-mood="sweating"]) :is(.p-arm-front, .p-arm-back) { transform: rotate(-72deg); animation: none; }
-.person[data-activity="delivery"]:is([data-mood="working"], [data-mood="sweating"]) .p-walker { animation: pace 7s ease-in-out infinite; }
-.person[data-activity="delivery"]:is([data-mood="working"], [data-mood="sweating"]) .p-figure { animation: pace-face 7s linear infinite; }
-.person[data-activity="delivery"]:is([data-mood="working"], [data-mood="sweating"]) .p-leg-back { animation: swing 0.5s ease-in-out infinite alternate; }
-.person[data-activity="delivery"]:is([data-mood="working"], [data-mood="sweating"]) .p-leg-front { animation: swing 0.5s ease-in-out infinite alternate-reverse; }
+.character[data-pose="work"][data-activity="phone"] .p-arm-front { transform: rotate(-152deg); animation: phone-hold 2.2s ease-in-out infinite; }
+.character[data-pose="work"][data-activity="phone"] .p-arm-back { transform: rotate(-30deg); animation: gesture 1.6s ease-in-out infinite alternate; }
+.character[data-pose="work"][data-activity="cleaning"] :is(.p-arm-front, .p-arm-back) { transform: rotate(-25deg); animation: sweep 0.55s ease-in-out infinite alternate; }
+.character[data-pose="work"][data-activity="design"] .p-arm-front { transform: rotate(-100deg); animation: paint-stroke 1.4s ease-in-out infinite; }
+.character[data-pose="work"][data-activity="testing"] .p-arm-front { transform: rotate(-90deg); animation: inspect 1.9s ease-in-out infinite; }
+.character[data-pose="work"][data-activity="sport"] .p-arm-front { transform: rotate(-80deg); animation: curl 0.9s ease-in-out infinite alternate; }
+.character[data-pose="work"][data-activity="coffee"] .p-arm-front { transform: rotate(-40deg); animation: sip 4s ease-in-out infinite; }
+.character[data-pose="work"][data-activity="people"] .p-arm-front { transform: rotate(-55deg); animation: none; }
+.character[data-pose="work"][data-activity="people"] .p-arm-back { transform: rotate(-20deg); animation: gesture 1.4s ease-in-out infinite alternate; }
+.character[data-pose="work"][data-activity="delivery"] :is(.p-arm-front, .p-arm-back) { transform: rotate(-72deg); animation: none; }
 @keyframes phone-hold { 50% { transform: rotate(-158deg); } }
 @keyframes gesture {
   from { transform: rotate(-15deg); }
@@ -1394,10 +1395,13 @@ dialog.next-dialog { width: min(480px, calc(100vw - 24px)); }
   70%, 86% { transform: rotate(-138deg); }
 }
 
+/* A coffee break */
+.character[data-pose="sip"] .p-arm-front { transform: rotate(-40deg); animation: sip 3.4s ease-in-out infinite; }
+
 /* Waiting: tapping a foot, checking the watch, looking around; the hourglass turns */
-.person[data-mood="waiting"] .p-leg-front { animation: tap 0.45s ease-in-out infinite alternate; }
-.person[data-mood="waiting"] .p-arm-front { animation: check-watch 5s ease-in-out infinite; }
-.person[data-mood="waiting"] .p-head { animation: look-around 5s ease-in-out infinite; }
+.character[data-pose="wait"] .p-leg-front { animation: tap 0.45s ease-in-out infinite alternate; }
+.character[data-pose="wait"] .p-arm-front { animation: check-watch 5s ease-in-out infinite; }
+.character[data-pose="wait"] .p-head { animation: look-around 5s ease-in-out infinite; }
 .person-art .p-hourglass { animation: hourglass-flip 3s ease-in-out infinite; }
 @keyframes tap { to { transform: rotate(-10deg); } }
 @keyframes check-watch {
@@ -1413,10 +1417,12 @@ dialog.next-dialog { width: min(480px, calc(100vw - 24px)); }
   85%, 100% { transform: rotate(180deg); }
 }
 
-/* Bored (waiting for days) and asleep (dusty): head drops, z-z-z floats up */
-.person:is([data-mood="bored"], [data-mood="sleeping"]) .p-head { transform: rotate(9deg) translateY(1px); }
-.person[data-mood="sleeping"] .p-head { transform: rotate(16deg) translateY(2px); }
-.person:is([data-mood="bored"], [data-mood="sleeping"]) .p-bob { animation-duration: 4.5s; }
+/* Sitting (the sofa) and sleeping (at its dusty desk): legs out, body down; asleep, the head drops */
+.character:is([data-pose="sit"], [data-pose="sleep"]) :is(.p-leg-back, .p-leg-front) { transform: rotate(-82deg); }
+.character:is([data-pose="sit"], [data-pose="sleep"]) .p-bob { transform: translateY(13px); animation: none; }
+.character:is([data-pose="sit"], [data-pose="sleep"]) :is(.p-arm-front, .p-arm-back) { transform: rotate(-22deg); }
+.character[data-pose="sleep"] .p-head { transform: rotate(16deg) translateY(2px); }
+.character[data-mood="bored"][data-pose="sit"] .p-head { transform: rotate(9deg) translateY(1px); }
 .person-art .p-z { animation: z-float 3s ease-in infinite; }
 .person-art .p-z-1 { animation-delay: 1s; }
 .person-art .p-z-2 { animation-delay: 2s; }
@@ -1426,11 +1432,10 @@ dialog.next-dialog { width: min(480px, calc(100vw - 24px)); }
   100% { opacity: 0; transform: translate(5px, -8px); }
 }
 
-/* Celebrating (done): arms up, jumping, sparkles. A task finished just now cheers for a moment. */
-.person[data-mood="celebrating"] .p-arm-front { transform: rotate(-160deg); }
-.person[data-mood="celebrating"] .p-arm-back { transform: rotate(150deg); }
-.person[data-mood="celebrating"] .p-bob { animation: jump 1.2s cubic-bezier(0.3, 0.7, 0.4, 1) infinite; }
-.person.is-cheering .p-bob { animation: jump 0.55s cubic-bezier(0.3, 0.7, 0.4, 1) 3; }
+/* Dancing (done): jumping with the arms up, sparkles around */
+.character[data-pose="dance"] .p-bob { animation: jump 0.7s cubic-bezier(0.3, 0.7, 0.4, 1) infinite; }
+.character[data-pose="dance"] .p-arm-front { transform: rotate(-160deg); animation: dance-front 0.7s ease-in-out infinite alternate; }
+.character[data-pose="dance"] .p-arm-back { transform: rotate(150deg); animation: dance-back 0.7s ease-in-out infinite alternate; }
 .person-art .p-sparkle { animation: sparkle 1.4s ease-in-out infinite; }
 .person-art .p-sparkle-1 { animation-delay: 0.45s; }
 .person-art .p-sparkle-2 { animation-delay: 0.9s; }
@@ -1438,18 +1443,29 @@ dialog.next-dialog { width: min(480px, calc(100vw - 24px)); }
   0%, 45%, 100% { transform: translateY(0); }
   22% { transform: translateY(-12px); }
 }
+@keyframes dance-front {
+  from { transform: rotate(-165deg); }
+  to { transform: rotate(-115deg); }
+}
+@keyframes dance-back {
+  from { transform: rotate(155deg); }
+  to { transform: rotate(110deg); }
+}
 @keyframes sparkle {
   0%, 100% { opacity: 0.3; transform: scale(0.4); }
   50% { opacity: 1; transform: scale(1.1); }
 }
 
-/* Talking: the mouth moves. Talking (or turned to someone) stops pacing, and a cheer beats any pose.
-   The doubled class outranks the activity poses above. */
-.person.is-talking .p-mouth { animation: talk 0.22s ease-in-out infinite alternate; }
+/* Chatting: hands talk too; the mouth moves while a bubble is up */
+.character[data-pose="chat"] .p-arm-back { animation: gesture 1.3s ease-in-out infinite alternate; }
+.character[data-pose="chat"] .p-head { animation: nod 2.2s ease-in-out infinite; }
+.character.is-talking .p-mouth { animation: talk 0.22s ease-in-out infinite alternate; }
 @keyframes talk { to { transform: scaleY(1.9); } }
-.person.person:is(.is-talking, [data-facing]) :is(.p-walker, .p-figure) { animation: none; }
-.person.person.is-cheering .p-arm-front { transform: rotate(-160deg); animation: none; }
-.person.person.is-cheering .p-arm-back { transform: rotate(150deg); animation: none; }
+
+/* A task finished just now: a quick victory jump with the arms up (beats any pose) */
+.character.is-cheering .p-bob { animation: jump 0.55s cubic-bezier(0.3, 0.7, 0.4, 1) 3; }
+.character.character.is-cheering .p-arm-front { transform: rotate(-160deg); animation: none; }
+.character.character.is-cheering .p-arm-back { transform: rotate(150deg); animation: none; }
 
 @media (max-width: 760px) {
   .season-badge { padding: 2px; }
@@ -1460,10 +1476,9 @@ dialog.next-dialog { width: min(480px, calc(100vw - 24px)); }
   .today-list { flex-basis: 100%; }
   .today-item { flex: 1 1 100%; max-width: 100%; }
   .tile-bottom .dust-label { display: none; }
-  .scene-sky { min-height: 62px; padding: 10px 14px; }
-  .scene-floor { grid-template-columns: repeat(auto-fill, minmax(128px, 1fr)); gap: 4px; padding: 14px 6px 16px; }
-  .person-title { font-size: 0.82rem; }
-  .bubble { top: 20px; max-width: 150px; font-size: 0.74rem; }
+  .scene-bar { padding: 8px 10px; }
+  .character-tag { max-width: 96px; font-size: 0.6rem; }
+  .bubble { max-width: 150px; font-size: 0.72rem; }
   .report-actions .btn { flex: 1 1 40%; }
 }
 

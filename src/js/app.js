@@ -21,7 +21,7 @@ import { clearAccountCopies, createSync, loadSyncMeta } from './sync.js';
 import { buildStatusReport } from './report.js';
 import { SEASONS, getSeasonForDate, resolveSeason } from './seasons.js';
 import { buildPersona } from './people-model.js';
-import { MAX_PEOPLE, createChatter, renderPeopleScene } from './people-view.js';
+import { MAX_PEOPLE, createPeopleWorld } from './people-view.js';
 import { burstConfetti, playChime, prefersReducedMotion } from './celebrate.js';
 import { isVoiceSupported, startDictation, voiceErrorMessage } from './voice.js';
 
@@ -129,9 +129,8 @@ function getLocalStorage() {
   }
 }
 
-// The characters of the people view chat from time to time (people-view.js).
-const chatter = createChatter({
-  scene: els.peopleScene,
+// The people view's office: characters that roam, work, take breaks and chat (people-view.js).
+const peopleWorld = createPeopleWorld(els.peopleScene, {
   getPersona: taskId => {
     const state = store.getState();
     const task = state.tasks.find(item => item.id === taskId);
@@ -139,9 +138,10 @@ const chatter = createChatter({
     const now = Date.now();
     return buildPersona(task, state.categories.find(category => category.id === task.categoryId) ?? null, { now, today: myDayDate(now) });
   },
-  // Only on the app screen (not behind login or loading), and nobody needs it behind an open dialog.
-  canTalk: () => document.body.dataset.view === 'app' && !document.querySelector('dialog[open]'),
+  // Conversations only when turned on, on the app screen (not behind login or loading), and not behind a dialog.
+  canTalk: () => ui.display.chatter && document.body.dataset.view === 'app' && !document.querySelector('dialog[open]'),
   getGreeting: () => (currentSeason ? SEASONS[currentSeason].greeting : null),
+  reducedMotion: prefersReducedMotion,
 });
 
 // ---------------------------------------------------------------------------
@@ -177,7 +177,8 @@ function render() {
 /** The tiles, or - when chosen in the settings - the animated characters. */
 function renderTasks(state, now, today) {
   if (ui.display.view !== 'people') {
-    chatter.stop();
+    peopleWorld.clear();
+    setPeopleFullscreen(false);
     els.peopleScene.hidden = true;
     els.peopleScene.replaceChildren();
     els.taskList.hidden = false;
@@ -188,18 +189,23 @@ function renderTasks(state, now, today) {
   els.taskList.replaceChildren();
   els.peopleScene.hidden = false;
   const visibleTasks = selectVisibleTasks(state, ui.filters);
-  if (renderTasksEmptyState(els.peopleScene, state, visibleTasks.length)) {
-    chatter.stop();
+  if (visibleTasks.length === 0) {
+    peopleWorld.clear();
+    setPeopleFullscreen(false);
+    renderTasksEmptyState(els.peopleScene, state, 0);
     return;
   }
   const categoriesById = new Map(state.categories.map(category => [category.id, category]));
   const shownTasks = visibleTasks.slice(0, MAX_PEOPLE);
   const personas = shownTasks.map(task => buildPersona(task, categoriesById.get(task.categoryId) ?? null, { now, today }));
-  renderPeopleScene(els.peopleScene, personas, {
-    seasonKey: currentSeason, hiddenCount: visibleTasks.length - shownTasks.length, hour: new Date(now).getHours(),
-  });
-  if (ui.display.chatter) chatter.start();
-  else chatter.stop();
+  peopleWorld.update(personas, { seasonKey: currentSeason, hiddenCount: visibleTasks.length - shownTasks.length, now });
+}
+
+/** The office over the whole screen (people view), or back in the page. */
+function setPeopleFullscreen(isFullscreen) {
+  if (els.peopleScene.classList.contains('is-fullscreen') === isFullscreen) return;
+  els.peopleScene.classList.toggle('is-fullscreen', isFullscreen);
+  peopleWorld.relayout();
 }
 
 /** Today's date for "my day" marks, or null while "my day" is turned off in the settings. */
@@ -354,6 +360,7 @@ const clickActions = {
   'dust-off': ({ taskId }, element) => dustOff(taskId, element),
   'complete-task': ({ taskId }, element) => completeTask(taskId, element),
   'open-next': () => openNextDialog(),
+  'people-fullscreen': () => setPeopleFullscreen(!els.peopleScene.classList.contains('is-fullscreen')),
   'next-start': ({ taskId, subtaskId }, element) => startNextPick(taskId, subtaskId, element),
   'next-my-day': ({ taskId, subtaskId }) => {
     if (toggleMyDay(taskId, subtaskId)) showNextResult(taskId, subtaskId);
@@ -483,6 +490,13 @@ document.addEventListener('keydown', event => {
     return;
   }
 
+  // Escape leaves the office's full screen (an open dialog handles its own Escape first).
+  if (event.key === 'Escape' && els.peopleScene.classList.contains('is-fullscreen') && !document.querySelector('dialog[open]')) {
+    event.preventDefault();
+    setPeopleFullscreen(false);
+    return;
+  }
+
   // "N" opens a new task (event.code works on a Hebrew keyboard layout too).
   const isTypingElsewhere = target instanceof HTMLTextAreaElement || target instanceof HTMLSelectElement;
   const hasModifier = event.ctrlKey || event.metaKey || event.altKey;
@@ -501,9 +515,9 @@ document.addEventListener('pointerdown', event => {
 // Hovering a character makes it say something about its task.
 els.peopleScene.addEventListener('pointerover', event => {
   if (event.pointerType !== 'mouse' || !ui.display.chatter) return;
-  const person = event.target.closest('.person');
-  if (!person || person.contains(event.relatedTarget)) return;
-  chatter.sayAbout(person.dataset.taskId);
+  const character = event.target.closest('.character');
+  if (!character || character.contains(event.relatedTarget)) return;
+  peopleWorld.sayAbout(character.dataset.taskId);
 });
 
 // Leaving a field is the moment to apply anything that waited for the typing to end.
@@ -598,7 +612,7 @@ function celebrateProgress(taskBefore, origin, isSubtaskClosed, { announce = tru
   if (taskBefore.status !== 'done' && taskAfter.status === 'done') {
     burstConfetti({ ...origin, size: 'big', colors: [categoryColor, seasonAccent()] });
     if (ui.display.sound) playChime();
-    chatter.cheer(taskAfter.id);
+    peopleWorld.cheer(taskAfter.id);
     if (announce) showToast(CHEERS[Math.floor(Math.random() * CHEERS.length)](truncate(taskAfter.title, 40)), { tone: 'success' });
   } else if (isSubtaskClosed) {
     burstConfetti({ ...origin, size: 'small', colors: [categoryColor] });
