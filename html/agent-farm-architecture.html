@@ -1,0 +1,270 @@
+<!DOCTYPE html>
+<html lang="he" dir="rtl">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>ארכיטקטורה - לוח המשימות וחוות האייג'נטים</title>
+<style>
+  :root {
+    --navy: #1f2d5a; --navy-light: #2e4488; --accent: #2f80ed;
+    --bg: #f4f6fb; --card: #ffffff; --line: #e2e7f1; --text: #26304a; --muted: #6b7590;
+  }
+  * { box-sizing: border-box; }
+  body { font-family: "Segoe UI", Arial, sans-serif; margin: 0; background: var(--bg);
+         color: var(--text); line-height: 1.7; }
+  header { background: linear-gradient(135deg, var(--navy), var(--navy-light));
+           color: #fff; padding: 28px 40px; }
+  header h1 { margin: 0; font-size: 25px; }
+  header p { margin: 8px 0 0; opacity: .9; font-size: 15px; }
+  .wrap { max-width: 1100px; margin: 0 auto; padding: 26px 20px 60px; }
+  .card { background: var(--card); border: 1px solid var(--line); border-radius: 12px;
+          padding: 22px 26px; margin-bottom: 22px; box-shadow: 0 1px 3px rgba(31,45,90,.05); }
+  h2 { font-size: 19px; margin: 0 0 14px; color: var(--navy);
+       border-right: 4px solid var(--accent); padding-right: 12px; }
+  h3 { font-size: 16px; margin: 16px 0 6px; color: var(--navy); }
+  /* direction: ltr on the scroll container so a horizontal scrollbar appears and
+     is usable when the zoomed diagram overflows (RTL containers suppress it). */
+  .diagram { overflow: auto; max-height: 78vh; border: 1px solid var(--line);
+             border-radius: 10px; background: #fff; padding: 10px; cursor: grab;
+             direction: ltr; }
+  .diagram.panning { cursor: grabbing; }
+  /* width: max-content makes the wrapper grow with the zoomed SVG so the scroll
+     container's scrollWidth reflects it; margin auto keeps it centered when smaller. */
+  .mermaid { direction: ltr; display: block; width: max-content; max-width: none; margin: 0 auto; }
+  .mermaid svg { display: block; }
+  .zoom-bar { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; margin: 0 0 12px; }
+  .zoom-bar button { font: inherit; font-size: 14px; padding: 5px 12px; cursor: pointer;
+                     border: 1px solid var(--line); background: #fff; border-radius: 8px;
+                     color: var(--navy); line-height: 1; }
+  .zoom-bar button:hover { background: #eef4ff; border-color: #cfe0ff; }
+  .zoom-bar .zoom-level { min-width: 52px; text-align: center; font-weight: 600; color: var(--navy); }
+  .zoom-bar .tip { color: var(--muted); font-size: 13px; margin-inline-start: auto; }
+  .legend { display: flex; flex-wrap: wrap; gap: 10px 22px; list-style: none;
+            padding: 0; margin: 6px 0 0; }
+  .legend li { display: flex; align-items: center; gap: 8px; font-size: 14px; }
+  .swatch { width: 16px; height: 16px; border-radius: 4px; border: 2px solid; flex: none; }
+  .notes { font-size: 14.5px; }
+  .notes ul, .notes ol { padding-right: 20px; margin: 8px 0; }
+  .notes li { margin: 4px 0; }
+  .notes table { border-collapse: collapse; width: 100%; margin: 8px 0; font-size: 14px; }
+  .notes th, .notes td { border: 1px solid var(--line); padding: 6px 10px; text-align: right; vertical-align: top; }
+  .notes th { background: #f0f3fa; }
+  .muted { color: var(--muted); font-size: 13px; }
+</style>
+</head>
+<body>
+<header>
+  <h1>ארכיטקטורה - לוח המשימות וחוות האייג'נטים</h1>
+  <p>מי מדבר עם מי, ואיזה מידע עובר בכל חץ: הלוח, Supabase, הראנרים במחשבים, המנועים והחשבונות</p>
+</header>
+
+<div class="wrap">
+  <div class="card">
+    <h2>הדיאגרמה</h2>
+    <div class="zoom-bar">
+      <button data-zoom="out" title="הקטן">−</button>
+      <span class="zoom-level">100%</span>
+      <button data-zoom="in" title="הגדל">+</button>
+      <button data-zoom="fit">התאם לרוחב</button>
+      <button data-zoom="reset">איפוס 100%</button>
+      <span class="tip">Ctrl+גלגלת לזום · גרירה להזזה</span>
+    </div>
+    <div class="diagram">
+      <div class="mermaid">
+flowchart TD
+  PAGES["GitHub Pages<br/>מגיש את קבצי האתר"]:::svc
+  BROWSER["הלוח<br/>בדפדפן, במחשב או בנייד"]:::client
+
+  subgraph SB["Supabase - הפרויקט האישי: התחברות, טבלאות, Realtime"]
+    direction LR
+    DOCS[("מסמך המשימות<br/>כל המשימות")]:::data
+    JOBS[("תור האייג'נטים<br/>הודעות ותשובות")]:::data
+    RUNNERS[("רשימת המחשבים<br/>מי מחובר, אילו פרויקטים")]:::data
+  end
+
+  subgraph WORK["מחשב העבודה - רק חשבונות עבודה"]
+    direction TB
+    WCFG{{"הגדרות הראנר<br/>פרויקטים ותיקיות מותרות"}}:::gate
+    WRUN["ראנר<br/>Node, רץ ברקע"]:::svc
+    WENG["Claude Code / Codex<br/>חשבונות עבודה"]:::svc
+    WTREE[("תיקייה וענף<br/>לכל משימה")]:::data
+    VSC["VS Code<br/>סקירה ומיזוג ידני"]:::client
+  end
+
+  subgraph HOME["המחשב האישי - רק החשבון האישי"]
+    direction TB
+    HCFG{{"הגדרות הראנר<br/>פרויקטים ותיקיות מותרות"}}:::gate
+    HRUN["ראנר<br/>Node, רץ ברקע"]:::svc
+    HENG["Codex<br/>חשבון אישי"]:::svc
+    HTREE[("תיקייה וענף<br/>לכל משימה")]:::data
+    HVSC["VS Code<br/>סקירה ומיזוג ידני"]:::client
+  end
+
+  HAI["OpenAI<br/>החשבון האישי"]:::principal
+  WAI["Anthropic / OpenAI<br/>חשבונות העבודה"]:::principal
+
+  PAGES -->|"קבצי האתר"| BROWSER
+  BROWSER -->|"שמירת המשימות"| DOCS
+  BROWSER -->|"הודעה לאייג'נט"| JOBS
+  JOBS -.->|"Realtime: תשובות"| BROWSER
+
+  JOBS <-->|"מקבל הודעות,<br/>מחזיר תשובות"| WRUN
+  WRUN -->|"כל דקה: אני מחובר"| RUNNERS
+  WCFG --> WRUN
+  WRUN -->|"ההודעה"| WENG
+  WENG -->|"עורך קבצים"| WTREE
+  WTREE --> VSC
+  WENG <-->|"קוד ושיחה"| WAI
+
+  JOBS <-->|"מקבל הודעות,<br/>מחזיר תשובות"| HRUN
+  HRUN -->|"כל דקה: אני מחובר"| RUNNERS
+  HCFG --> HRUN
+  HRUN -->|"ההודעה"| HENG
+  HENG -->|"עורך קבצים"| HTREE
+  HTREE --> HVSC
+  HENG <-->|"קוד ושיחה"| HAI
+
+  classDef client    fill:#e8f1fe,stroke:#2f80ed,stroke-width:2px,color:#12305f;
+  classDef gate      fill:#fff2e6,stroke:#f2994a,stroke-width:2px,color:#7a4a12;
+  classDef principal fill:#ececff,stroke:#5b6cff,stroke-width:2px,color:#2a2a7a;
+  classDef svc       fill:#e6f7f6,stroke:#17a2a2,stroke-width:2px,color:#0d5c5c;
+  classDef data      fill:#e7ebf5,stroke:#1f2d5a,stroke-width:2px,color:#1f2d5a;
+      </div>
+    </div>
+  </div>
+
+  <div class="card">
+    <h2>מקרא הצבעים</h2>
+    <ul class="legend">
+      <li><span class="swatch" style="background:#e8f1fe;border-color:#2f80ed"></span>מה שהמשתמש רואה ונוגע בו (הלוח, VS Code)</li>
+      <li><span class="swatch" style="background:#e6f7f6;border-color:#17a2a2"></span>תוכנה שרצה (אתר, Realtime, ראנר, מנועי האייג'נטים)</li>
+      <li><span class="swatch" style="background:#e7ebf5;border-color:#1f2d5a"></span>נתונים (טבלאות בענן, תיקיות עבודה בדיסק)</li>
+      <li><span class="swatch" style="background:#fff2e6;border-color:#f2994a"></span>שער ובקרה (התחברות, הגדרות שקובעות מה מותר)</li>
+      <li><span class="swatch" style="background:#ececff;border-color:#5b6cff"></span>חשבונות AI חיצוניים</li>
+    </ul>
+    <p class="muted">חץ רציף = בקשה או שליחה. חץ מקווקו = תשובה שחוזרת (לולאת המשוב: התוצאה עולה לתור, ו-Realtime מביא אותה ללוח).</p>
+  </div>
+
+  <div class="card notes">
+    <h2>הסבר קצר</h2>
+
+    <h3>הרכיבים</h3>
+    <ul>
+      <li><strong>הלוח</strong> - אתר סטטי (HTML ו-JavaScript) ש-GitHub Pages מגיש. הוא לא מריץ כלום במחשב: הוא רק קורא וכותב ל-Supabase.</li>
+      <li><strong>Supabase</strong> - הענן היחיד באמצע. התחברות, ושלוש טבלאות: המסמך עם כל המשימות, התור של ההודעות לאייג'נטים והתשובות שלהם, ורשימת המחשבים. Realtime משדר כל שינוי מיד לכל מי שמחובר. כל משתמש רואה רק את השורות שלו (RLS).</li>
+      <li><strong>הראנר</strong> - תוכנית Node קטנה שרצה ברקע בכל מחשב פיתוח. היא מתחברת לאותו חשבון של הלוח, לוקחת רק הודעות שמיועדות למחשב שלה, ומפעילה את המנוע.</li>
+      <li><strong>המנוע</strong> - Claude Code או Codex, אותם כלים שעובדים איתם ידנית, רק בלי מסך. כל אחד מחובר לחשבון של הפרופיל שלו, ושולח את הקוד והשיחה לספק ה-AI של אותו חשבון.</li>
+      <li><strong>תיקייה וענף לכל משימה</strong> - העותק שהאייג'נט עובד בו (git worktree), ליד תיקיית הפרויקט ולא בתוכה. משם עוברים על העבודה ב-VS Code וממזגים ידנית.</li>
+    </ul>
+
+    <h3>מסלול של הודעה אחת</h3>
+    <ol>
+      <li>בלוח שולחים תת-משימה לאייג'נט. שורה חדשה נכנסת לתור: לאיזה מחשב, איזה פרויקט, איזו תת-משימה, והטקסט. תת-המשימה עוברת ל"ממתין לתגובה".</li>
+      <li>הראנר של אותו מחשב שומע על השורה (Realtime, ובנוסף בדיקה כל 15 שניות), תופס אותה ומסמן "עובד".</li>
+      <li>הראנר מכין את התיקייה והענף של המשימה, ומעביר את ההודעה למנוע של הפרופיל, עם החשבון של הפרופיל.</li>
+      <li>המנוע עובד: קורא ועורך קבצים בתיקייה, ומדבר עם ספק ה-AI שלו.</li>
+      <li>הראנר כותב לתור את התוצאה: סטטוס, סיכום, ענף ומספר קבצים שהשתנו. הפירוט המלא נשאר בלוג במחשב.</li>
+      <li>Realtime מביא את התוצאה ללוח. תת-המשימה עוברת ל"בעבודה אצלי", והתשובה מופיעה בחלון האייג'נט. אפשר לענות, וההודעה הבאה ממשיכה את אותה שיחה.</li>
+    </ol>
+
+    <h3>איזה מידע נמצא איפה</h3>
+    <table>
+      <tr><th>מידע</th><th>איפה הוא נמצא</th></tr>
+      <tr><td>הקוד של הפרויקטים</td><td>רק במחשב שלו, ואצל ספק ה-AI של החשבון שעובד עליו. לא עולה ל-Supabase.</td></tr>
+      <tr><td>משימות, ההודעות לאייג'נטים</td><td>Supabase (הפרויקט האישי), כולל משימות עבודה.</td></tr>
+      <tr><td>תשובות האייג'נט</td><td>פרויקטים של העבודה: רק סיכום קצר בלי קוד. פרויקטים אישיים: סיכום מלא. הפירוט המלא בלוג המקומי.</td></tr>
+      <tr><td>נתיבי תיקיות, איזה חשבון מריץ מה</td><td>רק בקובץ ההגדרות של כל מחשב. לענן עולה רק נתיב תיקיית העבודה, בשביל כפתור "פתיחה ב-VS Code".</td></tr>
+      <tr><td>ההתחברות של הראנר</td><td>קובץ בתיקיית המשתמש בכל מחשב. הסיסמה לא נשמרת.</td></tr>
+    </table>
+
+    <h3>ההפרדה בין עבודה לאישי</h3>
+    <ul>
+      <li><strong>פיזית:</strong> כל עולם רץ במחשב משלו. קוד העבודה והחשבונות של העבודה לא נמצאים במחשב האישי, וההתחברות האישית לא נמצאת במחשב העבודה.</li>
+      <li><strong>בהגדרות:</strong> כל ראנר מכיר רק את הפרויקטים שלו, ודוחה הודעה לפרויקט אחר. ההודעה מהלוח מציינת רק מחשב ומפתח פרויקט, לא נתיב ולא חשבון.</li>
+      <li><strong>נקודת המפגש היחידה:</strong> הלוח וה-Supabase שלו משותפים, ולכן טקסט המשימות של העבודה נשמר בפרויקט האישי.</li>
+    </ul>
+
+    <h3>כשמחשב כבוי</h3>
+    <ul>
+      <li>אחרי 3 דקות בלי דיווח הלוח מציג אותו "לא מחובר". הלוח עצמו ו-Supabase ממשיכים לעבוד.</li>
+      <li>אפשר להמשיך לשלוח לפרויקטים שלו, גם מהנייד: ההודעות מחכות בתור, והראנר מריץ אותן לפי הסדר כשהמחשב עולה.</li>
+      <li>הודעה שהייתה באמצע עבודה מסומנת "נכשל" כשהראנר עולה שוב. התיקייה, הענף והשיחה נשמרים.</li>
+    </ul>
+
+    <p class="muted">המצב בקוד היום: כל פרויקט משויך למנוע אחד. במחשב העבודה אפשר להחזיק את Claude ואת Codex בפרופילים נפרדים, אבל לפרויקטים שונים.</p>
+    <p class="muted">הדיאגרמה נרנדרת בדפדפן. רק הספרייה של Mermaid נטענת מהרשת, והתוכן לא יוצא מהקובץ.</p>
+  </div>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/mermaid@11/dist/mermaid.min.js"></script>
+<script>
+  mermaid.initialize({
+    startOnLoad: false,
+    theme: "base",
+    securityLevel: "loose",
+    flowchart: { htmlLabels: true, curve: "basis", nodeSpacing: 45, rankSpacing: 55 }
+  });
+
+  // Render first, then wire zoom controls that scale ONLY the diagram (not the page).
+  mermaid.run().then(setupZoom).catch(function (e) { console.error(e); });
+
+  function setupZoom() {
+    var container = document.querySelector(".diagram");
+    var svg = container ? container.querySelector("svg") : null;
+    var level = document.querySelector(".zoom-level");
+    if (!svg) return;
+
+    // Natural width from the SVG viewBox (falls back to the measured width).
+    var baseWidth = (svg.viewBox && svg.viewBox.baseVal && svg.viewBox.baseVal.width)
+      ? svg.viewBox.baseVal.width
+      : svg.getBoundingClientRect().width;
+
+    var zoom = 1;
+    var MIN = 0.3, MAX = 5;
+
+    function apply() {
+      svg.style.maxWidth = "none";
+      svg.style.width = (baseWidth * zoom) + "px";
+      svg.style.height = "auto";
+      if (level) level.textContent = Math.round(zoom * 100) + "%";
+    }
+    function setZoom(z) { zoom = Math.min(MAX, Math.max(MIN, z)); apply(); }
+
+    document.querySelectorAll("[data-zoom]").forEach(function (btn) {
+      btn.addEventListener("click", function () {
+        var action = btn.getAttribute("data-zoom");
+        if (action === "in") setZoom(zoom * 1.2);
+        else if (action === "out") setZoom(zoom / 1.2);
+        else if (action === "reset") setZoom(1);
+        else if (action === "fit") setZoom((container.clientWidth - 24) / baseWidth);
+      });
+    });
+
+    // Ctrl + mouse wheel zooms the diagram only.
+    container.addEventListener("wheel", function (e) {
+      if (!e.ctrlKey) return;
+      e.preventDefault();
+      setZoom(zoom * (e.deltaY < 0 ? 1.1 : 1 / 1.1));
+    }, { passive: false });
+
+    // Drag to pan when zoomed in.
+    var dragging = false, startX = 0, startY = 0, startLeft = 0, startTop = 0;
+    container.addEventListener("mousedown", function (e) {
+      dragging = true; container.classList.add("panning");
+      startX = e.pageX; startY = e.pageY;
+      startLeft = container.scrollLeft; startTop = container.scrollTop;
+    });
+    window.addEventListener("mouseup", function () {
+      dragging = false; container.classList.remove("panning");
+    });
+    window.addEventListener("mousemove", function (e) {
+      if (!dragging) return;
+      container.scrollLeft = startLeft - (e.pageX - startX);
+      container.scrollTop = startTop - (e.pageY - startY);
+    });
+
+    setZoom(baseWidth > container.clientWidth - 24 ? (container.clientWidth - 24) / baseWidth : 1);
+  }
+</script>
+</body>
+</html>

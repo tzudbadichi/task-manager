@@ -158,13 +158,20 @@ const byCreatedAt = (a, b) => a.createdAt - b.createdAt;
 /**
  * The machine that gets a new job of a task: the one that ran the task's previous job (it holds the
  * agent's conversation and work folder) while it is connected; otherwise the connected one seen last.
+ * When no machine with the project is connected, the job is still addressed to one - it waits in the
+ * queue, and that machine's runner takes it when it starts. null only when no machine offers the project.
  */
 export function pickRunnerForJob(projectKey, runners, taskJobs, now) {
-  const candidates = runners.filter(runner => isRunnerOnline(runner, now) && runner.projects.some(project => project.key === projectKey));
-  if (candidates.length === 0) return null;
+  const offering = runners.filter(runner => runner.projects.some(project => project.key === projectKey));
+  if (offering.length === 0) return null;
+  const seenLast = list => list.reduce((latest, runner) => (runner.lastSeenAt > latest.lastSeenAt ? runner : latest));
   const previousRunnerId = taskJobs.filter(job => job.projectKey === projectKey).sort(byCreatedAt).at(-1)?.runnerId;
-  return candidates.find(runner => runner.id === previousRunnerId)
-    ?? candidates.reduce((latest, runner) => (runner.lastSeenAt > latest.lastSeenAt ? runner : latest));
+  const previous = offering.find(runner => runner.id === previousRunnerId) ?? null;
+  if (previous && isRunnerOnline(previous, now)) return previous;
+  const online = offering.filter(runner => isRunnerOnline(runner, now));
+  if (online.length > 0) return seenLast(online);
+  // Nobody is connected: the message waits in the queue for the machine that ran this task, or the one seen last.
+  return previous ?? seenLast(offering);
 }
 
 /** The conversation of one subtask with its agent, oldest first. */

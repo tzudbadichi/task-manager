@@ -597,7 +597,7 @@ function agentTurn(job, now, isRunnerConnected) {
           isActive && h('span', { class: 'agent-spinner', 'aria-hidden': 'true' }), AGENT_JOB_VIEW[job.status].label)),
       isActive && h('p', { class: 'muted small' }, canClose
         ? 'המחשב שמריץ את זה לא מחובר כרגע. אם הוא לא יחזור, אפשר לסגור את הריצה כאן.'
-        : activeJobText(job, now)),
+        : activeJobText(job, now, isRunnerConnected)),
       job.summary && h('p', { class: 'agent-msg-text' }, job.summary),
       job.error && h('p', { class: 'agent-msg-error' }, job.error),
       hasMeta && h('div', { class: 'agent-meta' },
@@ -618,9 +618,13 @@ function cancelLabel(job, canClose) {
   return canClose ? 'סגירת הריצה' : 'לעצור את האייג\'נט';
 }
 
-function activeJobText(job, now) {
+function activeJobText(job, now, isRunnerConnected) {
   if (job.cancelRequested) return 'ביקשנו מהאייג\'נט לעצור...';
-  if (job.status === 'queued') return 'ממתין שהמחשב יתחיל לעבוד עליו...';
+  if (job.status === 'queued') {
+    return isRunnerConnected
+      ? 'ממתין שהמחשב יתחיל לעבוד עליו...'
+      : 'המחשב לא מחובר כרגע. ההודעה מחכה בתור, ותתחיל כשהראנר יעלה.';
+  }
   return `עובד כבר ${formatElapsed(now - (job.startedAt ?? job.createdAt))}`;
 }
 

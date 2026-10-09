@@ -83,6 +83,7 @@ project-root/
 ├── tests/                        # בדיקות יחידה (node:test), כולל הראנר
 │   └── fixtures/                 # localStorage מדומה, מחולל מזהים, Supabase מדומה, client שאילתות מדומה
 ├── html/agent-farm-setup-guide.html     # מדריך התקנה לחוות האייג'נטים (עם צ'קבוקסים)
+├── html/agent-farm-architecture.html    # דיאגרמת הארכיטקטורה: לוח, Supabase, ראנרים, מנועים, ומה עובר בכל חץ
 ├── .github/workflows/deploy-pages.yml   # בדיקות + config.js + פריסה ל-GitHub Pages
 ├── Kingdom_of_Claudes_Beloved_MDs/      # מסמכי פירוט לכל רכיב
 ├── package.json                  # סקריפטים: test, serve, runner, runner:login, runner:check

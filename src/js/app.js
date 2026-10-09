@@ -11,7 +11,7 @@ import {
   renderBackupBanner, renderCategoriesList, renderDashboard, renderFilters, renderNextPick, renderSeasonBadge, renderSwatches,
   renderSyncStatus, renderTaskDetail, renderTaskGrid, renderTasksEmptyState, renderTodayBar, suggestCategoryColor,
 } from './render.js';
-import { hydrateIcons } from './icons.js';
+import { hydrateIcons, icon } from './icons.js';
 import { h } from './dom.js';
 import { createId, dateStamp, truncate } from './utils.js';
 import { createCloud, loadCloudConfig } from './cloud.js';
@@ -22,6 +22,7 @@ import { buildStatusReport } from './report.js';
 import { SEASONS, getSeasonForDate, resolveSeason } from './seasons.js';
 import { buildPersona } from './people-model.js';
 import { MAX_PEOPLE, createPeopleWorld } from './people-view.js';
+import { WORLDS, getWorld } from './worlds/index.js';
 import { burstConfetti, playChime, prefersReducedMotion } from './celebrate.js';
 import { isVoiceSupported, startDictation, voiceErrorMessage } from './voice.js';
 import { createAgentHub } from './agent-hub.js';
@@ -72,6 +73,7 @@ const els = {
   todayBar: byId('today-bar'),
   peopleScene: byId('people-scene'),
   seasonBadge: byId('season-badge'),
+  viewToggle: byId('view-toggle'),
   nextDialog: byId('next-dialog'),
   nextBody: byId('next-body'),
   reportDialog: byId('report-dialog'),
@@ -157,7 +159,7 @@ const peopleWorld = createPeopleWorld(els.peopleScene, {
     const task = state.tasks.find(item => item.id === taskId);
     if (!task) return null;
     const now = Date.now();
-    return buildPersona(task, state.categories.find(category => category.id === task.categoryId) ?? null, { now, today: myDayDate(now) });
+    return buildPersona(task, state.categories.find(category => category.id === task.categoryId) ?? null, { now, today: myDayDate(now), world: currentWorld() });
   },
   // Conversations only when turned on, on the app screen (not behind login or loading), and not behind a dialog.
   canTalk: () => ui.display.chatter && document.body.dataset.view === 'app' && !document.querySelector('dialog[open]'),
@@ -184,6 +186,8 @@ function render() {
   pruneCategoryFilter(state);
   applyTheme(state.settings.theme);
   applySeason(now);
+  applyWorld();
+  renderViewToggle();
   renderDashboard(els.dashboard, state, ui.filters);
   renderTodayBar(els.todayBar, state, { today: dateStamp(new Date(now)), showMyDay: ui.display.myDay });
   renderFilters(els.filters, state, ui.filters);
@@ -220,8 +224,9 @@ function renderTasks(state, now, today) {
   }
   const categoriesById = new Map(state.categories.map(category => [category.id, category]));
   const shownTasks = visibleTasks.slice(0, MAX_PEOPLE);
-  const personas = shownTasks.map(task => buildPersona(task, categoriesById.get(task.categoryId) ?? null, { now, today }));
-  peopleWorld.update(personas, { seasonKey: currentSeason, hiddenCount: visibleTasks.length - shownTasks.length, now });
+  const world = currentWorld();
+  const personas = shownTasks.map(task => buildPersona(task, categoriesById.get(task.categoryId) ?? null, { now, today, world }));
+  peopleWorld.update(personas, { world, seasonKey: currentSeason, hiddenCount: visibleTasks.length - shownTasks.length, now });
 }
 
 /** The office over the whole screen (people view), or back in the page. */
@@ -245,6 +250,41 @@ function isVoiceAvailable() {
 }
 
 /** Holiday theme (seasons.js): colors via html[data-season], plus the badge in the top bar. */
+/** The people view's themed world, chosen per device (worlds/index.js). */
+function currentWorld() {
+  return getWorld(ui.display.world);
+}
+
+/**
+ * A themed world also tints the app: html[data-world] makes --world-accent the accent color (styles.css),
+ * and a holiday's color still wins over it.
+ */
+function applyWorld() {
+  const world = currentWorld();
+  const root = document.documentElement;
+  if (root.dataset.world === world.key) return;
+  if (world.accent) {
+    root.dataset.world = world.key;
+    root.style.setProperty('--world-accent', world.accent.light);
+    root.style.setProperty('--world-accent-dark', world.accent.dark);
+  } else {
+    delete root.dataset.world;
+    root.style.removeProperty('--world-accent');
+    root.style.removeProperty('--world-accent-dark');
+  }
+}
+
+/** The top bar's one-click switch between the tiles and the characters shows where it leads. */
+function renderViewToggle() {
+  const toCharacters = ui.display.view !== 'people';
+  const label = toCharacters ? 'מעבר לתצוגת הדמויות' : 'מעבר לתצוגת הריבועים';
+  if (els.viewToggle.dataset.target === String(toCharacters)) return;
+  els.viewToggle.dataset.target = String(toCharacters);
+  els.viewToggle.title = label;
+  els.viewToggle.setAttribute('aria-label', label);
+  els.viewToggle.replaceChildren(icon(toCharacters ? 'users' : 'grid'));
+}
+
 function applySeason(now) {
   const seasonKey = resolveSeason(ui.display.season, new Date(now));
   if (seasonKey === currentSeason) return;
@@ -385,6 +425,7 @@ const clickActions = {
   'complete-task': ({ taskId }, element) => completeTask(taskId, element),
   'open-next': () => openNextDialog(),
   'people-fullscreen': () => setPeopleFullscreen(!els.peopleScene.classList.contains('is-fullscreen')),
+  'toggle-view': () => updateDisplay({ view: ui.display.view === 'people' ? 'grid' : 'people' }),
   'next-start': ({ taskId, subtaskId }, element) => startNextPick(taskId, subtaskId, element),
   'next-my-day': ({ taskId, subtaskId }) => {
     if (toggleMyDay(taskId, subtaskId)) showNextResult(taskId, subtaskId);
@@ -473,6 +514,7 @@ const changeActions = {
     syncSettingsForm();
   },
   'setting-view': (_, element) => updateDisplay({ view: element.value }),
+  'set-world': (_, element) => updateDisplay({ world: element.value }),
   'setting-season': (_, element) => updateDisplay({ season: element.value }),
   'setting-toggle': ({ setting }, element) => {
     if (DISPLAY_TOGGLE_KEYS.includes(setting)) updateDisplay({ [setting]: element.checked });
@@ -1027,6 +1069,7 @@ function syncSettingsForm() {
   const fields = els.settingsForm.elements;
   fields.theme.value = settings.theme;
   fields.view.value = ui.display.view;
+  fields.world.value = ui.display.world;
   fields.season.value = ui.display.season;
   for (const key of DISPLAY_TOGGLE_KEYS) fields[key].checked = ui.display[key];
   fields.sound.disabled = !ui.display.celebrate;
@@ -1173,7 +1216,7 @@ function agentSendBlocker(task, project, activeJob) {
   if (agentSnapshot.status === 'unavailable') return 'צריך קודם להריץ את supabase/schema.sql המעודכן ב-Supabase.';
   if (agentSnapshot.status !== 'ready') return 'מתחבר לרשימת המחשבים...';
   if (!task.agentProject) return 'קודם בוחרים בחלון המשימה לאיזה פרויקט היא שייכת.';
-  if (!project?.online) return 'אף מחשב שמכיר את הפרויקט הזה לא מחובר כרגע. אפשר לשלוח כשהראנר יעלה.';
+  if (!project) return 'אף מחשב לא מציע כרגע את הפרויקט הזה. אולי הוא הוסר מההגדרות של הראנר.';
   if (project.isMismatched) return 'הפרויקט מוגדר אחרת במחשבים שונים (מנוע או פרופיל). צריך להתאים את ההגדרות של הראנרים.';
   if (activeJob) return 'האייג\'נט עוד עובד על ההודעה הקודמת. את הבאה שולחים כשהוא מסיים (או עוצרים אותו).';
   return null;
@@ -1199,12 +1242,16 @@ function renderAgentDialog({ isOpening = false } = {}) {
   if (wasAtEnd) thread.scrollTop = thread.scrollHeight;
 
   const blocker = agentSendBlocker(task, project, jobs.find(job => isJobActive(job.status)));
+  // No machine with the project is connected: sending still works - the message waits in the queue.
+  const offlineNote = !blocker && !project.online
+    ? 'אף מחשב עם הפרויקט הזה לא מחובר כרגע. אפשר לשלוח בכל זאת: ההודעה תחכה בתור, ותתחיל כשהראנר יעלה.'
+    : null;
   els.agentSend.disabled = Boolean(blocker) || isAgentSending;
   els.agentMessageLabel.textContent = jobs.length > 0 ? 'תשובה או הנחיה נוספת' : 'מה לעשות? (אופציונלי)';
-  els.agentHint.textContent = blocker ?? (jobs.length > 0
+  els.agentHint.textContent = blocker ?? offlineNote ?? (jobs.length > 0
     ? 'ההודעה ממשיכה את אותה שיחה, באותה תיקיית עבודה. Ctrl+Enter שולח.'
     : 'הכותרת, התיאור ותת-המשימה נשלחים לאייג\'נט יחד עם מה שכתוב כאן. אפשר גם לשלוח בלי לכתוב כלום.');
-  els.agentHint.classList.toggle('is-warning', Boolean(blocker));
+  els.agentHint.classList.toggle('is-warning', Boolean(blocker || offlineNote));
 }
 
 async function sendToAgent() {
@@ -1222,7 +1269,7 @@ async function sendToAgent() {
   }
   const taskJobs = agentSnapshot.jobs.filter(job => job.taskId === task.id);
   const runner = pickRunnerForJob(task.agentProject, agentSnapshot.runners, taskJobs, now);
-  if (!runner) return; // the blocker above already covers "no connected machine"
+  if (!runner) return; // the blocker above already covers "no machine offers this project"
   // The conversation lives on the machine: one that has not seen this task (or subtask) yet gets its context.
   const context = promptContextFor(taskJobs, subtask.id, runner.id);
   const message = els.agentMessage.value;
@@ -1245,7 +1292,9 @@ async function sendToAgent() {
       prompt: composeAgentPrompt({ task, subtask, message, context }),
     });
     if (agentTarget === target) els.agentMessage.value = '';
-    showToast(`נשלח לאייג'נט (${runner.name})`, { tone: 'success', durationMs: 2500 });
+    showToast(isRunnerOnline(runner, Date.now())
+      ? `נשלח לאייג'נט (${runner.name})`
+      : `נשמר בתור. יתחיל כשהראנר ב-${runner.name} יעלה`, { tone: 'success', durationMs: 4000 });
   } catch {
     showToast('השליחה לאייג\'נט נכשלה. כדאי לבדוק את החיבור ולנסות שוב.', { tone: 'error' });
   } finally {
@@ -1510,6 +1559,7 @@ function onTick() {
 async function start() {
   hydrateIcons();
   fillSeasonSelect(els.settingsForm.elements.season);
+  els.settingsForm.elements.world.replaceChildren(...WORLDS.map(world => h('option', { value: world.key }, world.label)));
   setupDragAndDrop();
   store.subscribe(onStoreChange);
   render();

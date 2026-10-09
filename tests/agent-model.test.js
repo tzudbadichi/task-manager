@@ -145,6 +145,18 @@ describe('projects and machines', () => {
     assert.equal(pickRunnerForJob('portal', runners, [job('j1', { runnerId: 'c' })], T0).id, 'b');
     assert.equal(pickRunnerForJob('unknown', runners, [], T0), null);
   });
+
+  test('when no machine with the project is connected, the job waits in the queue for one of them', () => {
+    const offline = T0 - RUNNER_ONLINE_MS - 1;
+    const runners = [
+      runner('work', { lastSeenAt: offline - MINUTE, projects: [portal] }),
+      runner('spare', { lastSeenAt: offline, projects: [portal] }),
+      runner('home', { lastSeenAt: T0, projects: [notes] }),
+    ];
+    assert.equal(pickRunnerForJob('portal', runners, [job('j1', { runnerId: 'work' })], T0).id, 'work', 'the machine that holds the conversation');
+    assert.equal(pickRunnerForJob('portal', runners, [], T0).id, 'spare', 'otherwise the one seen last');
+    assert.equal(pickRunnerForJob('portal', runners, [job('j1', { runnerId: 'gone' })], T0).id, 'spare');
+  });
 });
 
 describe('jobs per subtask and the sync actions', () => {
