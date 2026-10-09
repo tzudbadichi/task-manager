@@ -57,6 +57,9 @@
       <button type="button" class="btn btn-ghost" data-action="open-categories" title="קטגוריות וצבעים">
         <span data-icon="tag"></span><span class="btn-label">קטגוריות</span>
       </button>
+      <button type="button" id="view-toggle" class="icon-btn view-toggle" data-action="toggle-view" title="מעבר לתצוגת הדמויות" aria-label="מעבר לתצוגת הדמויות">
+        <span data-icon="users"></span>
+      </button>
       <button type="button" class="icon-btn" data-action="toggle-theme" title="מצב בהיר / כהה" aria-label="מצב בהיר / כהה">
         <span data-icon="moon"></span>
       </button>
@@ -267,6 +270,10 @@
             <option value="grid">ריבועים</option>
             <option value="people">דמויות מונפשות</option>
           </select>
+        </label>
+        <label class="setting-line">
+          <span>ערכת נושא לדמויות</span>
+          <select name="world" class="select" data-action="set-world"></select>
         </label>
         <label class="setting-line">
           <span>ערכת צבעים</span>

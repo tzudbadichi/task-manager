@@ -176,7 +176,10 @@ describe('what a character does next', () => {
   test('a character comments on what it is doing', () => {
     const persona = { title: 'גרסה 2.0', subtaskTitle: 'בדיקות', progress: { done: 0, total: 1 } };
     assert.equal(composePoseLine('sip', persona, { random: () => 0 }), 'רק קפה אחד וחוזרים לעבודה');
-    assert.equal(composePoseLine('think', persona, { random: () => 0 }), 'רגע, מאיפה מתחילים עם "בדיקות"?');
+    assert.equal(composePoseLine('think', persona, { random: () => 0 }), 'מה הצעד הבא? אולי "בדיקות"');
     assert.equal(composePoseLine('walk', persona), null);
+    // A themed world speaks its own lines.
+    const lines = { poses: { sip: ['חבית אחת ו"{task}" ממשיך'] } };
+    assert.equal(composePoseLine('sip', persona, { random: () => 0, lines }), 'חבית אחת ו"גרסה 2.0" ממשיך');
   });
 });

@@ -113,7 +113,7 @@
 
 `ui-prefs.js` שומר במפתח `taskManager.ui.v1`, לכל מכשיר בנפרד (לא מסונכרן):
 - `filters` - סינון קטגוריות, סינון סטטוס, הצגת הושלמו ומיון (ברירת מחדל: "הסדר שלי"). טקסט החיפוש לא נשמר בכוונה.
-- `display` (`DEFAULT_DISPLAY`) - `view` (`grid` / `people`, ראו `PEOPLE_VIEW.md`), `season` (`auto` / `off` / מפתח חג, ראו `SEASONAL_THEMES.md`), ומתגים: `celebrate` (פועל), `sound` (כבוי), `chatter` (פועל), `myDay` (פועל), `voice` (פועל), `voiceConsent` (האישור החד-פעמי להכתבה, ראו `VOICE_INPUT.md`).
+- `display` (`DEFAULT_DISPLAY`) - `view` (`grid` / `people`, ראו `PEOPLE_VIEW.md`), `world` (ערכת הנושא של הדמויות - מפתח מ-`WORLD_KEYS`, ברירת מחדל `office`, ראו `WORLDS.md`), `season` (`auto` / `off` / מפתח חג, ראו `SEASONAL_THEMES.md`), ומתגים: `celebrate` (פועל), `sound` (כבוי), `chatter` (פועל), `myDay` (פועל), `voice` (פועל), `voiceConsent` (האישור החד-פעמי להכתבה, ראו `VOICE_INPUT.md`).
 
 ערכים לא חוקיים חוזרים לברירת מחדל, גם בטעינה וגם בשמירה.
 

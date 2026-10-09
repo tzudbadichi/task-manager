@@ -6,6 +6,7 @@
 import { STATUSES } from './statuses.js';
 import { findFocusSubtask, getDustLevel } from './selectors.js';
 import { DAY_MS, formatElapsed, hashString, truncate } from './utils.js';
+import OFFICE_WORLD from './worlds/office.js';
 
 // What a character does, found by keywords in the task's texts. "keywords" are specific (a bug, a
 // supplier email); "weak" ones are generic words ("to fix", "team") that count only when no specific
@@ -52,6 +53,18 @@ const SKIN_TONES = Object.freeze(['#ffe0c4', '#f9d7bd', '#f1c27d', '#e0ac69', '#
 const HAIR_COLORS = Object.freeze(['#1f1f1f', '#2d1b0e', '#4a2c16', '#8b5a2b', '#a0522d', '#c0392b', '#d4a017', '#f3d27a', '#9ca3af', '#e5e7eb']);
 const DYED_HAIR_COLORS = Object.freeze(['#3b82f6', '#ec4899', '#8b5cf6', '#10b981']);
 const FUR_COLORS = Object.freeze({
+  owl: ['#a16207', '#78716c', '#d6d3d1', '#92400e'],
+  ghost: ['#f8fafc', '#e0f2fe'],
+  tree: ['#92400e', '#78350f', '#a16207'],
+  parrot: ['#ef4444', '#22c55e', '#3b82f6', '#f59e0b'],
+  octopus: ['#f472b6', '#a855f7', '#fb923c', '#ef4444'],
+  fish: ['#f97316', '#38bdf8', '#facc15', '#a3e635', '#f472b6'],
+  turtle: ['#65a30d', '#16a34a', '#84cc16'],
+  dino: ['#22c55e', '#84cc16', '#14b8a6', '#a855f7', '#f97316'],
+  horse: ['#92400e', '#78350f', '#f5f5f4', '#374151', '#d6a46c'],
+  droid: ['#e2e8f0', '#cbd5e1', '#94a3b8', '#fde68a'],
+  yeti: ['#92400e', '#f5f5f4', '#a8a29e', '#78350f'],
+  critter: ['#facc15', '#f472b6', '#60a5fa', '#4ade80', '#fb923c', '#c084fc'],
   cat: ['#f59e0b', '#9ca3af', '#4b5563', '#f3f4f6', '#fde68a', '#a16207'],
   dog: ['#a16207', '#d4a017', '#374151', '#f5f5f4', '#92400e', '#e7c18f'],
   bear: ['#92400e', '#78350f', '#f1f5f9', '#b45309', '#57534e'],
@@ -76,8 +89,14 @@ const HEADWEAR = Object.freeze([[null, 62], ['cap', 7], ['beanie', 6], ['headpho
 const EYEWEAR = Object.freeze([[null, 66], ['round', 13], ['square', 12], ['sun', 9]]);
 const FACIAL_HAIR = Object.freeze([[null, 74], ['beard', 11], ['mustache', 9], ['goatee', 6]]);
 const ACCESSORIES = Object.freeze([[null, 46], ['scarf', 12], ['bowtie', 10], ['necklace', 10], ['badge', 12], ['tie', 10]]);
-// Glasses do not fit every face.
-const NO_EYEWEAR_KINDS = new Set(['frog', 'penguin', 'robot', 'alien']);
+// Kinds with a human face (human skin tones, beards); glasses fit them and a few animals.
+const HUMANLIKE_KINDS = new Set(['human', 'elf', 'dwarf', 'hobbit', 'merfolk']);
+const EYEWEAR_KINDS = new Set([...HUMANLIKE_KINDS, 'cat', 'dog', 'bear', 'fox', 'panda', 'rabbit', 'monkey']);
+// Some folk are small (or big) whatever their size.
+const KIND_SIZE = Object.freeze({ hobbit: 0.82, dwarf: 0.87, critter: 0.8, yeti: 1.08 });
+// Hair styles (HAIR_STYLES order in art.js) that suit a kind: elves and merfolk long, hobbits curly.
+const KIND_HAIR_STYLES = Object.freeze({ elf: [1, 5, 2], merfolk: [1, 5], hobbit: [10, 4] });
+const DYED_HAIR_SHARE = 0.08;
 // Share of characters that dress up for a holiday (the rest keep their own hats, for variety).
 const FESTIVE_SHARE = 0.65;
 
@@ -156,35 +175,45 @@ export function getMood(task, focusSubtask, now, dustLevel) {
 }
 
 /**
- * A stable, varied look per task. kind: human, an animal, a robot or an alien. skin is the skin tone
- * (humans) or the fur / metal color; size scales the whole character; pace is its walking speed (0-1).
+ * A stable, varied look per task. cast: the world's choices (worlds/*.js "cast": weighted kinds, outfits,
+ * headwear, eyewear and held items); anything it leaves out comes from the office's defaults.
+ * kind: human, a fantasy folk, an animal, a robot, an alien...; skin is the skin tone (human faces) or the
+ * fur / feathers / metal color; size scales the whole character; pace is its walking speed (0-1).
  */
-export function lookOf(taskId) {
+export function lookOf(taskId, cast = {}) {
   const random = seededRandom(hashString(String(taskId)));
-  const kind = pickWeightedValue(KIND_WEIGHTS, random);
-  const isHuman = kind === 'human';
+  const kind = pickWeightedValue(cast.kinds ?? KIND_WEIGHTS, random);
+  const hasHumanFace = HUMANLIKE_KINDS.has(kind);
   const look = {
     kind,
-    skin: isHuman ? pickFrom(SKIN_TONES, random) : pickFrom(FUR_COLORS[kind], random),
-    hair: random() < 0.08 ? pickFrom(DYED_HAIR_COLORS, random) : pickFrom(HAIR_COLORS, random),
+    skin: hasHumanFace ? pickFrom(SKIN_TONES, random) : pickFrom(FUR_COLORS[kind] ?? FUR_COLORS.cat, random),
+    hair: random() < (cast.dyedHairShare ?? DYED_HAIR_SHARE) ? pickFrom(DYED_HAIR_COLORS, random) : pickFrom(HAIR_COLORS, random),
     hairStyle: Math.floor(random() * HAIR_STYLE_COUNT),
     build: pickFrom(BUILDS, random),
     headSize: pickFrom(HEAD_SIZES, random),
     size: 0.86 + random() * 0.26,
-    outfit: pickFrom(OUTFITS, random),
+    outfit: cast.outfits ? pickWeightedValue(cast.outfits, random) : pickFrom(OUTFITS, random),
     pants: pickFrom(PANTS_COLORS, random),
     shoes: pickFrom(SHOE_COLORS, random),
     accent: pickFrom(ACCENT_COLORS, random),
-    headwear: pickWeightedValue(HEADWEAR, random),
-    eyewear: pickWeightedValue(EYEWEAR, random),
+    headwear: pickWeightedValue(cast.headwear ?? HEADWEAR, random),
+    eyewear: pickWeightedValue(cast.eyewear ?? EYEWEAR, random),
     facialHair: pickWeightedValue(FACIAL_HAIR, random),
     accessory: pickWeightedValue(ACCESSORIES, random),
+    held: pickWeightedValue(cast.held ?? [[null, 1]], random),
     spotted: random() < 0.3,
     festive: random() < FESTIVE_SHARE,
     pace: random(),
   };
-  if (!isHuman) look.facialHair = null;
-  if (NO_EYEWEAR_KINDS.has(kind)) look.eyewear = null;
+  if (!hasHumanFace) look.facialHair = null;
+  if (!EYEWEAR_KINDS.has(kind)) look.eyewear = null;
+  if (KIND_HAIR_STYLES[kind]) look.hairStyle = KIND_HAIR_STYLES[kind][look.hairStyle % KIND_HAIR_STYLES[kind].length];
+  if (kind === 'dwarf') {
+    look.facialHair = 'bigbeard';
+    look.build = 'broad';
+  }
+  if (kind === 'elf') look.build = 'slim';
+  look.size *= KIND_SIZE[kind] ?? 1;
   return look;
 }
 
@@ -231,8 +260,11 @@ export function nextBehavior(mood, { atHome = false, seatFree = false } = {}, ra
   }
 }
 
-/** Everything the view and the chatter need to know about one task's character. */
-export function buildPersona(task, category, { now, today }) {
+/**
+ * Everything the view and the chatter need to know about one task's character.
+ * world: the themed world (worlds/*.js) its look comes from; the office by default.
+ */
+export function buildPersona(task, category, { now, today, world = OFFICE_WORLD }) {
   const focus = findFocusSubtask(task);
   const dustLevel = getDustLevel(task, now);
   const doneCount = task.subtasks.filter(subtask => subtask.status === 'done').length;
@@ -252,7 +284,8 @@ export function buildPersona(task, category, { now, today }) {
     idleLabel: dustLevel > 0 ? formatElapsed(now - task.updatedAt) : null,
     dustLevel,
     isMyDay: task.subtasks.some(subtask => subtask.myDay === today && subtask.status !== 'done'),
-    look: lookOf(task.id),
+    look: lookOf(task.id, world.cast),
+    worldKey: world.key,
   };
 }
 
@@ -263,54 +296,8 @@ export function buildPersona(task, category, { now, today }) {
 
 const TITLE_LENGTH = 24;
 
-const OPENERS = Object.freeze({
-  idle: [
-    'מתי מתחילים עם "{sub}"?',
-    'יש לי תוכנית: קודם "{sub}". רק צריך להתחיל',
-    'מישהו יודע מה הצעד הראשון ב"{task}"?',
-  ],
-  working: [
-    'באמצע "{sub}", לא להפריע',
-    'עוד קצת ו"{sub}" מאחוריי',
-    '{done} מתוך {total} כבר בכיס',
-  ],
-  sweating: [
-    'כבר {elapsed} על "{sub}". חם פה',
-    '"{sub}" לא נגמר... כבר {elapsed}',
-  ],
-  waiting: [
-    'שלחתי, ועכשיו מחכים לתשובה על "{sub}"',
-    'עדיין אין תשובה על "{sub}"',
-  ],
-  bored: [
-    '{elapsed} בלי תשובה על "{sub}". אולי תזכורת?',
-    'עוד מחכים... כבר {elapsed}',
-  ],
-  sleeping: [
-    'לא נגעו בי {idle}. זוכרים אותי?',
-    'תעירו אותי כשמתחילים עם "{task}"',
-  ],
-  celebrating: [
-    'סיימנו את "{task}"!',
-    'הכל סגור: {total} מתוך {total}',
-  ],
-});
-
-const REPLIES = Object.freeze({
-  idle: ['אולי עכשיו? אפשר להתחיל בקטן', 'קדימה, צעד ראשון', 'הכפתור "מה עכשיו?" יכול לבחור'],
-  working: ['בהצלחה!', 'רוצה קפה?', 'איזה קצב!'],
-  sweating: ['מגיעה לך הפסקה', 'אולי לפרק את זה לצעדים קטנים?'],
-  waiting: ['זה יגיע, סבלנות', 'גם אצלי לפעמים לוקח זמן'],
-  bored: ['אולי לשלוח תזכורת?', 'שווה להרים טלפון'],
-  sleeping: ['מישהו צריך לנער פה את האבק', 'אולי פשוט לסגור את זה?'],
-  celebrating: ['כל הכבוד!', 'מגיעה חגיגה', 'מתי המסיבה?'],
-});
-
-const SMALL_TALK = Object.freeze([
-  ['מה נשמע?', 'יש עבודה, אין תלונות'],
-  ['מי בא לקפה?', 'עוד חמש דקות'],
-  ['ראיתם את המטען שלי?', 'בדיוק איפה שהשארת אותו'],
-]);
+// The lines themselves live in the worlds (worlds/<key>.js "lines"); the office's are the default.
+const OFFICE_LINES = OFFICE_WORLD.lines;
 
 const SMALL_TALK_CHANCE = 0.12;
 const MY_DAY_CHANCE = 0.5;
@@ -322,7 +309,7 @@ function choose(list, random) {
 }
 
 // One pass with a function, so a title that contains "$&" or "{total}" is inserted as is.
-function fill(template, persona) {
+function fill(template, persona, { greeting = '' } = {}) {
   const values = {
     sub: truncate(persona.subtaskTitle, TITLE_LENGTH),
     task: truncate(persona.title, TITLE_LENGTH),
@@ -330,59 +317,55 @@ function fill(template, persona) {
     total: String(persona.progress.total),
     elapsed: persona.elapsedLabel ?? 'הרבה זמן',
     idle: persona.idleLabel ?? 'הרבה זמן',
+    category: truncate(persona.categoryName ?? '', 16),
+    greeting,
   };
-  return template.replace(/\{(sub|task|done|total|elapsed|idle)\}/g, (_, key) => values[key]);
+  return template.replace(/\{(sub|task|done|total|elapsed|idle|category|greeting)\}/g, (_, key) => values[key]);
 }
 
-// What a character says to itself while doing something (no listener needed).
-const POSE_LINES = Object.freeze({
-  sip: ['רק קפה אחד וחוזרים לעבודה', 'הקפה היום חזק במיוחד', 'הפסקה קטנה, מגיעה לנו'],
-  sit: ['רק דקה על הספה...', 'הספה הזו נוחה מדי'],
-  sleep: ['זזז...', 'עוד חמש דקות...'],
-  look: ['איזה יום בחוץ', 'מה עושים עכשיו?', 'סיבוב קטן במשרד'],
-  think: ['רגע, מאיפה מתחילים עם "{sub}"?', 'צריך תוכנית ל"{task}"'],
-  work: ['מתקדמים עם "{sub}"', 'עוד קצת ועוד קצת'],
-  wait: ['כמה עוד אפשר לחכות?', 'אולי כבר ענו?'],
-  dance: ['סיימנו! מסיבה!', 'יש! "{task}" מאחורינו'],
-});
+/** The placeholders a world's lines may use (tests/worlds.test.js checks them). */
+export const LINE_PLACEHOLDERS = Object.freeze(['sub', 'task', 'done', 'total', 'elapsed', 'idle', 'category', 'greeting']);
 
-/** A line for what the character is doing right now (null when there is nothing to say about it). */
-export function composePoseLine(pose, persona, { random = Math.random } = {}) {
-  const lines = POSE_LINES[pose];
-  return lines ? fill(choose(lines, random), persona) : null;
+/**
+ * A line for what the character is doing right now (null when there is nothing to say about it).
+ * lines: the world's lines (worlds/*.js); the office's by default - as for the functions below.
+ */
+export function composePoseLine(pose, persona, { random = Math.random, lines = OFFICE_LINES } = {}) {
+  const poseLines = lines.poses?.[pose];
+  return poseLines?.length ? fill(choose(poseLines, random), persona) : null;
 }
 
 /** What a character says about itself (a hover, or a character alone on the floor). */
-export function composeMonologue(persona, { random = Math.random, greeting = null } = {}) {
+export function composeMonologue(persona, { random = Math.random, greeting = null, lines = OFFICE_LINES } = {}) {
   if (greeting && random() < SEASON_CHANCE) return [{ from: 0, text: `${greeting}!` }];
   if (persona.isMyDay && persona.mood !== 'celebrating' && random() < MY_DAY_CHANCE) {
-    return [{ from: 0, text: `"${truncate(persona.subtaskTitle, TITLE_LENGTH)}" ברשימה של היום שלי!` }];
+    return [{ from: 0, text: fill(lines.myDay, persona) }];
   }
-  return [{ from: 0, text: fill(choose(OPENERS[persona.mood] ?? OPENERS.idle, random), persona) }];
+  return [{ from: 0, text: fill(choose(lines.openers[persona.mood] ?? lines.openers.idle, random), persona) }];
 }
 
 /**
  * A short exchange between two characters: [{ from: 0 | 1, text }]. The first speaks about its task,
  * the second answers (and sometimes mentions what it is busy with itself).
  */
-export function composeConversation(speaker, listener, { random = Math.random, greeting = null } = {}) {
+export function composeConversation(speaker, listener, { random = Math.random, greeting = null, lines = OFFICE_LINES } = {}) {
   if (random() < SMALL_TALK_CHANCE) {
-    const [question, answer] = choose(SMALL_TALK, random);
+    const [question, answer] = choose(lines.smallTalk, random);
     return [{ from: 0, text: question }, { from: 1, text: answer }];
   }
   if (greeting && random() < SEASON_CHANCE) {
-    return [{ from: 0, text: `${greeting}!` }, { from: 1, text: `${greeting} גם לך!` }];
+    return [{ from: 0, text: `${greeting}!` }, { from: 1, text: fill(lines.greetingReply, speaker, { greeting }) }];
   }
-  const lines = composeMonologue(speaker, { random });
+  const exchange = composeMonologue(speaker, { random, lines });
   const isSameCategory = speaker.categoryName && speaker.categoryName === listener.categoryName;
   if (isSameCategory && random() < SAME_CATEGORY_CHANCE) {
-    lines.push({ from: 1, text: `גם אני ב${truncate(speaker.categoryName, 16)}. נעבוד ביחד` });
+    exchange.push({ from: 1, text: fill(lines.sameCategory, speaker) });
   } else {
-    lines.push({ from: 1, text: choose(REPLIES[speaker.mood] ?? REPLIES.idle, random) });
+    exchange.push({ from: 1, text: fill(choose(lines.replies[speaker.mood] ?? lines.replies.idle, random), speaker) });
   }
   // Now and then the listener shares what it is stuck with, too.
   if (listener.mood !== 'celebrating' && listener.mood !== 'sleeping' && random() < 0.3) {
-    lines.push({ from: 1, text: `ואני עוד על "${truncate(listener.subtaskTitle, TITLE_LENGTH)}"` });
+    exchange.push({ from: 1, text: fill(lines.listenerBusy, listener) });
   }
-  return lines;
+  return exchange;
 }

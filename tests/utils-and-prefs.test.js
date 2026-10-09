@@ -83,11 +83,11 @@ describe('UI preferences', () => {
 
   test('display choices round-trip; unknown values fall back to the defaults', () => {
     const storage = createMemoryStorage();
-    const display = { view: 'people', season: 'hanukkah', celebrate: false, sound: true, chatter: false, myDay: false, voice: false, voiceConsent: true };
+    const display = { view: 'people', world: 'pirates', season: 'hanukkah', celebrate: false, sound: true, chatter: false, myDay: false, voice: false, voiceConsent: true };
     saveUiPrefs(storage, { filters: loadUiPrefs(null).filters, display });
     assert.deepEqual(loadUiPrefs(storage).display, display);
     const invalid = loadUiPrefs(createMemoryStorage({
-      [UI_PREFS_KEY]: JSON.stringify({ display: { view: 'list', season: 'christmas', sound: 'yes', extra: 1 } }),
+      [UI_PREFS_KEY]: JSON.stringify({ display: { view: 'list', world: 'narnia', season: 'christmas', sound: 'yes', extra: 1 } }),
     }));
     assert.deepEqual(invalid.display, { ...DEFAULT_DISPLAY });
     assert.equal(DEFAULT_DISPLAY.view, 'grid');

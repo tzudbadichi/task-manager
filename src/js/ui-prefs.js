@@ -5,6 +5,7 @@
 
 import { STATUSES } from './statuses.js';
 import { SEASON_PREFERENCES } from './seasons.js';
+import { DEFAULT_WORLD_KEY, WORLD_KEYS } from './worlds/index.js';
 
 export const UI_PREFS_KEY = 'taskManager.ui.v1';
 export const SORT_KEYS = Object.freeze(['manual', 'status', 'updated', 'created', 'category']);
@@ -20,6 +21,8 @@ export const DEFAULT_FILTERS = Object.freeze({
 
 export const DEFAULT_DISPLAY = Object.freeze({
   view: 'grid',
+  // The people view's themed world (worlds/index.js).
+  world: DEFAULT_WORLD_KEY,
   season: 'auto',
   celebrate: true,
   sound: false,
@@ -45,6 +48,7 @@ function normalizeDisplay(raw) {
   const source = asObject(raw);
   const display = {
     view: VIEW_KEYS.includes(source.view) ? source.view : DEFAULT_DISPLAY.view,
+    world: WORLD_KEYS.includes(source.world) ? source.world : DEFAULT_DISPLAY.world,
     season: SEASON_PREFERENCES.includes(source.season) ? source.season : DEFAULT_DISPLAY.season,
   };
   for (const key of BOOLEAN_DISPLAY_KEYS) display[key] = typeof source[key] === 'boolean' ? source[key] : DEFAULT_DISPLAY[key];

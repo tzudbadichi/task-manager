@@ -7,24 +7,8 @@
 // on y = 112. CSS rotates the arms around the shoulders (37,62) / (55,62) and the legs around the hips
 // (41,88) / (51,88). Stations keep the coordinates they had next to the figure (x 68-140).
 
-const SVG_NS = 'http://www.w3.org/2000/svg';
-
-function svg(tag, attributes = {}, ...children) {
-  const node = document.createElementNS(SVG_NS, tag);
-  for (const [name, value] of Object.entries(attributes)) {
-    if (value !== null && value !== undefined && value !== false) node.setAttribute(name, String(value));
-  }
-  for (const child of children.flat(Infinity)) if (child) node.append(child);
-  return node;
-}
-
-const group = (className, ...children) => svg('g', { class: className }, ...children);
-const rect = (x, y, width, height, fill, extra = {}) => svg('rect', { x, y, width, height, fill, ...extra });
-const circle = (cx, cy, r, fill, extra = {}) => svg('circle', { cx, cy, r, fill, ...extra });
-const ellipse = (cx, cy, rx, ry, fill, extra = {}) => svg('ellipse', { cx, cy, rx, ry, fill, ...extra });
-const path = (d, fill, extra = {}) => svg('path', { d, fill, ...extra });
-const line = (x1, y1, x2, y2, stroke, width, extra = {}) =>
-  svg('line', { x1, y1, x2, y2, stroke, 'stroke-width': width, 'stroke-linecap': 'round', ...extra });
+import { circle, darker, ellipse, group, lighter, line, path, rect, svg } from './svg-kit.js';
+import { createWorldStationArt, worldDecorParts } from './art-worlds.js';
 
 const WOOD = '#b07a4f';
 const WOOD_DARK = '#8b5e3c';
@@ -189,7 +173,13 @@ function doneFlag() {
 // ---------------------------------------------------------------------------
 
 /** The station of an activity (desk with a laptop, easel, cart...), with a check flag once the task is done. */
-export function createStationArt(activity, { done = false } = {}) {
+/**
+ * The station of an activity (desk with a laptop, easel, cart...), with a check flag once the task is done.
+ * worldStation: a themed world's station key (art-worlds.js) to draw instead.
+ */
+export function createStationArt(activity, { done = false, worldStation = null } = {}) {
+  const themed = worldStation && createWorldStationArt(worldStation, { done, doneFlag });
+  if (themed) return themed;
   return svg('svg', { viewBox: '68 20 72 96', class: 'station-art', 'aria-hidden': 'true', focusable: 'false' },
     (STATIONS[activity] ?? STATIONS.coffee)(), done && doneFlag());
 }
@@ -225,13 +215,6 @@ function cupInHand() {
 // the traits; the shirt is always in the task's category color (CSS --cat-color).
 // ---------------------------------------------------------------------------
 
-function mixColor(color, other, amount) {
-  const channels = hex => [1, 3, 5].map(index => Number.parseInt(hex.slice(index, index + 2), 16));
-  const [from, to] = [channels(color), channels(other)];
-  return `#${from.map((value, index) => Math.round(value + (to[index] - value) * amount).toString(16).padStart(2, '0')).join('')}`;
-}
-const lighter = (color, amount = 0.5) => mixColor(color, '#ffffff', amount);
-const darker = (color, amount = 0.3) => mixColor(color, '#000000', amount);
 
 const MOOD_FACES = {
   idle: { eyes: 'open', mouth: 'smile' },
@@ -300,11 +283,18 @@ const HAIR_STYLES = [
 
 const FACIAL_HAIR_ART = {
   beard: hair => path('M33 42 Q33 56 47 56 Q61 56 60 41 Q58 48 47.5 48.5 Q36 48 33 42 Z', hair),
+  bigbeard: hair => path('M31 41 Q29 63 47 66 Q64 63 61 40 Q58 49 47.5 49.5 Q36 49 31 41 Z', hair),
   mustache: hair => path('M42.5 45.5 q2.6 -2 5 0 q2.4 -2 5 0 q-2.6 2.4 -5 0.8 q-2.4 1.6 -5 -0.8 Z', hair),
   goatee: hair => path('M45 50.5 q2.5 2 5 0 l-1 4 q-1.5 1.2 -3 0 Z', hair),
 };
 
 const EYEWEAR_ART = {
+  eyepatch: ([, [x2, y2]]) => [path('M30 35 L62 46', 'none', { stroke: '#111827', 'stroke-width': 1 }), ellipse(x2, y2, 3.8, 3.4, '#111827')],
+  goggles: ([[x1, y1], [x2, y2]], look) => [
+    path(`M30 ${y1} H62`, 'none', { stroke: '#334155', 'stroke-width': 2 }),
+    circle(x1, y1, 3.9, '#a5f3fc', { stroke: look?.accent ?? '#334155', 'stroke-width': 1.8, 'fill-opacity': 0.75 }),
+    circle(x2, y2, 3.9, '#a5f3fc', { stroke: look?.accent ?? '#334155', 'stroke-width': 1.8, 'fill-opacity': 0.75 }),
+  ],
   round: ([[x1, y1], [x2, y2]]) => [
     circle(x1, y1, 3.4, 'none', { stroke: INK, 'stroke-width': 1 }), circle(x2, y2, 3.4, 'none', { stroke: INK, 'stroke-width': 1 }),
     path(`M${x1 + 3.4} ${y1} Q${(x1 + x2) / 2} ${y1 - 1.5} ${x2 - 3.4} ${y2} M${x1 - 3.4} ${y1} L${x1 - 7.5} ${y1 - 1}`, 'none', { stroke: INK, 'stroke-width': 1 }),
@@ -322,6 +312,29 @@ const EYEWEAR_ART = {
 };
 
 const HEADWEAR_ART = {
+  wizard: look => [path('M33 29 Q45 11 53 1 Q52 16 59 29 Z', look.accent), ellipse(46, 29, 19, 3.6, darker(look.accent, 0.15)), rect(35.5, 25, 21, 3, darker(look.accent, 0.35)), circle(49, 15, 1.4, '#facc15')],
+  helmet: () => [path('M30 37 A16 16 0 0 1 62 37 Z', '#94a3b8'), rect(29, 34, 34, 4, '#64748b', { rx: 1.5 }), rect(44.8, 34, 2.6, 9, '#64748b', { rx: 1 }),
+    path('M31 31 q-7 -3 -6 -12 q4 7 9 8 Z', '#f5f5f4'), path('M61 31 q7 -3 6 -12 q-4 7 -9 8 Z', '#f5f5f4')],
+  bubble: () => [circle(46, 40, 21.5, '#bae6fd', { 'fill-opacity': 0.22, stroke: '#e0f2fe', 'stroke-width': 1.6 }), path('M32 30 q5 -7 13 -9', 'none', { stroke: '#ffffff', 'stroke-width': 1.6, 'stroke-linecap': 'round', 'stroke-opacity': 0.8 })],
+  tricorn: () => [path('M33 31 Q46 12 59 31 Z', '#1f2937'), path('M25 32 Q46 21 67 32 Q58 27 46 25.5 Q34 27 25 32 Z', '#111827'), path('M27 31.5 Q46 21.5 65 31.5', 'none', { stroke: '#facc15', 'stroke-width': 0.9 })],
+  bandana: look => [path('M31 37 A15 14 0 0 1 61 37 Z', look.accent), path('M31.5 36 l-7 3.5 l5 2.5 Z', look.accent), ...[[38, 30], [46, 28], [54, 31]].map(([x, y]) => circle(x, y, 1, '#ffffff'))],
+  mask: (look, [[x1, y1], [x2, y2]] = HUMAN_EYES) => [
+    path(`M30 ${y1 - 3.5} H62 V${y1 + 3.5} H30 Z M${x1 - 3} ${y1} a3 2.6 0 1 0 6 0 a3 2.6 0 1 0 -6 0 Z M${x2 - 3} ${y2} a3 2.6 0 1 0 6 0 a3 2.6 0 1 0 -6 0 Z`, look.accent, { 'fill-rule': 'evenodd' }),
+    path(`M30.5 ${y1 - 1} l-6 -3 M30.5 ${y1 + 1} l-6 3`, 'none', { stroke: look.accent, 'stroke-width': 1.6, 'stroke-linecap': 'round' }),
+  ],
+  toque: () => [rect(35, 22, 22, 12, '#ffffff', { stroke: '#e2e8f0', 'stroke-width': 0.8 }), circle(37.5, 20, 6, '#ffffff'), circle(46, 16.5, 7, '#ffffff'), circle(54.5, 20, 6, '#ffffff'), rect(34, 30.5, 24, 4.5, '#f1f5f9', { stroke: '#e2e8f0', 'stroke-width': 0.8, rx: 1 })],
+  laurel: () => [...[-4, -3, -2, -1, 1, 2, 3, 4].map(step => {
+    const angle = (step * 18 * Math.PI) / 180;
+    const cx = 46 + Math.sin(angle) * 15.5;
+    const cy = 40 - Math.cos(angle) * 15.5;
+    return ellipse(cx, cy, 1.9, 3.4, '#eab308', { transform: `rotate(${step * 18 + (step < 0 ? 35 : -35)} ${cx} ${cy})` });
+  })],
+  cowboy: () => [ellipse(46, 30.5, 22, 4.2, '#92400e'), path('M35 30.5 Q34.5 15 46 18.5 Q57.5 15 57 30.5 Z', '#a16207'), rect(35.4, 26, 21.2, 3.2, '#78350f'), path('M46 18.5 v6', 'none', { stroke: '#78350f', 'stroke-width': 1 })],
+  safari: () => [path('M31 34 A15 14 0 0 1 61 34 Z', '#e7d3a1'), ellipse(46, 34, 20, 3.6, '#d6c08f'), rect(31.5, 30.5, 29, 2.6, '#a16207')],
+  visor: (look, [[x1, y1], [x2, y2]] = HUMAN_EYES) => [rect(x1 - 5.5, y1 - 3.5, x2 - x1 + 11, 7, look.accent, { rx: 3.5, 'fill-opacity': 0.85, class: 'p-glow' }), line(x1 - 3, y1 - 1.5, x1 + 1, y1 - 1.5, '#ffffff', 0.9, { 'stroke-opacity': 0.8 })],
+  hood: () => path('M28 50 Q26 22 46 21 Q66 22 64 50 Q61 30 46 29.5 Q31 30 28 50 Z', null, { class: 'p-torso-dark' }),
+  kerchief: look => [path('M30 38 Q32 22 46 22 Q60 22 62 38 Q46 30 30 38 Z', look.accent), path('M30.5 37 l-5 5 l6 -1 Z', look.accent)],
+  earpiece: () => [path('M31.5 39 q-3 2 -1 5', 'none', { stroke: '#111827', 'stroke-width': 1.8, 'stroke-linecap': 'round' }), path('M30.5 44 q-2 6 3 10', 'none', { stroke: '#94a3b8', 'stroke-width': 0.8 })],
   cap: look => [path('M31 37 A15 14 0 0 1 61 37 Z', look.accent), path('M56 35.5 h11 a1.6 1.6 0 0 1 0 3.2 h-11 Z', darker(look.accent, 0.2)), circle(46, 23.3, 1.4, darker(look.accent, 0.25))],
   beanie: look => [path('M30.5 37.5 A15.5 16 0 0 1 61.5 37.5 Z', look.accent), rect(30.5, 34, 31, 4.6, lighter(look.accent, 0.35), { rx: 2 }), circle(46, 20.5, 3.4, '#ffffff')],
   headphones: look => [path('M30 42 A16 17 0 0 1 62 42', 'none', { stroke: INK, 'stroke-width': 2.6 }), rect(27.3, 37, 5.4, 10, look.accent, { rx: 2.2 }), rect(59.3, 37, 5.4, 10, look.accent, { rx: 2.2 })],
@@ -465,6 +478,123 @@ const HEADS = {
     eyes: { anchors: [[42, 40], [52.5, 40]], style: 'big', color: '#111827' },
     mouth: { anchor: [47.5, 49] },
   }),
+  // Fantasy folk: human heads with a twist (pointed ears; dwarves' big beard and hobbits' curls come from the look).
+  elf: look => ({ ...humanHead(look), base: [circle(46, 40, 15, look.skin), path('M33.5 44 L21 32.5 L33.5 37.5 Z', look.skin), line(31, 41, 25, 35.5, darker(look.skin, 0.15), 0.8)] }),
+  dwarf: humanHead,
+  hobbit: humanHead,
+  merfolk: humanHead,
+  owl: look => {
+    const feathers = look.skin;
+    return {
+      back: [path('M33 31 L30 18 L40 27 Z', feathers), path('M59 31 L62 18 L52 27 Z', feathers)],
+      base: circle(46, 40, 15.5, feathers),
+      features: [circle(42, 40, 6.6, lighter(feathers, 0.6)), circle(52, 40, 6.6, lighter(feathers, 0.6)), path('M31 33 Q46 27 61 33', 'none', { stroke: darker(feathers, 0.25), 'stroke-width': 1.4 })],
+      eyes: { anchors: [[42, 40], [52, 40]], style: 'big', color: '#1f2937' },
+      mouth: { custom: path('M45 44 l2.5 5.5 l2.5 -5.5 Z', '#f59e0b') },
+    };
+  },
+  ghost: look => ({
+    base: path('M30 44 A16 16 0 0 1 62 44 L62 56 L30 56 Z', look.skin, { 'fill-opacity': 0.92 }),
+    eyes: { anchors: [[41, 40], [52, 40]], style: 'big', color: '#334155' },
+    mouth: { anchor: [46.5, 48.5], color: '#334155' },
+    cheeks: true,
+  }),
+  tree: look => {
+    const bark = look.skin;
+    return {
+      back: [circle(36, 26, 9, '#16a34a'), circle(47, 19, 11, '#22c55e'), circle(58, 25, 9, '#15803d'), circle(46, 28, 10, '#16a34a')],
+      base: rect(32, 27, 28, 29, bark, { rx: 9 }),
+      features: path('M36 32 v7 M57 34 v8 M38 52 q3 2 6 0', 'none', { stroke: darker(bark, 0.3), 'stroke-width': 1.2, 'stroke-linecap': 'round' }),
+      eyes: { anchors: [[42, 41], [52, 41]] },
+      mouth: { anchor: [47.5, 48.5] },
+    };
+  },
+  parrot: look => {
+    const feathers = look.skin;
+    return {
+      back: [path('M42 27 q-5 -9 1 -13 q0 7 5 10 Z', lighter(feathers, 0.2)), path('M47 26 q-1 -9 6 -10 q-3 6 0 10 Z', darker(feathers, 0.15))],
+      base: circle(46, 40, 15, feathers),
+      features: [circle(51.5, 39, 4.6, '#ffffff'), path('M55 36 q10 1 8 10 q-3 -3 -8 -3 Z', '#f59e0b')],
+      eyes: { anchors: [[43, 39], [51.5, 39]] },
+      mouth: { custom: path('M55 44 q5 1 6 -1 l-6 -1.5 Z', '#b45309') },
+    };
+  },
+  octopus: look => ({
+    base: ellipse(46, 37, 16.5, 18, look.skin),
+    features: [circle(38, 28, 2.2, lighter(look.skin, 0.4)), circle(53, 25, 1.6, lighter(look.skin, 0.4)), circle(57, 32, 1.4, lighter(look.skin, 0.4))],
+    eyes: { anchors: [[42, 40], [52, 40]], style: 'big', color: '#111827' },
+    mouth: { anchor: [47, 48.5] },
+    cheeks: true,
+  }),
+  fish: look => {
+    const scales = look.skin;
+    return {
+      back: path('M38 29 q8 -13 19 -1 Z', darker(scales, 0.2)),
+      base: ellipse(47, 40, 17, 14, scales),
+      features: [path('M36 34 q-3 6 0 12', 'none', { stroke: darker(scales, 0.25), 'stroke-width': 1.3 }), path('M38 45 l-7 4 l8 1 Z', darker(scales, 0.2))],
+      eyes: { anchors: [[46, 37], [55, 37]], style: 'big', color: '#111827' },
+      mouth: { anchor: [58, 45], width: 0.6 },
+    };
+  },
+  turtle: look => ({
+    base: circle(46, 41, 14, look.skin),
+    features: [circle(40, 33, 1.8, darker(look.skin, 0.2)), circle(53, 31, 1.4, darker(look.skin, 0.2))],
+    eyes: { anchors: [[42, 41], [52, 41]] },
+    mouth: { anchor: [47.5, 48] },
+    cheeks: true,
+  }),
+  dino: look => {
+    const skin = look.skin;
+    return {
+      back: [[36, 27], [42, 23], [49, 22], [56, 24]].map(([x, y]) => path(`M${x - 3} ${y + 3} L${x} ${y - 4} L${x + 3} ${y + 3} Z`, darker(skin, 0.25))),
+      base: path('M31 45 Q29 27 46 25 Q59 24 62 35 L71 38 Q76 45 69 49 L50 51 Q33 53 31 45 Z', skin),
+      features: [circle(70, 41, 0.9, darker(skin, 0.5)), path('M56 49.5 l1.5 2.5 l1.5 -2.5 Z M61 49 l1.5 2.5 l1.5 -2.5 Z', '#ffffff')],
+      eyes: { anchors: [[44, 36], [53, 35]] },
+      mouth: { anchor: [60, 46], width: 0.8 },
+    };
+  },
+  horse: look => {
+    const coat = look.skin;
+    const mane = darker(coat, 0.4);
+    return {
+      back: [path('M40 26 l1 -8 l5 6 Z', coat), path('M33 30 q-7 7 -4 18 q5 -3 7 -10 Z', mane)],
+      base: path('M35 46 Q31 25 46 23 Q58 22 61 34 L67 46 Q68 55 59 55 Q51 55 47 49 Q40 53 35 46 Z', coat),
+      features: [path('M38 25 q6 -4 12 0', 'none', { stroke: mane, 'stroke-width': 2.5 }), ellipse(61, 50, 5.5, 4, lighter(coat, 0.25)), circle(63, 50, 1.1, darker(coat, 0.45))],
+      eyes: { anchors: [[46, 36], [54, 35]] },
+      mouth: { anchor: [60, 53], width: 0.6 },
+    };
+  },
+  droid: look => ({
+    base: [path('M30 47 A16 16 0 0 1 62 47 Z', look.skin, { stroke: '#64748b', 'stroke-width': 1 }), rect(30, 46, 32, 7, look.accent, { rx: 1.5 })],
+    features: [circle(52, 36, 4.2, '#0f172a'), circle(53, 35, 1.3, '#38bdf8'), circle(38, 39, 1.8, '#ef4444', { class: 'p-antenna' })],
+    eyes: { anchors: [[43, 38], [52, 36]], style: 'led' },
+    mouth: { custom: rect(41, 48.5, 10, 2, '#0f172a', { rx: 1 }) },
+  }),
+  yeti: look => {
+    const fur = look.skin;
+    return {
+      back: path('M29 42 l-3 -6 l4 -2 l-2 -6 l5 0 l0 -6 l5 3 l2 -6 l5 4 l4 -5 l4 5 l5 -4 l2 6 l5 -3 l0 6 l5 0 l-2 6 l4 2 l-3 6 Z', fur),
+      base: circle(46, 41, 15.5, fur),
+      features: ellipse(48, 44, 9, 8, lighter(fur, 0.45)),
+      eyes: { anchors: [[44, 41], [52, 41]] },
+      mouth: { anchor: [48, 48] },
+    };
+  },
+  // An original little creature: round, with long or round ears.
+  critter: look => {
+    const fur = look.skin;
+    const inner = lighter(fur, 0.45);
+    const ears = look.spotted
+      ? [circle(34, 28, 6, fur), circle(58, 28, 6, fur), circle(34, 28, 3, inner), circle(58, 28, 3, inner)]
+      : [path('M35 32 L28 10 L43 26 Z', fur), path('M57 32 L64 10 L49 26 Z', fur), path('M34.5 28 L30.5 15 L39.5 25 Z', inner), path('M57.5 28 L61.5 15 L52.5 25 Z', inner)];
+    return {
+      back: ears,
+      base: circle(46, 41, 15, fur),
+      eyes: { anchors: [[42, 40], [52, 40]], style: 'big', color: '#111827' },
+      mouth: { anchor: [47.5, 47.5], width: 0.6 },
+      cheeks: true,
+    };
+  },
 };
 
 // Holiday accessories: hats on the head, or something held in the back hand.
@@ -491,59 +621,168 @@ const BUILD_SHAPES = Object.freeze({
   broad: { x: 31, width: 30, arm: 7, rx: 13 },
 });
 
+// How the body below the head is made, by kind (the rest wear an outfit over a plain body).
+const KIND_BODY = Object.freeze({ robot: 'metal', droid: 'metal', penguin: 'penguin', ghost: 'sheet', tree: 'bark', critter: 'furry' });
+// Kinds that do not walk on two legs.
+const KIND_LEGS = Object.freeze({ ghost: 'none', octopus: 'tentacles', merfolk: 'tail' });
+// Kinds whose legs are fur, scales or bark (no trousers).
+const FURRY_LEGS = new Set(['dino', 'horse', 'yeti', 'critter', 'turtle', 'tree']);
+const BIRD_LEGS = new Set(['owl', 'parrot']);
+// Outfits with sleeves (and trousers) of their own color; the rest wear the category color.
+const OUTFIT_SLEEVES = Object.freeze({ labcoat: '#f8fafc', spacesuit: '#f1f5f9', chef: '#f8fafc', trench: '#c8a27a', khaki: '#d6c08f', neon: '#1e1b4b', armor: '#94a3b8' });
+const OUTFIT_LEGS = Object.freeze({ overalls: '#2563eb', spacesuit: '#f1f5f9', khaki: '#a3825a' });
+
 function limbColors(look) {
-  if (look.kind === 'robot') return { hand: look.skin, sleeve: look.skin, legs: look.skin, shoes: '#475569', legWidth: 6 };
-  if (look.kind === 'penguin') return { hand: '#1f2937', sleeve: '#1f2937', legs: '#f59e0b', shoes: '#f59e0b', legWidth: 4 };
+  const body = KIND_BODY[look.kind];
+  if (body === 'metal') return { hand: look.skin, sleeve: look.skin, legs: look.skin, shoes: '#475569', legWidth: 6 };
+  if (body === 'penguin') return { hand: '#1f2937', sleeve: '#1f2937', legs: '#f59e0b', shoes: '#f59e0b', legWidth: 4 };
+  if (body === 'sheet') return { hand: look.skin, sleeve: look.skin, legs: look.skin, shoes: look.skin, legWidth: 7 };
+  if (body === 'bark') return { hand: '#22c55e', sleeve: look.skin, legs: darker(look.skin, 0.15), shoes: darker(look.skin, 0.35), legWidth: 8 };
+  if (body === 'furry') return { hand: look.skin, sleeve: look.skin, legs: look.skin, shoes: darker(look.skin, 0.2), legWidth: 7 };
+  const sleeve = look.outfit === 'toga' ? look.skin : (OUTFIT_SLEEVES[look.outfit] ?? null); // null: the category color (CSS)
+  if (BIRD_LEGS.has(look.kind)) return { hand: look.skin, sleeve, legs: '#f59e0b', shoes: '#f59e0b', legWidth: 3.5 };
+  if (FURRY_LEGS.has(look.kind)) return { hand: look.skin, sleeve, legs: look.skin, shoes: darker(look.skin, 0.4), legWidth: 7 };
   return {
     hand: look.skin,
-    sleeve: look.outfit === 'labcoat' ? '#f8fafc' : null, // null: the category color (CSS)
-    legs: look.outfit === 'overalls' ? '#2563eb' : look.pants,
-    shoes: look.shoes,
+    sleeve,
+    legs: OUTFIT_LEGS[look.outfit] ?? look.pants,
+    shoes: look.kind === 'hobbit' ? look.skin : look.shoes, // hobbits go barefoot
     legWidth: 7,
   };
 }
 
+function legParts(look, limbs) {
+  const mode = KIND_LEGS[look.kind] ?? 'legs';
+  if (mode === 'none') return [group('p-leg p-leg-back'), group('p-leg p-leg-front')];
+  if (mode === 'tentacles') {
+    const tentacle = (x, side) => path(`M${x} 86 q${-3 * side} 9 ${2 * side} 16 q${4 * side} 5 ${-2 * side} 9`, 'none', { stroke: look.skin, 'stroke-width': 5, 'stroke-linecap': 'round' });
+    return [group('p-leg p-leg-back', tentacle(38, 1), tentacle(43, -1)), group('p-leg p-leg-front', tentacle(49, 1), tentacle(54, -1))];
+  }
+  if (mode === 'tail') {
+    return [group('p-leg p-leg-back'), group('p-leg p-leg-front',
+      path('M36 84 Q34 98 44 106 L38 114 L47 110 L56 114 L50 106 Q60 98 56 84 Z', look.accent),
+      path('M40 92 q6 3 12 0 M42 99 q4 2 8 0', 'none', { stroke: darker(look.accent, 0.25), 'stroke-width': 1 }))];
+  }
+  const footWidth = look.kind === 'hobbit' ? 6.8 : 5;
+  return [
+    group('p-leg p-leg-back', line(41, 88, 40, 109, limbs.legs, limbs.legWidth), ellipse(41.5, 111, footWidth, 2.6, limbs.shoes)),
+    group('p-leg p-leg-front', line(51, 88, 52, 109, limbs.legs, limbs.legWidth), ellipse(54, 111, footWidth, 2.6, limbs.shoes)),
+  ];
+}
+
+// Behind everything: a dinosaur's tail, a turtle's shell.
+function backExtras(look) {
+  if (look.kind === 'dino') return path('M38 80 Q20 84 8 100 Q24 96 40 90 Z', look.skin);
+  if (look.kind === 'turtle') {
+    return [ellipse(40, 72, 15, 19, '#4d7c0f', { stroke: '#365314', 'stroke-width': 1.5 }),
+      path('M32 64 l8 -5 l8 5 v10 l-8 5 l-8 -5 Z', 'none', { stroke: '#365314', 'stroke-width': 1.2 })];
+  }
+  return null;
+}
+
+// A hero's cape hangs behind the body.
+function capeParts(look, build) {
+  if (look.outfit !== 'cape' || KIND_BODY[look.kind]) return null;
+  return path(`M${build.x + 1} 57 Q46 53 ${build.x + build.width - 1} 57 L${build.x + build.width + 9} 104 Q46 98 ${build.x - 9} 104 Z`, null, { class: 'p-torso-dark' });
+}
+
+// Outfits over the body: base is the torso in the category color; x / right / width are its edges.
+const OUTFIT_ART = {
+  tee: ({ base, limbs }) => [base, path('M42 55 Q46 60 50 55 Z', limbs.hand)],
+  hoodie: ({ base, x, right }) => [base, path(`M${x + 3} 57.5 Q46 50 ${right - 3} 57.5 Q46 63 ${x + 3} 57.5 Z`, null, { class: 'p-torso-dark' }),
+    rect(39.5, 77, 13, 7, null, { rx: 3, class: 'p-torso-dark' }), line(44, 58, 43.5, 66, '#f8fafc', 1), line(48, 58, 48.5, 66, '#f8fafc', 1)],
+  suit: ({ base }) => [base, path('M41.5 55 L46 67 L50.5 55 Z', '#f8fafc'), path('M45 56.5 h2 l1.1 9 l-2.1 2.6 l-2.1 -2.6 Z', '#1f2937'),
+    path('M40 55 L46 69 L52 55', 'none', { class: 'p-torso-dark-stroke', 'stroke-width': 1.6 }), circle(46, 75, 1.1, '#1f2937'), circle(46, 81, 1.1, '#1f2937')],
+  dress: ({ base, x, right, width }) => [path(`M${x + 1} 82 L${x - 6} 101 Q46 104 ${right + 6} 101 L${right - 1} 82 Z`, null, { class: 'p-torso' }), base,
+    rect(x, 79, width, 3, null, { class: 'p-torso-dark' })],
+  overalls: ({ base, x, right, width }) => [base, rect(x + 4, 68, width - 8, 23, '#2563eb', { rx: 2 }), line(x + 6, 69, x + 5, 56, '#2563eb', 2.4), line(right - 6, 69, right - 5, 56, '#2563eb', 2.4),
+    circle(x + 6, 70, 1.2, '#facc15'), circle(right - 6, 70, 1.2, '#facc15'), rect(42, 74, 8, 5, '#1d4ed8', { rx: 1 })],
+  labcoat: ({ base, x, right, width, rx }) => [base, rect(x - 1, 56, width + 2, 38, '#f8fafc', { rx, stroke: '#e2e8f0', 'stroke-width': 0.8 }), path('M42 56 L46 68 L50 56 Z', null, { class: 'p-torso' }),
+    line(46, 68, 46, 92, '#e2e8f0', 0.8), rect(right - 9, 66, 6, 6, 'none', { stroke: '#cbd5e1', 'stroke-width': 0.8 }), line(right - 7, 64, right - 7, 68, '#2563eb', 1)],
+  stripes: ({ base, x, width }) => [base, ...[63, 71, 79].map(y => rect(x + 1, y, width - 2, 3, '#ffffff', { 'fill-opacity': 0.45 }))],
+  sweater: ({ base, x, width }) => [base, path('M41 55 l5 4.5 l5 -4.5 Z', '#f8fafc'), rect(x + 0.5, 86, width - 1, 4, null, { rx: 2, class: 'p-torso-dark' })],
+  vest: ({ base, x, right }) => [base,
+    path(`M${x + 0.5} 60 L44 70 L44 90 L${x + 4} 90 Q${x + 0.5} 88 ${x + 0.5} 84 Z`, null, { class: 'p-torso-dark' }),
+    path(`M${right - 0.5} 60 L48 70 L48 90 L${right - 4} 90 Q${right - 0.5} 88 ${right - 0.5} 84 Z`, null, { class: 'p-torso-dark' })],
+  // Themed outfits
+  robe: ({ x, right }) => [path(`M${x} 57 Q46 52 ${right} 57 L${right + 5} 106 Q46 109 ${x - 5} 106 Z`, null, { class: 'p-torso' }),
+    path('M41 56 L46 64 L51 56', 'none', { class: 'p-torso-dark-stroke', 'stroke-width': 1.8 }), line(46, 64, 46, 106, null, 1, { class: 'p-torso-dark-stroke' }), rect(x + 1, 79, right - x - 2, 2.4, '#facc15', { rx: 1 })],
+  armor: ({ base, x, width }) => [base, rect(x + 2, 58, width - 4, 21, '#94a3b8', { rx: 6, stroke: '#64748b', 'stroke-width': 1 }),
+    circle(x + 2, 59, 4.5, '#cbd5e1'), circle(x + width - 2, 59, 4.5, '#cbd5e1'), rect(x, 80, width, 3, '#78350f')],
+  spacesuit: ({ x, width, rx }) => [rect(x, 55, width, 36, '#f1f5f9', { rx, stroke: '#cbd5e1', 'stroke-width': 0.8 }), rect(40.5, 62, 11, 9, null, { rx: 1.5, class: 'p-torso' }),
+    circle(43, 66.5, 1, '#ffffff'), circle(49, 66.5, 1, '#facc15'), rect(x, 80, width, 3, '#94a3b8')],
+  coat: ({ base, x, right }) => [base, path(`M${x} 70 L${x - 4} 100 L44 92 Z M${right} 70 L${right + 4} 100 L48 92 Z`, null, { class: 'p-torso-dark' }),
+    path('M42 55 L46 64 L50 55 Z', '#f8fafc'), ...[64, 71, 78].map(y => circle(43, y, 1, '#facc15')), ...[64, 71, 78].map(y => circle(49, y, 1, '#facc15'))],
+  cape: ({ base }) => [base, circle(46, 67, 4.6, '#facc15'), path('M44 67 l2 -3 l2 3 l-2 3 Z', null, { class: 'p-torso' }), rect(34, 80, 24, 3, '#facc15')],
+  apron: ({ base, x, width }) => [base, rect(x + 3, 62, width - 6, 30, '#f8fafc', { rx: 3 }), line(x + 5, 62, x + 8, 55, '#f8fafc', 1.6), line(x + width - 5, 62, x + width - 8, 55, '#f8fafc', 1.6),
+    rect(42, 74, 8, 6, 'none', { stroke: '#cbd5e1', 'stroke-width': 0.8 })],
+  toga: ({ x, right, width, rx }) => [rect(x, 55, width, 40, '#f8fafc', { rx, stroke: '#e2e8f0', 'stroke-width': 0.8 }),
+    path(`M${right} 56 L${right} 62 L${x + 2} 88 L${x} 82 Z`, null, { class: 'p-torso' }), circle(right - 2, 58, 1.8, '#facc15')],
+  trench: ({ x, right, width, rx }) => [rect(x - 1, 55, width + 2, 42, '#c8a27a', { rx, stroke: '#a16207', 'stroke-width': 0.8 }),
+    path('M41 55 L46 66 L51 55 Z', null, { class: 'p-torso' }), path(`M40 55 L46 70 L52 55`, 'none', { stroke: '#a16207', 'stroke-width': 1.4 }),
+    rect(x - 1, 78, width + 2, 3, '#92400e'), circle(43, 72, 0.9, '#78350f'), circle(49, 72, 0.9, '#78350f')],
+  chef: ({ x, width, rx }) => [rect(x, 55, width, 36, '#f8fafc', { rx, stroke: '#e2e8f0', 'stroke-width': 0.8 }),
+    ...[61, 67, 73, 79].flatMap(y => [circle(42, y, 0.9, '#94a3b8'), circle(50, y, 0.9, '#94a3b8')]),
+    path('M39 55 Q46 61 53 55 L52 59 Q46 63 40 59 Z', null, { class: 'p-torso' })],
+  tunic: ({ base, x, width }) => [base, rect(x, 79, width, 3, '#78350f'), path('M44 56 L46 62 L48 56', 'none', { stroke: '#f8fafc', 'stroke-width': 0.9 }), circle(46, 80.5, 1.4, '#facc15')],
+  khaki: ({ x, width, rx }) => [rect(x, 55, width, 36, '#d6c08f', { rx, stroke: '#a3825a', 'stroke-width': 0.8 }),
+    rect(x + 3, 64, 6, 5, 'none', { stroke: '#a3825a', 'stroke-width': 0.8 }), rect(x + width - 9, 64, 6, 5, 'none', { stroke: '#a3825a', 'stroke-width': 0.8 }),
+    path('M40 55 Q46 61 52 55 L50 60 Q46 63 42 60 Z', null, { class: 'p-torso' })],
+  sheriff: ({ base, x, right }) => [base,
+    path(`M${x + 0.5} 60 L44 70 L44 90 L${x + 4} 90 Q${x + 0.5} 88 ${x + 0.5} 84 Z`, '#78350f'),
+    path(`M${right - 0.5} 60 L48 70 L48 90 L${right - 4} 90 Q${right - 0.5} 88 ${right - 0.5} 84 Z`, '#78350f'),
+    path('M39 64 l1.2 2.4 l2.6 0.3 l-1.9 1.8 l0.5 2.6 l-2.4 -1.3 l-2.4 1.3 l0.5 -2.6 l-1.9 -1.8 l2.6 -0.3 Z', '#facc15')],
+  jumpsuit: ({ base, x, width }) => [base, line(46, 56, 46, 90, null, 1.2, { class: 'p-torso-dark-stroke' }), rect(x, 78, width, 3, '#334155'), rect(x + 3, 62, 6, 4, null, { rx: 1, class: 'p-torso-dark' })],
+  neon: ({ x, width, rx }) => [rect(x, 55, width, 36, '#1e1b4b', { rx }), path('M42 55 L46 66 L50 55 Z', null, { class: 'p-torso' }),
+    rect(x + 1, 55, width - 2, 36, 'none', { rx, class: 'p-torso-glow', 'stroke-width': 1.4 }), line(x + 4, 72, x + width - 4, 72, null, 1.2, { class: 'p-torso-glow' })],
+};
+
 function torsoParts(look, limbs, build) {
   const { x, width, rx } = build;
   const right = x + width;
-  if (look.kind === 'robot') {
-    return [rect(x, 55, width, 36, look.skin, { rx: 5, stroke: '#64748b', 'stroke-width': 1 }), rect(x + 4, 61, width - 8, 15, null, { rx: 2.5, class: 'p-torso' }),
-      circle(42, 83, 1.6, '#ef4444'), circle(47, 83, 1.6, '#facc15'), circle(52, 83, 1.6, '#22c55e')];
-  }
-  if (look.kind === 'penguin') {
-    // A black body with a white belly; the category color is its scarf.
-    return [rect(x, 55, width, 36, '#1f2937', { rx: 13 }), ellipse(46.5, 76, width / 2 - 3, 14, '#f8fafc'),
-      path('M37.5 55 Q46 61.5 54.5 55 L54.5 59.5 Q46 66 37.5 59.5 Z', null, { class: 'p-torso' }), rect(48.5, 59, 5, 11, null, { rx: 1.6, class: 'p-torso' })];
-  }
-  const base = rect(x, 55, width, 36, null, { rx, class: 'p-torso' });
-  switch (look.outfit) {
-    case 'hoodie':
-      return [base, path(`M${x + 3} 57.5 Q46 50 ${right - 3} 57.5 Q46 63 ${x + 3} 57.5 Z`, null, { class: 'p-torso-dark' }),
-        rect(39.5, 77, 13, 7, null, { rx: 3, class: 'p-torso-dark' }), line(44, 58, 43.5, 66, '#f8fafc', 1), line(48, 58, 48.5, 66, '#f8fafc', 1)];
-    case 'suit':
-      return [base, path('M41.5 55 L46 67 L50.5 55 Z', '#f8fafc'), path('M45 56.5 h2 l1.1 9 l-2.1 2.6 l-2.1 -2.6 Z', '#1f2937'),
-        path('M40 55 L46 69 L52 55', 'none', { class: 'p-torso-dark-stroke', 'stroke-width': 1.6 }), circle(46, 75, 1.1, '#1f2937'), circle(46, 81, 1.1, '#1f2937')];
-    case 'dress':
-      return [path(`M${x + 1} 82 L${x - 6} 101 Q46 104 ${right + 6} 101 L${right - 1} 82 Z`, null, { class: 'p-torso' }), base,
-        rect(x, 79, width, 3, null, { class: 'p-torso-dark' })];
-    case 'overalls':
-      return [base, rect(x + 4, 68, width - 8, 23, '#2563eb', { rx: 2 }), line(x + 6, 69, x + 5, 56, '#2563eb', 2.4), line(right - 6, 69, right - 5, 56, '#2563eb', 2.4),
-        circle(x + 6, 70, 1.2, '#facc15'), circle(right - 6, 70, 1.2, '#facc15'), rect(42, 74, 8, 5, '#1d4ed8', { rx: 1 })];
-    case 'labcoat':
-      return [base, rect(x - 1, 56, width + 2, 38, '#f8fafc', { rx, stroke: '#e2e8f0', 'stroke-width': 0.8 }), path('M42 56 L46 68 L50 56 Z', null, { class: 'p-torso' }),
-        line(46, 68, 46, 92, '#e2e8f0', 0.8), rect(right - 9, 66, 6, 6, 'none', { stroke: '#cbd5e1', 'stroke-width': 0.8 }), line(right - 7, 64, right - 7, 68, '#2563eb', 1)];
-    case 'stripes':
-      return [base, ...[63, 71, 79].map(y => rect(x + 1, y, width - 2, 3, '#ffffff', { 'fill-opacity': 0.45 }))];
-    case 'sweater':
-      return [base, path('M41 55 l5 4.5 l5 -4.5 Z', '#f8fafc'), rect(x + 0.5, 86, width - 1, 4, null, { rx: 2, class: 'p-torso-dark' })];
-    case 'vest':
-      return [base,
-        path(`M${x + 0.5} 60 L44 70 L44 90 L${x + 4} 90 Q${x + 0.5} 88 ${x + 0.5} 84 Z`, null, { class: 'p-torso-dark' }),
-        path(`M${right - 0.5} 60 L48 70 L48 90 L${right - 4} 90 Q${right - 0.5} 88 ${right - 0.5} 84 Z`, null, { class: 'p-torso-dark' })];
-    default: // tee
-      return [base, path('M42 55 Q46 60 50 55 Z', limbs.hand)];
+  switch (KIND_BODY[look.kind]) {
+    case 'metal':
+      return [rect(x, 55, width, 36, look.skin, { rx: 5, stroke: '#64748b', 'stroke-width': 1 }), rect(x + 4, 61, width - 8, 15, null, { rx: 2.5, class: 'p-torso' }),
+        circle(42, 83, 1.6, '#ef4444'), circle(47, 83, 1.6, '#facc15'), circle(52, 83, 1.6, '#22c55e')];
+    case 'penguin':
+      // A black body with a white belly; the category color is its scarf.
+      return [rect(x, 55, width, 36, '#1f2937', { rx: 13 }), ellipse(46.5, 76, width / 2 - 3, 14, '#f8fafc'),
+        path('M37.5 55 Q46 61.5 54.5 55 L54.5 59.5 Q46 66 37.5 59.5 Z', null, { class: 'p-torso' }), rect(48.5, 59, 5, 11, null, { rx: 1.6, class: 'p-torso' })];
+    case 'sheet':
+      // A ghost is a floating sheet with a wavy hem; its scarf is in the category color.
+      return [path('M33 55 Q46 50 59 55 L62 99 q-4 -5 -8 0 q-4 5 -8 0 q-4 -5 -8 0 q-4 5 -8 0 Z', look.skin, { 'fill-opacity': 0.92 }),
+        path('M37.5 56 Q46 62.5 54.5 56 L54.5 60 Q46 66.5 37.5 60 Z', null, { class: 'p-torso' })];
+    case 'bark':
+      // A walking tree: a bark trunk with a sash in the category color.
+      return [rect(x, 55, width, 37, look.skin, { rx: 6 }), path(`M${x + 4} 62 v18 M${right - 5} 60 v22`, 'none', { stroke: darker(look.skin, 0.3), 'stroke-width': 1.2 }),
+        path(`M${x} 60 L${right} 76 L${right} 81 L${x} 65 Z`, null, { class: 'p-torso' })];
+    case 'furry':
+      // A little creature: fur, a lighter belly and a scarf in the category color.
+      return [rect(x, 55, width, 36, look.skin, { rx: 14 }), ellipse(46.5, 76, width / 2 - 4, 12, lighter(look.skin, 0.45)),
+        path('M37.5 55 Q46 61.5 54.5 55 L54.5 59.5 Q46 66 37.5 59.5 Z', null, { class: 'p-torso' })];
+    default: {
+      const base = rect(x, 55, width, 36, null, { rx, class: 'p-torso' });
+      return (OUTFIT_ART[look.outfit] ?? OUTFIT_ART.tee)({ base, x, right, width, rx, look, limbs });
+    }
   }
 }
+
+// Things held in the back hand (at about (34,83)) - themed worlds' wands, swords, lassos...
+const HELD_ART = {
+  wand: () => [line(34, 85, 27, 69, '#78350f', 1.7), circle(27, 68.5, 1.2, '#fde68a', { class: 'p-glow' })],
+  staff: () => [line(34, 98, 34, 47, '#78350f', 2.3), circle(34, 45, 3.2, '#93c5fd', { class: 'p-glow' })],
+  sword: () => [line(34, 79, 34, 56, '#cbd5e1', 2.4), line(30, 79.5, 38, 79.5, '#a16207', 2), line(34, 81, 34, 86, '#78350f', 2.2)],
+  axe: () => [line(34, 92, 34, 62, '#78350f', 2.1), path('M34 62 q-9 1 -9 9 q4 -3 9 -3 Z', '#94a3b8')],
+  lightsword: look => [rect(32.6, 79, 2.8, 8, '#475569', { rx: 0.8 }), line(34, 79, 34, 51, look.accent, 5, { 'stroke-opacity': 0.35, class: 'p-glow' }), line(34, 79, 34, 51, '#ffffff', 1.8)],
+  trident: () => [line(34, 98, 34, 50, '#facc15', 1.8), path('M29.5 56 v-7 M34 56 v-9 M38.5 56 v-7 M29.5 56 h9', 'none', { stroke: '#facc15', 'stroke-width': 1.6, 'stroke-linecap': 'round' })],
+  spatula: () => [line(34, 85, 32, 70, '#78350f', 1.9), rect(28.5, 61, 7, 9, '#94a3b8', { rx: 1.2 })],
+  lasso: () => [ellipse(30, 87, 5.5, 4, 'none', { stroke: '#a16207', 'stroke-width': 1.6 }), ellipse(25, 79, 6, 5, 'none', { stroke: '#a16207', 'stroke-width': 1.4 })],
+  scroll: () => [rect(28.5, 76, 11, 9, '#fef3c7', { rx: 1.5, stroke: '#d6c08f', 'stroke-width': 0.8 }), circle(28.5, 80.5, 1.8, '#d6c08f'), circle(39.5, 80.5, 1.8, '#d6c08f')],
+  gadget: look => [rect(29.5, 77, 7.5, 11, '#111827', { rx: 1.5 }), rect(30.5, 78, 5.5, 6, look.accent, { class: 'p-glow' })],
+  bolt: () => path('M37 61 l-7 11 h5 l-4 11 l10 -13 h-5 l4 -9 Z', '#facc15', { stroke: '#ca8a04', 'stroke-width': 0.6 }),
+  net: () => [line(34, 85, 30, 66, '#78350f', 1.6), ellipse(29, 61, 6.5, 5.2, '#ffffff', { 'fill-opacity': 0.25, stroke: '#94a3b8', 'stroke-width': 1 }), path('M23.5 61 h11 M29 56 v10', 'none', { stroke: '#cbd5e1', 'stroke-width': 0.6 })],
+  shovel: () => [line(34, 90, 34, 62, '#78350f', 2), path('M30 90 h8 l-1 8 q-3 3 -6 0 Z', '#94a3b8')],
+};
 
 function accessoryParts(look, build) {
   if (look.kind === 'penguin' || look.kind === 'robot') return null;
@@ -585,8 +824,9 @@ function overlay(mood) {
  * The SVG of one task's character. persona: from people-model.buildPersona (look, mood, activity).
  * CSS animates it by data-pose / data-mood / data-activity on the surrounding .agent element.
  * A festive character (most of them) wears the holiday's accessory instead of its own hat.
+ * activityProps: show the office activity's prop in the hand while working (themed worlds hold their own items).
  */
-export function createCharacterArt(persona, { seasonKey = null } = {}) {
+export function createCharacterArt(persona, { seasonKey = null, activityProps = true } = {}) {
   const { look, mood, activity } = persona;
   const face = MOOD_FACES[mood] ?? MOOD_FACES.idle;
   const build = BUILD_SHAPES[look.build] ?? BUILD_SHAPES.regular;
@@ -594,19 +834,20 @@ export function createCharacterArt(persona, { seasonKey = null } = {}) {
   const head = (HEADS[look.kind] ?? HEADS.human)(look);
   const season = look.festive ? seasonKey : null;
   const seasonHat = HEAD_ACCESSORIES[season]?.() ?? null;
-  const headwear = seasonHat ? null : HEADWEAR_ART[look.headwear]?.(look) ?? null;
+  const headwear = seasonHat ? null : HEADWEAR_ART[look.headwear]?.(look, head.eyes.anchors) ?? null;
   const sleeveAttributes = limbs.sleeve ? {} : { class: 'p-sleeve' };
   const headScale = look.headSize / 15;
   const shadowWidth = 17 + (build.width - 24) / 2;
+  const backHand = BACK_HAND_ACCESSORIES[season]?.() ?? HELD_ART[look.held]?.(look) ?? null;
 
   return svg('svg', { viewBox: '0 0 92 124', class: 'person-art', 'aria-hidden': 'true', focusable: 'false' },
     ellipse(46, 114, shadowWidth, 3.4, null, { class: 'p-shadow' }),
     group('p-bob',
       group('p-figure',
-        group('p-leg p-leg-back', line(41, 88, 40, 109, limbs.legs, limbs.legWidth), ellipse(41.5, 111, 5, 2.6, limbs.shoes)),
-        group('p-leg p-leg-front', line(51, 88, 52, 109, limbs.legs, limbs.legWidth), ellipse(54, 111, 5, 2.6, limbs.shoes)),
-        group('p-arm p-arm-back', line(37, 62, 34, 81, limbs.sleeve, build.arm, sleeveAttributes), circle(34, 83, 3.4, limbs.hand),
-          BACK_HAND_ACCESSORIES[season]?.()),
+        backExtras(look),
+        legParts(look, limbs),
+        group('p-arm p-arm-back', line(37, 62, 34, 81, limbs.sleeve, build.arm, sleeveAttributes), circle(34, 83, 3.4, limbs.hand), backHand),
+        capeParts(look, build),
         torsoParts(look, limbs, build),
         accessoryParts(look, build),
         group('p-head',
@@ -619,11 +860,11 @@ export function createCharacterArt(persona, { seasonKey = null } = {}) {
             head.beforeMouth,
             group('p-mouth', head.mouth.custom ?? drawMouth(face.mouth, head.mouth.anchor, head.mouth.color, head.mouth.width)),
             head.front,
-            EYEWEAR_ART[look.eyewear]?.(head.eyes.anchors),
+            EYEWEAR_ART[look.eyewear]?.(head.eyes.anchors, look),
             headwear,
             seasonHat)),
         group('p-arm p-arm-front', line(55, 62, 58, 81, limbs.sleeve, build.arm, sleeveAttributes), circle(58, 83, 3.4, limbs.hand),
-          group('p-hand-prop', HAND_PROPS[activity]?.()), cupInHand())),
+          group('p-hand-prop', activityProps && HAND_PROPS[activity]?.()), cupInHand())),
       overlay(mood)));
 }
 
@@ -728,18 +969,34 @@ const DECOR = {
     path('M10 48 h24 l-3 22 h-18 Z', variant % 2 === 0 ? '#c2410c' : '#475569'),
     rect(8, 46, 28, 5, variant % 2 === 0 ? '#ea580c' : '#64748b', { rx: 2 }),
   ],
+  // The rug's colors come from the room (styles.css) - these are the office's.
   rug: () => [
-    ellipse(100, 20, 98, 18, '#fde68a'),
-    ellipse(100, 20, 88, 14, 'none', { stroke: '#f59e0b', 'stroke-width': 2, 'stroke-dasharray': '6 4' }),
-    ellipse(100, 20, 70, 9, '#fef3c7'),
+    ellipse(100, 20, 98, 18, '#fde68a', { class: 'rug-outer' }),
+    ellipse(100, 20, 88, 14, 'none', { stroke: '#f59e0b', 'stroke-width': 2, 'stroke-dasharray': '6 4', class: 'rug-edge' }),
+    ellipse(100, 20, 70, 9, '#fef3c7', { class: 'rug-inner' }),
   ],
 };
 
-/** A piece of office furniture; size: { width, height } of its viewBox (world-layout.js ART). */
-export function createDecorArt(kind, size, { variant = 0 } = {}) {
+// The office's own pieces under the keys the worlds use; the plant key picks the office plant's variant.
+const OFFICE_DECOR_KEYS = Object.freeze({
+  window: ['sky'], door: ['office'], sofa: ['sofa'], coffee: ['coffee'], cooler: ['cooler'], shelf: ['books'], picture: ['art'], plant: ['fern', 'snake'],
+});
+
+/**
+ * A piece of furniture; size: { width, height } of its viewBox (world-layout.js ART).
+ * theme: the world's variant key for this kind (worlds/*.js decor) - a themed piece (art-worlds.js), or the
+ * office's own piece for the office keys.
+ */
+export function createDecorArt(kind, size, { variant = 0, theme = null } = {}) {
+  const officeVariants = OFFICE_DECOR_KEYS[kind] ?? [];
+  const themed = theme && !officeVariants.includes(theme) ? worldDecorParts(kind, theme) : null;
+  const officeVariant = kind === 'plant' && theme ? Math.max(0, officeVariants.indexOf(theme)) + variant : variant;
   return svg('svg', { viewBox: `0 0 ${size.width} ${size.height}`, class: `decor-art decor-${kind}`, 'aria-hidden': 'true', focusable: 'false' },
-    DECOR[kind]?.(variant));
+    themed ?? DECOR[kind]?.(officeVariant));
 }
+
+/** The office's own variant keys, per furniture kind (the worlds are checked against these and art-worlds.js). */
+export const OFFICE_SCENERY_KEYS = OFFICE_DECOR_KEYS;
 
 /** Points the office clock's hands at the given time. */
 export function setClockTime(clockSvg, date) {
@@ -817,3 +1074,13 @@ export function createSeasonEmblem(seasonKey, { size = 26 } = {}) {
   if (!draw) return null;
   return svg('svg', { viewBox: '0 0 32 32', width: size, height: size, class: 'season-emblem', 'aria-hidden': 'true', focusable: 'false' }, draw());
 }
+
+/** Every kind, outfit, hat, eyewear and held item the character art can draw. */
+export const CHARACTER_PARTS = Object.freeze({
+  kinds: Object.freeze(Object.keys(HEADS)),
+  outfits: Object.freeze(Object.keys(OUTFIT_ART)),
+  headwear: Object.freeze(Object.keys(HEADWEAR_ART)),
+  eyewear: Object.freeze(Object.keys(EYEWEAR_ART)),
+  held: Object.freeze(Object.keys(HELD_ART)),
+  facialHair: Object.freeze(Object.keys(FACIAL_HAIR_ART)),
+});

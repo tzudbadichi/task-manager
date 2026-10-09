@@ -4,8 +4,11 @@
 // done - and characters walk over to each other to chat in speech bubbles. A task that joins the view
 // comes in through the door, and one that leaves it walks out.
 //
+// The office can be a themed world (worlds/*.js: a wizard castle, a pirate ship...) with its own room,
+// scenery, stations, characters and lines; the office itself is the default world.
+//
 // people-model.js decides who each character is and what it does next, world-layout.js where everything
-// is, art.js draws it, and styles.css ("People view") animates the poses. This module runs the office:
+// is, art.js and art-worlds.js draw it, and styles.css ("People view") animates the poses. This module runs the office:
 // it keeps the characters across renders (keyed by task id), moves them on every animation frame
 // (positions through CSSOM transforms, allowed by the CSP), and orchestrates the conversations.
 
@@ -17,6 +20,7 @@ import { composeConversation, composeMonologue, composePoseLine, nextBehavior } 
 import { ART, computeWorldLayout } from './world-layout.js';
 import { UNCATEGORIZED_COLOR } from './render.js';
 import { truncate } from './utils.js';
+import { WORLDS, getWorld, worldStationFor } from './worlds/index.js';
 
 // Beyond this many characters the office gets crowded; the rest are listed as hidden (filters narrow it down).
 export const MAX_PEOPLE = 48;
@@ -59,7 +63,7 @@ const distance = (a, b) => Math.hypot(a.x - b.x, a.y - b.y);
 function signatureOf(persona, seasonKey) {
   return JSON.stringify([
     persona.title, persona.subtaskTitle, persona.status, persona.mood, persona.activity, persona.categoryColor,
-    persona.progress.done, persona.progress.total, persona.dustLevel, persona.isMyDay, seasonKey,
+    persona.progress.done, persona.progress.total, persona.dustLevel, persona.isMyDay, persona.worldKey, seasonKey,
   ]);
 }
 
@@ -72,9 +76,9 @@ function signatureOf(persona, seasonKey) {
 export function createPeopleWorld(container, { getPersona, canTalk = () => true, getGreeting = () => null, reducedMotion = () => false }) {
   const root = h('div', { class: 'people-root' });
   const bar = h('div', { class: 'scene-bar' });
-  const world = h('div', { class: 'people-world' });
+  const room = h('div', { class: 'people-world' });
   const note = h('p', { class: 'scene-note', hidden: true });
-  root.append(bar, world, note);
+  root.append(bar, room, note);
 
   const characters = new Map(); // taskId -> character
   const leaving = new Set(); // characters walking out through the door
@@ -93,6 +97,7 @@ export function createPeopleWorld(container, { getPersona, canTalk = () => true,
   let isRunning = false;
   let hasPopulated = false; // the first fill places everyone directly (no parade through the door)
   let current = { personas: [], options: {} };
+  let world = getWorld(null); // the themed world shown now (the office by default)
   let relayoutFrame = 0;
   const resizeObserver = typeof ResizeObserver === 'function' ? new ResizeObserver(() => scheduleRelayout()) : null;
 
@@ -119,29 +124,32 @@ export function createPeopleWorld(container, { getPersona, canTalk = () => true,
     for (const element of decorElements) element.remove();
     decorElements = layout.decor.map(item => {
       const size = ART[item.kind];
-      const element = h('div', { class: ['decor', `decor-${item.kind}`], 'aria-hidden': 'true' }, createDecorArt(item.kind, size, { variant: item.variant ?? 0 }));
+      const art = createDecorArt(item.kind, size, { variant: item.variant ?? 0, theme: world.decor?.[item.kind] ?? null });
+      const element = h('div', { class: ['decor', `decor-${item.kind}`], 'aria-hidden': 'true' }, art);
       const height = item.width * (size.height / size.width);
       placeElement(element, item.left, item.top ?? item.floorY - height, item.width, item.z);
       if (item.kind === 'clock') clock = element.firstElementChild;
       return element;
     });
-    world.prepend(...decorElements);
+    room.prepend(...decorElements);
   }
 
   /** Recomputes the layout when the size or the number of desks changed. False while the office has no width yet. */
   function applyLayout(count) {
-    const width = world.clientWidth;
+    const width = room.clientWidth;
     if (width <= 0) return false;
     const isFullscreen = container.classList.contains('is-fullscreen');
     const minHeight = isFullscreen ? Math.max(0, container.clientHeight - bar.offsetHeight - (note.hidden ? 0 : note.offsetHeight)) : 0;
-    const key = `${width}|${count}|${Math.round(minHeight)}`;
+    const key = `${width}|${count}|${Math.round(minHeight)}|${world.key}`;
     if (key === layoutKey) return true;
     const previous = layout;
     layout = computeWorldLayout({ width, count, minHeight });
     layoutKey = key;
-    world.style.setProperty('height', `${layout.height}px`);
-    world.style.setProperty('--wall-h', `${layout.wallHeight}px`);
-    world.classList.toggle('is-compact', layout.compact);
+    room.style.setProperty('height', `${layout.height}px`);
+    room.style.setProperty('--wall-h', `${layout.wallHeight}px`);
+    room.classList.toggle('is-compact', layout.compact);
+    room.dataset.room = world.room;
+    room.dataset.world = world.key;
     drawDecor();
     seats = layout.spots.seats.map(() => null);
     for (const character of [...characters.values(), ...leaving]) {
@@ -172,12 +180,13 @@ export function createPeopleWorld(container, { getPersona, canTalk = () => true,
     if (!station) {
       station = { element: h('div', { class: 'station', 'aria-hidden': 'true' }), signature: '' };
       stations.set(persona.taskId, station);
-      world.append(station.element);
+      room.append(station.element);
     }
     const isDone = persona.status === 'done';
-    const signature = `${persona.activity}|${isDone}`;
+    const worldStation = worldStationFor(world, persona.activity);
+    const signature = `${persona.activity}|${isDone}|${worldStation}`;
     if (station.signature !== signature) {
-      station.element.replaceChildren(createStationArt(persona.activity, { done: isDone }));
+      station.element.replaceChildren(createStationArt(persona.activity, { done: isDone, worldStation }));
       station.signature = signature;
     }
     station.element.classList.toggle('is-busy', persona.mood === 'working' || persona.mood === 'sweating');
@@ -203,15 +212,18 @@ export function createPeopleWorld(container, { getPersona, canTalk = () => true,
     const { label } = STATUSES[persona.status];
     const { done, total } = persona.progress;
     element.style.setProperty('--cat-color', persona.categoryColor ?? UNCATEGORIZED_COLOR);
+    // The office's activity poses (phone at the ear, sweeping...) go with its activity props; a themed
+    // world's characters work at their themed station with a general working pose.
+    const isOffice = world.stations === null;
     Object.assign(element.dataset, {
-      status: persona.status, mood: persona.mood, activity: persona.activity, kind: persona.look.kind,
+      status: persona.status, mood: persona.mood, activity: isOffice ? persona.activity : 'world', kind: persona.look.kind,
     });
     if (persona.dustLevel) element.dataset.dust = String(persona.dustLevel);
     else delete element.dataset.dust;
     element.title = persona.status === 'done' ? persona.title : `${persona.title}\nעכשיו: ${persona.subtaskTitle}`;
     element.setAttribute('aria-label', `${persona.title}. ${label}, ${done} מתוך ${total} תתי משימות הושלמו. לחיצה פותחת את המשימה`);
     element.replaceChildren(
-      createCharacterArt(persona, { seasonKey }),
+      createCharacterArt(persona, { seasonKey, activityProps: isOffice }),
       h('span', { class: 'character-tag' },
         persona.isMyDay && icon('sun', { size: 11 }),
         h('span', { class: 'dot', 'aria-hidden': 'true' }),
@@ -234,7 +246,7 @@ export function createPeopleWorld(container, { getPersona, canTalk = () => true,
       speedFactor: 1 + persona.look.pace * 0.5,
     };
     renderCharacterContent(character, seasonKey);
-    world.append(element);
+    room.append(element);
     return character;
   }
 
@@ -475,13 +487,13 @@ export function createPeopleWorld(container, { getPersona, canTalk = () => true,
       .slice(0, NEAREST_LISTENERS));
     const greeting = getGreeting();
     if (!listener) {
-      const [line] = composeMonologue(speakerPersona, { greeting });
+      const [line] = composeMonologue(speakerPersona, { greeting, lines: world.lines });
       showBubble(speaker, line.text, lineDuration(line.text));
       return;
     }
     const listenerPersona = getPersona(listener.taskId);
     if (!listenerPersona) return;
-    const conversation = { speaker, listener, lines: composeConversation(speakerPersona, listenerPersona, { greeting }) };
+    const conversation = { speaker, listener, lines: composeConversation(speakerPersona, listenerPersona, { greeting, lines: world.lines }) };
     conversations.add(conversation);
     releaseSeat(speaker);
     speaker.mode = 'approach';
@@ -531,6 +543,10 @@ export function createPeopleWorld(container, { getPersona, canTalk = () => true,
     }
   }
 
+  function endAllConversations() {
+    for (const conversation of [...conversations]) endConversation(conversation);
+  }
+
   function endConversationsOf(character) {
     for (const conversation of [...conversations]) {
       if (conversation.speaker === character || conversation.listener === character) endConversation(conversation);
@@ -542,7 +558,7 @@ export function createPeopleWorld(container, { getPersona, canTalk = () => true,
     const candidate = pickRandom([...characters.values()].filter(character =>
       character.mode === 'free' && !character.walking && !character.isTalking && POSES_WITH_LINES.has(character.pose)));
     const persona = candidate && getPersona(candidate.taskId);
-    const text = persona && composePoseLine(candidate.pose, persona);
+    const text = persona && composePoseLine(candidate.pose, persona, { lines: world.lines });
     if (text) showBubble(candidate, text, lineDuration(text));
   }
 
@@ -580,15 +596,19 @@ export function createPeopleWorld(container, { getPersona, canTalk = () => true,
   }
 
   function renderBar(count, seasonKey, isFullscreen) {
-    const key = `${count}|${seasonKey ?? ''}|${isFullscreen}`;
+    const key = `${count}|${seasonKey ?? ''}|${isFullscreen}|${world.key}`;
     if (key === barKey) return;
     barKey = key;
     // Native replaceChildren would write "null" for a missing emblem, so the list is filtered.
     bar.replaceChildren(...[
-      h('span', { class: 'scene-title' }, 'המשרד של המשימות'),
+      h('span', { class: 'scene-title' }, world.stations ? world.label : 'המשרד של המשימות'),
       h('span', { class: 'scene-count' }, count === 1 ? 'דמות אחת' : `${count} דמויות`),
       seasonKey && createSeasonEmblem(seasonKey, { size: 24 }),
       h('span', { class: 'spacer' }),
+      h('label', { class: 'world-picker' },
+        h('span', { class: 'world-picker-label' }, 'ערכת נושא'),
+        h('select', { class: 'select', value: world.key, dataset: { action: 'set-world', focusKey: 'world-picker' }, 'aria-label': 'ערכת נושא למשרד' },
+          ...WORLDS.map(item => h('option', { value: item.key }, item.label)))),
       h('button', {
         type: 'button', class: 'btn btn-soft btn-sm',
         dataset: { action: 'people-fullscreen', focusKey: 'people-fullscreen' }, 'aria-pressed': String(isFullscreen),
@@ -598,15 +618,20 @@ export function createPeopleWorld(container, { getPersona, canTalk = () => true,
   }
 
   /**
-   * Shows these personas (display order, at most MAX_PEOPLE). options: { seasonKey, hiddenCount, now }.
+   * Shows these personas (display order, at most MAX_PEOPLE). options: { world, seasonKey, hiddenCount, now };
+   * world is a themed world (worlds/*.js) - its personas' looks must come from it (buildPersona).
    * Characters and desks are kept by task id; only what changed is redrawn.
    */
   function update(personas, options = {}) {
     const { seasonKey = null, hiddenCount = 0, now = Date.now() } = options;
     current = { personas, options };
+    if (options.world && options.world !== world) {
+      world = options.world;
+      endAllConversations();
+    }
     if (root.parentElement !== container) {
       container.replaceChildren(root);
-      resizeObserver?.observe(world);
+      resizeObserver?.observe(room);
     }
     renderBar(personas.length, seasonKey, container.classList.contains('is-fullscreen'));
     note.hidden = hiddenCount === 0;
@@ -616,7 +641,7 @@ export function createPeopleWorld(container, { getPersona, canTalk = () => true,
     if (!applyLayout(personas.length)) return;
 
     const date = new Date(now);
-    world.dataset.time = timeOfDay(date.getHours());
+    room.dataset.time = timeOfDay(date.getHours());
     if (clock) setClockTime(clock, date);
 
     const wanted = new Set(personas.map(persona => persona.taskId));
@@ -683,7 +708,7 @@ export function createPeopleWorld(container, { getPersona, canTalk = () => true,
     characters.clear();
     leaving.clear();
     stations.clear();
-    world.replaceChildren();
+    room.replaceChildren();
     decorElements = [];
     clock = null;
     seats = [];
@@ -704,7 +729,7 @@ export function createPeopleWorld(container, { getPersona, canTalk = () => true,
       const character = characters.get(taskId);
       const persona = character && getPersona(taskId);
       if (!persona || character.isTalking) return;
-      const [line] = composeMonologue(persona, { greeting: getGreeting() });
+      const [line] = composeMonologue(persona, { greeting: getGreeting(), lines: world.lines });
       showBubble(character, line.text, lineDuration(line.text));
     },
     /** A short victory jump (its task was just finished). */
