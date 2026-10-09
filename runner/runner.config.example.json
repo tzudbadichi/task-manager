@@ -1,0 +1,31 @@
+{
+  "_help": "Copy to runner.config.json (never committed) and edit. Full explanation: html/agent-farm-setup-guide.html. Keep runnerName in English - it is printed in the console.",
+  "runnerName": "Work PC",
+  "maxParallelJobs": 2,
+  "jobTimeoutMinutes": 60,
+  "profiles": {
+    "work": {
+      "label": "עבודה",
+      "engine": "claude",
+      "claudeConfigDir": "C:/Users/YOUR-USER/.claude",
+      "allowedRoots": ["C:/Projects/portal", "C:/Projects/crm"],
+      "cloudReport": "minimal",
+      "permissionMode": "acceptEdits",
+      "allowedTools": ["Bash(npm test *)", "Bash(git status *)", "Bash(git diff *)", "Bash(git log *)", "Bash(git add *)", "Bash(git commit *)"],
+      "disallowedTools": ["Bash(git push *)"]
+    },
+    "personal": {
+      "label": "אישי",
+      "engine": "codex",
+      "codexHome": "C:/Users/YOUR-USER/.codex-personal",
+      "allowedRoots": ["C:/Projects/task-manager"],
+      "cloudReport": "full",
+      "sandbox": "workspace-write"
+    }
+  },
+  "projects": [
+    { "key": "portal", "name": "Portal", "profile": "work", "path": "C:/Projects/portal", "baseBranch": "main" },
+    { "key": "crm", "name": "CRM", "profile": "work", "path": "C:/Projects/crm" },
+    { "key": "task-manager", "name": "Task manager", "profile": "personal", "path": "C:/Projects/task-manager" }
+  ]
+}

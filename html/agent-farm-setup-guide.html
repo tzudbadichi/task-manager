@@ -1,0 +1,342 @@
+<!DOCTYPE html>
+<html lang="he" dir="rtl">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>חוות אייג'נטים - מדריך התקנה</title>
+<style>
+  :root{
+    --bg:#f4f6f9; --ink:#1f2933; --muted:#52606d; --line:#eef1f4;
+    --brand:#16325c; --accent:#2b6cb0; --ok:#2e7d32;
+  }
+  *{box-sizing:border-box}
+  body{font-family:"Segoe UI",Arial,sans-serif;background:var(--bg);color:var(--ink);margin:0;padding:32px;line-height:1.7}
+  .wrap{max-width:920px;margin:0 auto}
+  h1{color:var(--brand);font-size:26px;margin:0 0 4px}
+  .sub{color:var(--muted);margin-bottom:20px}
+
+  /* progress */
+  .progress-wrap{position:sticky;top:0;background:var(--bg);padding:12px 0 16px;z-index:5}
+  .bar{height:12px;background:#dfe3e8;border-radius:999px;overflow:hidden}
+  .bar > span{display:block;height:100%;width:0;background:var(--ok);transition:width .25s ease}
+  .bar-meta{display:flex;justify-content:space-between;align-items:center;margin-top:6px;font-size:13px;color:var(--muted)}
+  .reset{background:none;border:1px solid #cbd2d9;color:var(--muted);border-radius:6px;padding:4px 10px;cursor:pointer;font-size:12px;font-family:inherit}
+  .reset:hover{background:#fff}
+
+  .status{background:#e6f4ea;border-right:5px solid var(--ok);padding:12px 16px;border-radius:6px;margin-bottom:24px}
+  .status ul{margin:6px 0 0;padding-right:20px}
+
+  .group{background:#fff;border-radius:10px;box-shadow:0 1px 4px rgba(0,0,0,.08);margin-bottom:20px;overflow:hidden}
+  .group-head{padding:12px 18px;font-weight:700;font-size:17px;color:#fff;background:var(--accent)}
+  .g-1{background:#b23b3b}.g-2{background:#b8860b}.g-3{background:#2b6cb0}.g-4{background:#4a5568}
+
+  .step{display:flex;gap:12px;align-items:flex-start;padding:14px 18px;border-top:1px solid var(--line);cursor:pointer}
+  .step:first-of-type{border-top:none}
+  .step input[type=checkbox]{width:20px;height:20px;margin-top:3px;flex-shrink:0;cursor:pointer;accent-color:var(--ok)}
+  .step .body{min-width:0;flex:1}
+  .step .title{font-weight:600}
+  .step .desc{color:var(--muted);font-size:14px;margin-top:3px}
+  .step .desc ul{margin:4px 0;padding-right:20px}
+  .step.done .title{text-decoration:line-through;color:#9aa5b1}
+
+  code{background:#eef1f4;padding:2px 6px;border-radius:4px;font-family:Consolas,monospace;font-size:13px;direction:ltr;display:inline-block}
+
+  /* copyable command block */
+  .cmd{position:relative;background:#0f1b2d;border-radius:8px;margin:10px 0;overflow:hidden}
+  .cmd code{display:block;background:none;color:#e6edf3;direction:ltr;text-align:left;padding:14px 90px 14px 16px;white-space:pre-wrap;word-break:break-word;font-size:13px;border-radius:0}
+  .cmd .copy{position:absolute;top:8px;left:8px;background:#243347;color:#cdd9e5;border:1px solid #3a4a5f;border-radius:6px;padding:5px 12px;font-size:12px;font-family:inherit;cursor:pointer}
+  .cmd .copy:hover{background:#2f4358}
+  .cmd .copy.copied{background:var(--ok);color:#fff;border-color:var(--ok)}
+
+  .note{font-size:13px;color:#7b8794;margin-top:6px}
+  .warn{font-size:13px;color:#8a4b08;background:#fff7e6;border-radius:6px;padding:6px 10px;margin-top:8px}
+  footer{color:#9aa5b1;font-size:12px;text-align:center;margin-top:28px}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <h1>חוות אייג'נטים - מדריך התקנה</h1>
+  <div class="sub">חיבור הלוח לאייג'נטים שעובדים על מחשב הפיתוח: Claude Code עם חשבון העבודה, ו-Codex עם החשבון האישי. מסמנים כל שלב שהושלם; ההתקדמות נשמרת בדפדפן.</div>
+
+  <div class="progress-wrap">
+    <div class="bar"><span id="barFill"></span></div>
+    <div class="bar-meta">
+      <span id="barText">0 מתוך 0 הושלמו</span>
+      <button class="reset" onclick="resetProgress()">איפוס התקדמות</button>
+    </div>
+  </div>
+
+  <div class="status">
+    <strong>איך זה עובד:</strong> בלוח משייכים משימת פיתוח לפרויקט, ולכל תת-משימה יש כפתור "לאייג'נט". ההודעה נכנסת לתור בענן. הראנר, תוכנית קטנה שרצה ברקע על מחשב העבודה, לוקח אותה, מריץ את האייג'נט בתיקייה ובענף נפרדים למשימה, ומחזיר את התשובה ללוח. בזמן שהאייג'נט עובד תת-המשימה "ממתין לתגובה", וכשהוא מסיים היא "בעבודה אצלי". אפשר לענות לו מהלוח, גם מהנייד.
+    <ul>
+      <li><strong>הפרדה בין עבודה לאישי:</strong> לכל פרופיל יש רשימת תיקיות וחשבון משלו, והראנר לא עולה אם תיקייה שייכת לשניהם. משימה של פרויקט עבודה תמיד רצה עם Claude בחשבון העבודה. ההפרדה קובעת איפה האייג'נט עובד, לא מה הוא יכול לקרוא בדיסק. להפרדה מלאה צריך להריץ את הפרופיל האישי תחת משתמש Windows נפרד.</li>
+      <li><strong>מה עולה לענן:</strong> בפרויקטים של העבודה עולה רק סיכום קצר במילים, בלי קוד. הפירוט המלא נשאר בלוג המקומי במחשב.</li>
+      <li><strong>בלי push:</strong> האייג'נט לא דוחף ולא ממזג. עוברים על הענף ב-VS Code וממזגים לבד.</li>
+    </ul>
+  </div>
+
+  <section class="group">
+    <div class="group-head g-1">1. הענן - פעם אחת</div>
+
+    <label class="step">
+      <input type="checkbox" data-key="s1">
+      <div class="body">
+        <div class="title">להריץ את הסכמה המעודכנת ב-Supabase</div>
+        <div class="desc">הפקודה מעתיקה את כל הקובץ ללוח. אחר כך: בדאשבורד של Supabase נכנסים ל-SQL Editor, בוחרים New query, מדביקים ולוחצים Run. מותר להריץ שוב - הקובץ לא מוחק נתונים. נוצרות הטבלאות <code>agent_runners</code> ו-<code>agent_jobs</code>.</div>
+        <div class="cmd">
+          <button class="copy" onclick="copyCmd(this)">העתק</button>
+          <code>Get-Content C:\Projects\task-manager\supabase\schema.sql -Raw -Encoding UTF8 | Set-Clipboard</code>
+        </div>
+      </div>
+    </label>
+
+    <label class="step">
+      <input type="checkbox" data-key="s2">
+      <div class="body">
+        <div class="title">לוודא שהגרסה החדשה של הלוח באוויר</div>
+        <div class="desc">אחרי commit ו-push הלוח מתפרסם אוטומטית ב-GitHub Pages. בודקים: בהגדרות של הלוח מופיע עכשיו חלק בשם "אייג'נטים" (עדיין בלי מחשבים). אם הוא לא מופיע - מרעננים עם Ctrl+F5.</div>
+      </div>
+    </label>
+  </section>
+
+  <section class="group">
+    <div class="group-head g-2">2. החשבונות במחשב העבודה</div>
+
+    <label class="step">
+      <input type="checkbox" data-key="s3">
+      <div class="body">
+        <div class="title">Claude Code מחובר לחשבון העבודה</div>
+        <div class="desc">מריצים <code>claude</code> בטרמינל ובודקים עם <code>/status</code> שזה חשבון העבודה. אם כן, שמים בהגדרות של הראנר ב-<code>claudeConfigDir</code> את <code>C:/Users/tzud.badihi/.claude</code>. אם החשבון הרגיל אצלך הוא אחר, יוצרים לעבודה תיקייה נפרדת, מתחברים בה (<code>/login</code>), ושמים את הנתיב שלה ב-<code>claudeConfigDir</code>:</div>
+        <div class="cmd">
+          <button class="copy" onclick="copyCmd(this)">העתק</button>
+          <code>$env:CLAUDE_CONFIG_DIR = "$env:USERPROFILE\.claude-work"
+claude</code>
+        </div>
+        <div class="note">אחרי ההתחברות סוגרים את החלון, כדי שהמשתנה לא ישפיע על עבודה רגילה.</div>
+      </div>
+    </label>
+
+    <label class="step">
+      <input type="checkbox" data-key="s4">
+      <div class="body">
+        <div class="title">Codex מחובר לחשבון האישי, בתיקייה משלו</div>
+        <div class="desc">במחשב הזה כבר יש התחברות של Codex בתיקיית ברירת המחדל, ולא ידוע לאיזה חשבון. לכן יוצרים לחשבון האישי תיקייה נפרדת ומתחברים בה. את הנתיב שמים ב-<code>codexHome</code> של הפרופיל האישי.</div>
+        <div class="cmd">
+          <button class="copy" onclick="copyCmd(this)">העתק</button>
+          <code>$env:CODEX_HOME = "$env:USERPROFILE\.codex-personal"
+New-Item -ItemType Directory -Force $env:CODEX_HOME | Out-Null
+codex login</code>
+        </div>
+        <div class="note">אחרי ההתחברות סוגרים את החלון. הנתיב המלא, לשים בהגדרות: <code>C:/Users/tzud.badihi/.codex-personal</code></div>
+      </div>
+    </label>
+  </section>
+
+  <section class="group">
+    <div class="group-head g-3">3. הגדרות הראנר</div>
+
+    <label class="step">
+      <input type="checkbox" data-key="s5">
+      <div class="body">
+        <div class="title">ליצור את קובץ ההגדרות מהתבנית</div>
+        <div class="desc">הקובץ <code>runner.config.json</code> לא נשמר בגיט, כי יש בו נתיבים של המחשב.</div>
+        <div class="cmd">
+          <button class="copy" onclick="copyCmd(this)">העתק</button>
+          <code>Copy-Item C:\Projects\task-manager\runner\runner.config.example.json C:\Projects\task-manager\runner\runner.config.json
+code C:\Projects\task-manager\runner\runner.config.json</code>
+        </div>
+      </div>
+    </label>
+
+    <label class="step">
+      <input type="checkbox" data-key="s6">
+      <div class="body">
+        <div class="title">למלא את פרטי ה-Supabase של הלוח</div>
+        <div class="desc">מוסיפים לקובץ את <code>"supabaseUrl"</code> ואת <code>"supabaseAnonKey"</code>, עם אותם ערכים שמוגדרים ב-GitHub. אפשר לראות אותם בפקודה הזו, או ב-Supabase תחת Project Settings ואז API. המפתח הזה ציבורי מעצם הגדרתו, וההגנה על הנתונים היא ה-RLS.</div>
+        <div class="cmd">
+          <button class="copy" onclick="copyCmd(this)">העתק</button>
+          <code>gh variable list -R tzudbadichi/task-manager</code>
+        </div>
+      </div>
+    </label>
+
+    <label class="step">
+      <input type="checkbox" data-key="s7">
+      <div class="body">
+        <div class="title">להגדיר פרופילים ופרויקטים</div>
+        <div class="desc">
+          <ul>
+            <li><code>runnerName</code> - שם המחשב כפי שיוצג בלוח, באנגלית (למשל <code>Work PC</code>).</li>
+            <li><code>profiles.work</code> - Claude Code. ב-<code>allowedRoots</code> מפרטים את התיקיות של פרויקטי העבודה, אחת-אחת.</li>
+            <li><code>profiles.personal</code> - Codex. ב-<code>allowedRoots</code> מפרטים את התיקיות של הפרויקטים האישיים.</li>
+            <li><code>projects</code> - לכל פרויקט: <code>key</code> (אנגלית קטנה, זה מה שהלוח שומר), <code>name</code>, <code>profile</code>, <code>path</code>, ואם רוצים - <code>baseBranch</code>.</li>
+            <li><code>allowedTools</code> בפרופיל העבודה קובע אילו פקודות האייג'נט רשאי להריץ (למשל בדיקות). כל השאר נחסם, כי אף אחד לא יושב מול המחשב לאשר.</li>
+          </ul>
+        </div>
+        <div class="warn">לא מתירים ב-<code>allowedTools</code> הרצה חופשית של סקריפטים (כמו <code>npm run *</code>). אייג'נט שיכול לערוך סקריפט ולהריץ אותו יכול להריץ כל פקודה, גם push.</div>
+        <div class="warn">כל הפרויקטים יושבים תחת C:\Projects, ולכן לא שמים C:\Projects כולו באף פרופיל. מפרטים תיקייה לכל פרויקט, אחרת הראנר יסרב לעלות כי התיקיות חופפות.</div>
+      </div>
+    </label>
+
+    <label class="step">
+      <input type="checkbox" data-key="s8">
+      <div class="body">
+        <div class="title">לבדוק את ההגדרות</div>
+        <div class="desc">הבדיקה מוודאת שכל CLI רץ (ומציגה גרסה), שכל תיקיית פרויקט קיימת ושיש בה git, ושההפרדה בין הפרופילים תקינה. שורות ירוקות - תקין; צהוב או אדום - לתקן לפי ההודעה.</div>
+        <div class="cmd">
+          <button class="copy" onclick="copyCmd(this)">העתק</button>
+          <code>cd C:\Projects\task-manager
+npm run runner:check</code>
+        </div>
+      </div>
+    </label>
+
+    <label class="step">
+      <input type="checkbox" data-key="s9">
+      <div class="body">
+        <div class="title">לחבר את הראנר לחשבון של הלוח</div>
+        <div class="desc">מתחברים עם אותו אימייל וסיסמה כמו בלוח. הסיסמה לא נשמרת, רק ה-session, בקובץ בתיקיית הפרופיל במחשב (<code>%LOCALAPPDATA%\task-manager-runner</code>).</div>
+        <div class="cmd">
+          <button class="copy" onclick="copyCmd(this)">העתק</button>
+          <code>npm run runner:login</code>
+        </div>
+      </div>
+    </label>
+  </section>
+
+  <section class="group">
+    <div class="group-head g-4">4. הפעלה ובדיקה</div>
+
+    <label class="step">
+      <input type="checkbox" data-key="s10">
+      <div class="body">
+        <div class="title">להפעיל את הראנר</div>
+        <div class="desc">משאירים את החלון פתוח. Ctrl+C עוצר, ועבודה שרצה באותו רגע מדווחת ללוח כ"נעצרה". בלוח, בהגדרות תחת "אייג'נטים", המחשב מופיע עם נקודה ירוקה.</div>
+        <div class="cmd">
+          <button class="copy" onclick="copyCmd(this)">העתק</button>
+          <code>cd C:\Projects\task-manager
+npm run runner</code>
+        </div>
+      </div>
+    </label>
+
+    <label class="step">
+      <input type="checkbox" data-key="s11">
+      <div class="body">
+        <div class="title">ניסיון ראשון</div>
+        <div class="desc">יוצרים משימה עם תת-משימה קטנה (למשל "להסביר מה הפרויקט עושה, בלי לשנות קבצים"). בחלון המשימה בוחרים בשדה "אייג'נט" את הפרויקט, לוחצים על "לאייג'נט" ליד תת-המשימה ושולחים. תת-המשימה עוברת ל"ממתין לתגובה", ובחלון הראנר מופיע "Job ... started". כשהאייג'נט מסיים, התשובה מופיעה בחלון, ותת-המשימה עוברת ל"בעבודה אצלי". הכפתור "פתיחה ב-VS Code" פותח את תיקיית העבודה של המשימה.</div>
+      </div>
+    </label>
+
+    <label class="step">
+      <input type="checkbox" data-key="s12">
+      <div class="body">
+        <div class="title">אופציונלי: הפעלה אוטומטית בכניסה ל-Windows</div>
+        <div class="desc">יוצר משימה מתוזמנת שמפעילה את הראנר בכל כניסה למחשב. הפלט נשמר גם בקובץ <code>runner.log</code> בתיקיית הראנר.</div>
+        <div class="cmd">
+          <button class="copy" onclick="copyCmd(this)">העתק</button>
+          <code>$action = New-ScheduledTaskAction -Execute "C:\Program Files\nodejs\node.exe" -Argument "C:\Projects\task-manager\runner\runner.js" -WorkingDirectory "C:\Projects\task-manager"
+$trigger = New-ScheduledTaskTrigger -AtLogOn -User $env:USERNAME
+Register-ScheduledTask -TaskName "TaskManagerAgentRunner" -Action $action -Trigger $trigger -Description "Agent farm runner for the task board"</code>
+        </div>
+        <div class="note">להסרה: <code>Unregister-ScheduledTask -TaskName "TaskManagerAgentRunner"</code></div>
+      </div>
+    </label>
+  </section>
+
+  <section class="group">
+    <div class="group-head g-4">5. אופציונלי: מחשב הבית</div>
+
+    <label class="step">
+      <input type="checkbox" data-key="s13">
+      <div class="body">
+        <div class="title">ראנר שני בבית, רק עם הפרופיל האישי</div>
+        <div class="desc">משכפלים את הריפו, מתחברים ל-Codex האישי, ויוצרים <code>runner.config.json</code> עם <code>runnerName</code> אחר (למשל <code>Home PC</code>), עם הפרופיל האישי בלבד ועם אותם מפתחות פרויקט. אחר כך <code>npm run runner:login</code> ו-<code>npm run runner</code>. משימה ממשיכה במחשב שעבד עליה, כשהוא מחובר. אם הוא כבוי, מחשב אחר שמכיר את הפרויקט לוקח אותה ופותח שיחה חדשה.</div>
+        <div class="cmd">
+          <button class="copy" onclick="copyCmd(this)">העתק</button>
+          <code>git clone https://github.com/tzudbadichi/task-manager.git
+cd task-manager
+Copy-Item runner\runner.config.example.json runner\runner.config.json</code>
+        </div>
+      </div>
+    </label>
+  </section>
+
+  <footer>מדריך אינטראקטיבי - ההתקדמות נשמרת בדפדפן זה. פירוט טכני מלא: Kingdom_of_Claudes_Beloved_MDs/AGENT_FARM.md</footer>
+</div>
+
+<script>
+  // מפתח שמירה ייחודי לפי כותרת המדריך, כדי שמדריכים שונים לא ידרסו זה את זה
+  var STORE_KEY = "guide::" + document.title;
+
+  function loadState(){
+    try { return JSON.parse(localStorage.getItem(STORE_KEY) || "{}"); }
+    catch(e){ return {}; }
+  }
+  function saveState(state){
+    try { localStorage.setItem(STORE_KEY, JSON.stringify(state)); } catch(e){}
+  }
+
+  function refreshProgress(){
+    var boxes = document.querySelectorAll('.step input[type=checkbox]');
+    var done = 0;
+    boxes.forEach(function(b){
+      var step = b.closest('.step');
+      if(b.checked){ done++; step.classList.add('done'); }
+      else { step.classList.remove('done'); }
+    });
+    var total = boxes.length;
+    var pct = total ? Math.round(done/total*100) : 0;
+    document.getElementById('barFill').style.width = pct + "%";
+    document.getElementById('barText').textContent = done + " מתוך " + total + " הושלמו (" + pct + "%)";
+  }
+
+  function initCheckboxes(){
+    var state = loadState();
+    document.querySelectorAll('.step input[type=checkbox]').forEach(function(b){
+      var key = b.getAttribute('data-key');
+      if(key && state[key]) b.checked = true;
+      b.addEventListener('change', function(){
+        var s = loadState();
+        s[key] = b.checked;
+        saveState(s);
+        refreshProgress();
+      });
+    });
+    refreshProgress();
+  }
+
+  function resetProgress(){
+    if(!confirm('לאפס את כל הסימונים במדריך זה?')) return;
+    localStorage.removeItem(STORE_KEY);
+    document.querySelectorAll('.step input[type=checkbox]').forEach(function(b){ b.checked = false; });
+    refreshProgress();
+  }
+
+  function copyCmd(btn){
+    var code = btn.parentElement.querySelector('code');
+    var text = code.innerText;
+    function ok(){
+      var orig = btn.textContent;
+      btn.textContent = "הועתק!";
+      btn.classList.add('copied');
+      setTimeout(function(){ btn.textContent = orig; btn.classList.remove('copied'); }, 1500);
+    }
+    if(navigator.clipboard && navigator.clipboard.writeText){
+      navigator.clipboard.writeText(text).then(ok).catch(function(){ fallbackCopy(text, ok); });
+    } else {
+      fallbackCopy(text, ok);
+    }
+  }
+  function fallbackCopy(text, ok){
+    var ta = document.createElement('textarea');
+    ta.value = text; ta.style.position = 'fixed'; ta.style.opacity = '0';
+    document.body.appendChild(ta); ta.select();
+    try { document.execCommand('copy'); ok(); } catch(e){}
+    document.body.removeChild(ta);
+  }
+
+  initCheckboxes();
+</script>
+</body>
+</html>

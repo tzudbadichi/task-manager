@@ -171,6 +171,29 @@
     </div>
   </dialog>
 
+  <!-- Agent: one subtask's conversation with the agent of its project. The context and the thread are
+       re-rendered (render.js renderAgentPanel); the message box is static, so updates never wipe typed text. -->
+  <dialog id="agent-dialog" class="agent-dialog" aria-labelledby="agent-dialog-title">
+    <form id="agent-form" class="dialog-body">
+      <header class="dialog-head">
+        <h2 id="agent-dialog-title"><span data-icon="bot"></span>אייג'נט</h2>
+        <button type="button" class="icon-btn" data-action="close-dialog" aria-label="סגירה"><span data-icon="x"></span></button>
+      </header>
+      <div id="agent-context" class="agent-context"></div>
+      <ol id="agent-thread" class="agent-thread" aria-live="polite" aria-label="השיחה עם האייג'נט"></ol>
+      <div class="field agent-compose">
+        <label class="field-label" id="agent-message-label" for="agent-message">הודעה לאייג'נט</label>
+        <textarea id="agent-message" name="message" rows="4" maxlength="20000" dir="auto"></textarea>
+        <p id="agent-hint" class="field-hint"></p>
+      </div>
+      <footer class="dialog-foot">
+        <span class="spacer"></span>
+        <button type="button" class="btn btn-ghost" data-action="close-dialog">סגירה</button>
+        <button type="submit" id="agent-send" class="btn btn-primary"><span data-icon="send"></span>שליחה לאייג'נט</button>
+      </footer>
+    </form>
+  </dialog>
+
   <!-- "What now?" - draws an open subtask to work on -->
   <dialog id="next-dialog" class="next-dialog" aria-labelledby="next-dialog-title">
     <div id="next-body" class="dialog-body"></div>
@@ -228,6 +251,12 @@
         <div class="button-row">
           <button type="button" class="btn btn-soft" data-action="sign-out"><span data-icon="log-out"></span>התנתקות מהמכשיר הזה</button>
         </div>
+      </section>
+
+      <section id="agents-section" class="settings-section" hidden>
+        <h3>אייג'נטים</h3>
+        <p class="muted small">מחשבי פיתוח שהראנר רץ עליהם, והפרויקטים שכל אחד מהם מכיר. משימה שמשויכת לפרויקט כזה נשלחת לאייג'נט מחלון המשימה.</p>
+        <div id="agents-list"></div>
       </section>
 
       <section class="settings-section">

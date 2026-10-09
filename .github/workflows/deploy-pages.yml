@@ -10,6 +10,7 @@ on:
     paths:
       - "src/**"
       - "tests/**"
+      - "runner/**"
       - "package.json"
       - ".github/workflows/deploy-pages.yml"
   workflow_dispatch:

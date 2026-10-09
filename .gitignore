@@ -1,6 +1,9 @@
 # Local Supabase config (generated in CI from repository Variables; copy config.example.js for local dev)
 src/config.js
 
+# Agent runner config of this machine (project folders, account folders - copy runner.config.example.json)
+runner/runner.config.json
+
 # Backups exported from the app (may contain personal / work task data - never commit)
 *backup*.json
 

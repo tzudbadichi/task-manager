@@ -5,6 +5,10 @@
 // When it is missing or empty the app runs in local-only mode, exactly as before.
 
 const DOCUMENT_TABLE = 'task_manager_documents';
+const AGENT_RUNNERS_TABLE = 'agent_runners';
+const AGENT_JOBS_TABLE = 'agent_jobs';
+const AGENT_JOB_COLUMNS = 'id, runner_id, project_key, task_id, subtask_id, prompt, status, cancel_requested, summary, error, '
+  + 'branch, worktree_path, changed_files, created_at, started_at, finished_at';
 const AUTH_STORAGE_KEY = 'task-manager-auth';
 const SUPABASE_SCRIPT = 'vendor/supabase.js';
 
@@ -66,6 +70,7 @@ export async function createCloud({ url, key }) {
       return () => data.subscription.unsubscribe();
     },
     createRemote: userId => createDocumentRemote(client, userId),
+    createAgentRemote: userId => createAgentRemote(client, userId),
   };
 }
 
@@ -114,6 +119,77 @@ export function createDocumentRemote(client, userId) {
       return () => client.removeChannel(channel);
     },
   };
+}
+
+/**
+ * Agent farm tables (supabase/schema.sql, AGENT_FARM.md): agent_runners - the dev machines running the
+ * runner and the projects each offers; agent_jobs - messages to agents and their answers. Rows come back
+ * raw (snake_case); agent-hub.js normalizes them. Row-level security limits everything to this user.
+ */
+export function createAgentRemote(client, userId) {
+  const jobs = () => client.from(AGENT_JOBS_TABLE);
+  const throwIfError = ({ data, error }) => {
+    if (error) throw error;
+    return data;
+  };
+  return {
+    async listRunners() {
+      return throwIfError(await client.from(AGENT_RUNNERS_TABLE)
+        .select('id, name, projects, last_seen_at')
+        .eq('user_id', userId)
+        .order('last_seen_at', { ascending: false }));
+    },
+    async listJobs(limit) {
+      return throwIfError(await jobs()
+        .select(AGENT_JOB_COLUMNS)
+        .eq('user_id', userId)
+        .order('created_at', { ascending: false })
+        .limit(limit));
+    },
+    /** A new job always starts queued (the database enforces it); the runner it names picks it up. */
+    async insertJob({ id, runnerId, projectKey, taskId, subtaskId, prompt }) {
+      return throwIfError(await jobs()
+        .insert({ id, user_id: userId, runner_id: runnerId, project_key: projectKey, task_id: taskId, subtask_id: subtaskId, prompt })
+        .select(AGENT_JOB_COLUMNS)
+        .single());
+    },
+    /**
+     * A queued job is cancelled right away; a running one is asked to stop (the runner stops the agent and
+     * reports "cancelled"). Both updates are conditional, so a job the runner claimed in between is not lost.
+     * close: the job's machine is not connected and may never come back (say, its state was lost) - a running
+     * job is then closed as cancelled right away; if that machine does report later, its update matches no
+     * open job and is dropped. Returns the updated row, or null when the job already finished.
+     */
+    async cancelJob(jobId, { close = false } = {}) {
+      const queued = throwIfError(await jobs().update({ status: 'cancelled' }).eq('id', jobId).eq('status', 'queued').select(AGENT_JOB_COLUMNS));
+      if (queued.length > 0) return queued[0];
+      const changes = close ? { status: 'cancelled', cancel_requested: true } : { cancel_requested: true };
+      const running = throwIfError(await jobs().update(changes).eq('id', jobId).eq('status', 'running').select(AGENT_JOB_COLUMNS));
+      return running[0] ?? null;
+    },
+    /**
+     * onEvent({ table, type, row, oldRow }) for every change of this user's runners and jobs, and onEvent(null)
+     * each time the live channel (re)connects - then everything is loaded again. Returns unsubscribe.
+     */
+    subscribe(onEvent) {
+      const forward = table => payload => onEvent({ table, type: payload.eventType, row: payload.new ?? null, oldRow: payload.old ?? null });
+      const filter = `user_id=eq.${userId}`;
+      const channel = client
+        .channel(`agent-farm-${userId}`)
+        .on('postgres_changes', { event: '*', schema: 'public', table: AGENT_JOBS_TABLE, filter }, forward(AGENT_JOBS_TABLE))
+        .on('postgres_changes', { event: '*', schema: 'public', table: AGENT_RUNNERS_TABLE, filter }, forward(AGENT_RUNNERS_TABLE))
+        .subscribe(channelStatus => {
+          if (channelStatus === 'SUBSCRIBED') onEvent(null);
+        });
+      return () => client.removeChannel(channel);
+    },
+  };
+}
+
+/** True when the agent tables were not created yet (the updated supabase/schema.sql was not run). */
+export function isMissingTableError(error) {
+  const code = error?.code ?? '';
+  return code === '42P01' || code === 'PGRST205' || /does not exist|could not find the table/i.test(String(error?.message ?? ''));
 }
 
 /** Hebrew message for a Supabase auth error. */

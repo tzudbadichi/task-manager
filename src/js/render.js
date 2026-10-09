@@ -11,6 +11,9 @@ import {
 import { SEASONS, SEASON_KEYS } from './seasons.js';
 import { createSeasonEmblem } from './art.js';
 import { formatElapsed } from './utils.js';
+import {
+  AGENT_JOB_VIEW, ENGINE_LABELS, isJobActive, isRunnerOnline, subtaskKey, vscodeFolderLink,
+} from './agent-model.js';
 
 export const UNCATEGORIZED_COLOR = '#94a3b8';
 export const CATEGORY_SWATCHES = Object.freeze([
@@ -256,6 +259,7 @@ function renderTaskTile(task, category, now, today) {
   h('div', { class: 'tile-top' },
     h('span', { class: 'cat-chip', cssVars: { '--chip-color': color } },
       h('span', { class: 'dot', 'aria-hidden': 'true' }), category?.name ?? 'ללא קטגוריה'),
+    task.agentProject && h('span', { class: 'tile-agent', title: `משימת אייג'נט - פרויקט ${task.agentProject}` }, icon('bot', { size: 14 })),
     h('span', { class: 'tile-grip', title: 'גרירה לסידור', 'aria-hidden': 'true' }, icon('grip', { size: 16 }))),
   // The title button stretches over the whole tile (CSS ::after), so a click anywhere opens the task.
   h('button', {
@@ -275,6 +279,7 @@ function renderTaskTile(task, category, now, today) {
         }, icon('check', { size: 11 })),
         h('span', { class: 'tile-subtask-title' }, subtask.title),
         subtask.myDay === today && h('span', { class: 'tile-myday', title: 'ב"היום שלי"' }, icon('sun', { size: 12 })),
+        tileAgentMark(subtask),
         miniStatusControl(subtask, { action: 'set-subtask-status', focusKey: `tile-status-${subtask.id}`, ...ids, subtaskId: subtask.id }));
     })),
   hiddenCount > 0 && h('span', { class: 'tile-more' }, `+${hiddenCount} נוספות`),
@@ -283,6 +288,13 @@ function renderTaskTile(task, category, now, today) {
     progressIndicator(summary),
     sinceLabel(task, now),
     dustLevel > 0 && dustLabel(task, now)));
+}
+
+// An open subtask the agent works on (pulsing) or has answered: a small robot next to its title.
+function tileAgentMark(subtask) {
+  const jobStatus = subtask.agentJob?.status;
+  if (!jobStatus || subtask.status === 'done') return null;
+  return h('span', { class: 'tile-agent-mark', dataset: { jobStatus }, title: `אייג'נט: ${AGENT_JOB_VIEW[jobStatus].label}` }, icon('bot', { size: 12 }));
 }
 
 function dustLabel(task, now) {
@@ -296,9 +308,10 @@ function dustLabel(task, now) {
 
 /**
  * Renders the detail view of one task. Returns false when the task no longer exists.
- * options: today (the date for "my day" sun buttons, or null to hide them), voice (show the dictation button).
+ * options: today (the date for "my day" sun buttons, or null to hide them), voice (show the dictation button),
+ * agents (cloud mode: { status, projects, latestBySubtask } - the agent picker and a button per subtask; null hides them).
  */
-export function renderTaskDetail(container, state, taskId, now, { today = null, voice = false } = {}) {
+export function renderTaskDetail(container, state, taskId, now, { today = null, voice = false, agents = null } = {}) {
   const task = state.tasks.find(item => item.id === taskId);
   if (!task) return false;
   const category = state.categories.find(item => item.id === task.categoryId) ?? null;
@@ -325,8 +338,10 @@ export function renderTaskDetail(container, state, taskId, now, { today = null, 
           h('option', { value: '' }, 'ללא קטגוריה'))),
       h('div', { class: 'field' },
         h('span', { class: 'field-label' }, 'סטטוס ', h('small', {}, '(לפי תתי המשימות)')),
-        h('div', { class: 'field-value' }, statusBadge(task.status), sinceLabel(task, now)))),
-    dustLevel > 0 && dustBanner(task, dustLevel, now),
+        h('div', { class: 'field-value' }, statusBadge(task.status), sinceLabel(task, now))),
+      showsAgentField(task, agents) && agentProjectField(task, agents.projects)),
+    // replaceChildren (unlike h) would print a false as text, so a missing banner is left out of the list.
+    ...(dustLevel > 0 ? [dustBanner(task, dustLevel, now)] : []),
     h('label', { class: 'field' },
       h('span', { class: 'field-label' }, 'תיאור ', h('small', {}, '(אופציונלי)')),
       h('textarea', {
@@ -335,7 +350,7 @@ export function renderTaskDetail(container, state, taskId, now, { today = null, 
       })),
     h('section', { class: 'detail-subtasks', 'aria-label': 'תתי משימות' },
       h('h3', {}, `תתי משימות (${summary.done}/${summary.total})`),
-      h('ul', { class: 'subtasks' }, ...task.subtasks.map(subtask => renderSubtask(task, subtask, now, today))),
+      h('ul', { class: 'subtasks' }, ...task.subtasks.map(subtask => renderSubtask(task, subtask, now, today, agents))),
       addSubtaskRow(task.id, voice)),
     h('footer', { class: 'dialog-foot' },
       h('button', { type: 'button', class: 'btn btn-danger-soft', dataset: { action: 'delete-task', ...ids } }, icon('trash', { size: 16 }), 'מחיקת המשימה'),
@@ -356,7 +371,44 @@ function dustBanner(task, dustLevel, now) {
       h('button', { type: 'button', class: 'btn btn-soft btn-sm', dataset: { action: 'complete-task', ...ids } }, icon('check', { size: 16 }), 'לסגור את כולה')));
 }
 
-function renderSubtask(task, subtask, now, today) {
+// The agent picker shows once the agent tables answer, and always for a task already linked to a project.
+function showsAgentField(task, agents) {
+  return Boolean(agents) && (agents.status === 'ready' || Boolean(task.agentProject));
+}
+
+function agentProjectField(task, projects) {
+  const isKnown = projects.some(project => project.key === task.agentProject);
+  return h('label', { class: 'field' },
+    h('span', { class: 'field-label' }, 'אייג\'נט ', h('small', {}, '(למשימות פיתוח)')),
+    h('select', {
+      class: 'select', value: task.agentProject ?? '',
+      title: 'פרויקט שהראנר במחשב הפיתוח מכיר. לכל תת-משימה יופיע כפתור לשליחה לאייג\'נט.',
+      dataset: { action: 'set-task-agent', focusKey: `detail-agent-${task.id}`, taskId: task.id },
+    },
+    h('option', { value: '' }, 'בלי - משימה רגילה'),
+    ...projects.map(project => h('option', { value: project.key }, agentProjectLabel(project))),
+    task.agentProject && !isKnown && h('option', { value: task.agentProject }, `${task.agentProject} (אף מחשב לא מציע אותו כרגע)`)));
+}
+
+function agentProjectLabel(project) {
+  const engine = ENGINE_LABELS[project.engine];
+  return [project.name, engine, project.profile, !project.online && 'לא מחובר', project.isMismatched && 'הגדרות סותרות']
+    .filter(Boolean).join(' · ');
+}
+
+// Opens the agent window of a subtask; its label shows where the agent is with it.
+function agentButton(task, subtask, latestJob) {
+  const jobStatus = latestJob?.status ?? subtask.agentJob?.status ?? null;
+  const view = jobStatus ? AGENT_JOB_VIEW[jobStatus] : null;
+  return h('button', {
+    type: 'button',
+    class: ['btn', 'btn-soft', 'btn-sm', 'agent-btn'],
+    dataset: { action: 'open-agent', focusKey: `sub-agent-${subtask.id}`, jobStatus, taskId: task.id, subtaskId: subtask.id },
+    title: view ? view.hint : 'פתיחת השיחה עם האייג\'נט של הפרויקט',
+  }, icon('bot', { size: 15 }), h('span', { class: 'agent-btn-label' }, view ? view.label : 'לאייג\'נט'));
+}
+
+function renderSubtask(task, subtask, now, today, agents = null) {
   const ids = { taskId: task.id, subtaskId: subtask.id };
   const isDone = subtask.status === 'done';
   const toggleLabel = isDone ? 'החזרה לביצוע' : 'סימון כהושלם';
@@ -383,6 +435,7 @@ function renderSubtask(task, subtask, now, today) {
         dataset: { action: 'edit-subtask-title', focusKey: `sub-title-${subtask.id}`, original: subtask.title, ...ids },
       })),
     h('div', { class: 'subtask-side' },
+      task.agentProject && agents && agentButton(task, subtask, agents.latestBySubtask.get(subtaskKey(task.id, subtask.id))),
       sinceLabel(subtask, now),
       statusControl(subtask.status, { action: 'set-subtask-status', focusKey: `sub-status-${subtask.id}`, ...ids }),
       showMyDayButton && iconButton('sun', isPickedToday ? 'הסרה מהיום שלי' : 'הוספה להיום שלי',
@@ -485,6 +538,119 @@ export function fillSeasonSelect(select) {
     h('option', { value: 'auto' }, 'אוטומטית לפי הלוח העברי'),
     h('option', { value: 'off' }, 'כבויה'),
     h('optgroup', { label: 'תצוגה מקדימה' }, ...SEASON_KEYS.map(key => h('option', { value: key }, SEASONS[key].label))));
+}
+
+// ---------------------------------------------------------------------------
+// Agent window (one subtask's conversation with its agent) and the machines list in the settings
+// ---------------------------------------------------------------------------
+
+/**
+ * Fills the re-rendered parts of the agent window; the message box below them is static (index.html),
+ * so an update from the agent never wipes text being typed.
+ * view: { task, subtask, project (a listAgentProjects entry or null), jobs (oldest first), now, hubStatus,
+ *         onlineRunnerIds (Set of connected machines) }
+ */
+export function renderAgentPanel(contextElement, threadElement, { task, subtask, project, jobs, now, hubStatus, onlineRunnerIds }) {
+  contextElement.replaceChildren(
+    h('p', { class: 'agent-subject' },
+      h('strong', {}, subtask.title),
+      subtask.title !== task.title && h('span', { class: 'muted' }, ` · ${task.title}`)),
+    agentProjectLine(task, project, hubStatus));
+  threadElement.replaceChildren(...(jobs.length === 0
+    ? [h('li', { class: 'agent-empty muted small' }, 'עוד לא נשלח כלום לאייג\'נט על תת-המשימה הזו.')]
+    : jobs.map(job => agentTurn(job, now, onlineRunnerIds.has(job.runnerId)))));
+}
+
+function agentProjectLine(task, project, hubStatus) {
+  if (hubStatus === 'unavailable') return agentNote('טבלאות האייג\'נטים עוד לא קיימות בענן. צריך להריץ פעם אחת את supabase/schema.sql המעודכן.');
+  if (hubStatus === 'loading') return agentNote('טוען את רשימת המחשבים...', 'is-quiet');
+  if (hubStatus === 'error') return agentNote('אין כרגע חיבור לרשימת המחשבים. ננסה שוב בעוד דקה.');
+  if (!task.agentProject) return agentNote('המשימה לא משויכת לפרויקט אייג\'נט. בוחרים פרויקט בחלון המשימה.');
+  if (!project) return agentNote(`אף מחשב לא מציע כרגע את הפרויקט "${task.agentProject}". אולי הוא הוסר מההגדרות של הראנר.`);
+  if (project.isMismatched) {
+    return agentNote(`הפרויקט "${project.key}" מוגדר במחשבים שונים עם מנוע או פרופיל שונה. לא נשלח אליו כלום עד שההגדרות של הראנרים יתאימו.`);
+  }
+  const machines = project.runners.map(runner => `${runner.name}${runner.online ? '' : ' (לא מחובר)'}`).join(', ');
+  return h('p', { class: 'agent-project small' },
+    h('span', { class: ['online-dot', project.online && 'is-online'], 'aria-hidden': 'true' }),
+    h('span', {}, [project.name, ENGINE_LABELS[project.engine], project.profile, machines].filter(Boolean).join(' · ')));
+}
+
+function agentNote(text, variant = 'is-warning') {
+  return h('p', { class: ['agent-note', 'small', variant] }, text);
+}
+
+/** One message and its answer. isRunnerConnected: whether the job's machine is connected (else a running job can be closed). */
+function agentTurn(job, now, isRunnerConnected) {
+  const isActive = isJobActive(job.status);
+  const canClose = job.status === 'running' && !isRunnerConnected;
+  const folderLink = vscodeFolderLink(job.worktreePath);
+  const hasMeta = Boolean(job.branch) || job.changedFiles !== null || Boolean(folderLink);
+  return h('li', { class: 'agent-turn', dataset: { jobStatus: job.status } },
+    h('div', { class: 'agent-msg is-me' },
+      h('span', { class: 'agent-msg-who' }, 'אני', h('span', { class: 'muted' }, ` · לפני ${formatElapsed(now - job.createdAt)}`)),
+      h('p', { class: 'agent-msg-text' }, job.prompt)),
+    h('div', { class: 'agent-msg is-agent' },
+      h('span', { class: 'agent-msg-who' },
+        icon('bot', { size: 14 }), 'האייג\'נט',
+        h('span', { class: 'agent-state', dataset: { jobStatus: job.status }, title: AGENT_JOB_VIEW[job.status].hint },
+          isActive && h('span', { class: 'agent-spinner', 'aria-hidden': 'true' }), AGENT_JOB_VIEW[job.status].label)),
+      isActive && h('p', { class: 'muted small' }, canClose
+        ? 'המחשב שמריץ את זה לא מחובר כרגע. אם הוא לא יחזור, אפשר לסגור את הריצה כאן.'
+        : activeJobText(job, now)),
+      job.summary && h('p', { class: 'agent-msg-text' }, job.summary),
+      job.error && h('p', { class: 'agent-msg-error' }, job.error),
+      hasMeta && h('div', { class: 'agent-meta' },
+        job.branch && h('span', { class: 'agent-meta-item', title: 'הענף שהאייג\'נט עובד בו' },
+          icon('git-branch', { size: 14 }), h('code', { dir: 'ltr' }, job.branch)),
+        job.changedFiles !== null && h('span', { class: 'agent-meta-item' },
+          icon('file', { size: 14 }), job.changedFiles === 1 ? 'קובץ אחד השתנה' : `${job.changedFiles} קבצים השתנו`),
+        folderLink && h('a', { class: 'btn btn-soft btn-sm', href: folderLink, title: `פתיחת תיקיית העבודה ב-VS Code: ${job.worktreePath}` },
+          icon('code', { size: 14 }), 'פתיחה ב-VS Code')),
+      isActive && (!job.cancelRequested || canClose) && h('button', {
+        type: 'button', class: 'btn btn-link agent-cancel',
+        dataset: { action: 'agent-cancel', jobId: job.id, close: canClose ? 'true' : null, focusKey: `agent-cancel-${job.id}` },
+      }, icon('stop', { size: 14 }), cancelLabel(job, canClose))));
+}
+
+function cancelLabel(job, canClose) {
+  if (job.status === 'queued') return 'ביטול השליחה';
+  return canClose ? 'סגירת הריצה' : 'לעצור את האייג\'נט';
+}
+
+function activeJobText(job, now) {
+  if (job.cancelRequested) return 'ביקשנו מהאייג\'נט לעצור...';
+  if (job.status === 'queued') return 'ממתין שהמחשב יתחיל לעבוד עליו...';
+  return `עובד כבר ${formatElapsed(now - (job.startedAt ?? job.createdAt))}`;
+}
+
+/** Settings: the machines that run the runner, whether each is connected, and the projects it offers. */
+export function renderAgentRunners(container, { status, runners, now }) {
+  if (status === 'unavailable') {
+    container.replaceChildren(agentNote('כדי להשתמש באייג\'נטים צריך להריץ פעם אחת את הקובץ supabase/schema.sql המעודכן ב-Supabase (SQL Editor).'));
+    return;
+  }
+  if (status === 'loading' || (status === 'error' && runners.length === 0)) {
+    container.replaceChildren(h('p', { class: 'muted small' }, status === 'loading' ? 'טוען...' : 'אין כרגע חיבור לרשימת המחשבים. ננסה שוב בעוד דקה.'));
+    return;
+  }
+  if (runners.length === 0) {
+    container.replaceChildren(h('p', { class: 'muted small' },
+      'עוד לא חובר אף מחשב. במחשב הפיתוח מריצים את הראנר (npm run runner) - ההוראות במדריך ההתקנה (html/agent-farm-setup-guide.html).'));
+    return;
+  }
+  container.replaceChildren(h('ul', { class: 'runners-list' }, ...runners.map(runner => {
+    const isOnline = isRunnerOnline(runner, now);
+    return h('li', { class: 'runner-row' },
+      h('div', { class: 'runner-head' },
+        h('span', { class: ['online-dot', isOnline && 'is-online'], 'aria-hidden': 'true' }),
+        h('strong', {}, runner.name),
+        h('span', { class: 'muted small' }, isOnline ? 'מחובר' : `נראה לאחרונה לפני ${formatElapsed(now - runner.lastSeenAt)}`)),
+      runner.projects.length === 0
+        ? h('p', { class: 'muted small' }, 'אין פרויקטים בהגדרות של הראנר.')
+        : h('ul', { class: 'runner-projects small' }, ...runner.projects.map(project =>
+          h('li', {}, [project.name, ENGINE_LABELS[project.engine], project.profile].filter(Boolean).join(' · ')))));
+  })));
 }
 
 // ---------------------------------------------------------------------------

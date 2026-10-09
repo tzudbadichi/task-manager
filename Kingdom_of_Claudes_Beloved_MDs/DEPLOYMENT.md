@@ -9,7 +9,7 @@
 - `.github/workflows/deploy-pages.yml`
 - `supabase/schema.sql` - מורץ פעם אחת בפרויקט ה-Supabase
 - `src/config.example.js` - תבנית ל-`config.js`
-- `package.json` - `npm test`, `npm run serve`
+- `package.json` - `npm test`, `npm run serve`, `npm run runner` / `runner:login` / `runner:check` (ראו `AGENT_FARM.md`)
 - `tests/` - בדיקות `node:test`
 
 ## ה-workflow
@@ -19,12 +19,12 @@
 | 1 | `test` | checkout, Node 22, `npm test` |
 | 2 | `deploy` (תלוי ב-test) | יצירת `config.js` מ-`vars.SUPABASE_URL` ו-`vars.SUPABASE_ANON_KEY` (מצוטטים עם `JSON.stringify`), configure-pages, העלאת `src/`, deploy-pages |
 
-מופעל ב-push ל-`main` כשמשתנים `src/**`, `tests/**`, `package.json` או קובץ ה-workflow, וגם ידנית (`workflow_dispatch`). הרשאות: ברירת מחדל `contents: read`; רק ל-job הפריסה יש `pages: write` ו-`id-token: write`. בלי ה-Variables נוצר `config.js` ריק, והאתר עובד במצב מקומי בלבד.
+מופעל ב-push ל-`main` כשמשתנים `src/**`, `tests/**`, `runner/**`, `package.json` או קובץ ה-workflow, וגם ידנית (`workflow_dispatch`). הרשאות: ברירת מחדל `contents: read`; רק ל-job הפריסה יש `pages: write` ו-`id-token: write`. בלי ה-Variables נוצר `config.js` ריק, והאתר עובד במצב מקומי בלבד.
 
 ## חיבור ל-Supabase (פעם אחת)
 
 1. **פרויקט**: יצירת פרויקט חדש ב-Supabase.
-2. **סכמה**: SQL Editor -> New query -> להדביק את `supabase/schema.sql` -> Run (אפשר להריץ שוב בבטחה).
+2. **סכמה**: SQL Editor -> New query -> להדביק את `supabase/schema.sql` -> Run (אפשר להריץ שוב בבטחה). מריצים שוב אחרי כל עדכון של הקובץ, למשל כדי להוסיף את טבלאות חוות האייג'נטים.
 3. **כתובות חזרה**: Authentication -> URL Configuration -> Site URL: `https://tzudbadichi.github.io/task-manager/`, ולהוסיף אותה (ואת `http://localhost:8080/` לפיתוח) ל-Redirect URLs.
 4. **Variables בריפו**: מהדאשבורד של Supabase (Project Settings -> API) להעתיק את ה-Project URL ואת ה-publishable key, ולהגדיר:
    ```
@@ -46,5 +46,6 @@
 
 - מצב מקומי: `npm run serve` -> `http://localhost:8080` (משתמש ב-Python; כל שרת סטטי שמגיש `.js` כ-`text/javascript` מתאים).
 - מצב ענן מקומית: להעתיק `src/config.example.js` ל-`src/config.js` ולמלא את שני הערכים.
-- `npm test` - בדיקות ל-reducer, נרמול והסבה, store, selectors, מנוע הסנכרון (מול remote מדומה), ה-adapter של Supabase (מול client מדומה), utils והעדפות תצוגה.
+- `npm test` - בדיקות ל-reducer, נרמול והסבה, store, selectors, מנוע הסנכרון (מול remote מדומה), ה-adapter של Supabase (מול client מדומה), utils והעדפות תצוגה, וחוות האייג'נטים: הכללים, ה-hub, הגישה לטבלאות, ובראנר - ההגדרות וההפרדה בין פרופילים, שורות הפקודה, הרצת תהליכים, git והלולאה (מול תור מדומה).
+- הראנר לא נפרס ל-GitHub Pages (רק `src/` עולה). הוא רץ במחשב הפיתוח - מדריך: `html/agent-farm-setup-guide.html`.
 - פתיחת `index.html` ישירות מהדיסק לא תעבוד (מודולי ES דורשים HTTP).

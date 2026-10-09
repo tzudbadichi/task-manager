@@ -9,7 +9,8 @@
 - `src/js/store.js` - reducer, נרמול, טעינה, `createStore`
 - `src/js/utils.js` - `cleanText`, `clampInt`, `isHexColor`, `toTimestamp`, `createId`
 - `src/js/ui-prefs.js` - העדפות תצוגה (נשמרות בנפרד מהנתונים)
-- `tests/store.test.js`, `tests/utils-and-prefs.test.js`
+- `src/js/agent-model.js` - הכללים של שדות האייג'נט (`isAgentProjectKey`, `normalizeAgentJobRef`, `isNewerJobState`, `subtaskStatusForJob`)
+- `tests/store.test.js`, `tests/agent-store.test.js`, `tests/utils-and-prefs.test.js`
 
 ## מבנה ה-state
 
@@ -21,8 +22,10 @@
     id, title, description, categoryId,       // categoryId = null -> "ללא קטגוריה"
     status,                                    // נגזר מתתי המשימות (deriveTaskStatus) - לא נקבע ישירות
     statusChangedAt, createdAt, updatedAt,     // ms epoch; statusChangedAt = מתי הסטטוס הנגזר השתנה
-    subtasks: [{ id, title, status, statusChangedAt, createdAt, updatedAt, myDay? }],  // לפחות אחת; status: todo | in_progress | waiting | done
+    agentProject?,                             // מפתח פרויקט אייג'נט - קיים רק במשימה משויכת (ראו AGENT_FARM.md)
+    subtasks: [{ id, title, status, statusChangedAt, createdAt, updatedAt, myDay?, agentJob? }],  // לפחות אחת; status: todo | in_progress | waiting | done
                                                // myDay: 'YYYY-MM-DD' - קיים רק בתת-משימה שנבחרה ל"היום שלי" (ראו MY_DAY_AND_NEXT.md)
+                                               // agentJob: { id, status, createdAt } - העבודה האחרונה של האייג'נט שהוחלה (ראו AGENT_FARM.md)
   }],
   settings: { theme, lastExportAt },
 }
@@ -41,13 +44,14 @@
 | פעולה | שדות | התנהגות |
 |-------|------|---------|
 | `task/add` | title, description, categoryId, subtasks[{id, title, status}], status | כותרת ריקה נדחית; קטגוריה לא קיימת -> null; עד 2000 משימות. תתי המשימות הראשונות מגיעות מ-`subtasks` (כותרת ריקה או פריט לא תקין נזרקים, סטטוס לא חוקי -> todo). בלי אף תת-משימה תקינה, כותרת המשימה (עם `status`) הופכת לתת-המשימה הראשונה, עם מזהה קבוע `<taskId>:1` - כך גם פעולה ישנה שנרשמה בלי תתי משימות משוחזרת זהה. הסטטוס של המשימה נגזר מתתי המשימות |
-| `task/update` | taskId, changes{title, description, categoryId} | כותרת ריקה מתעלמת, שאר השדות מתעדכנים |
+| `task/update` | taskId, changes{title, description, categoryId, agentProject} | כותרת ריקה מתעלמת, שאר השדות מתעדכנים. `agentProject`: מפתח תקין (`isAgentProjectKey`) משייך, `null` או `''` מבטל (השדה נמחק), מפתח לא תקין מתעלם |
 | `task/setStatus` | taskId, status | האפליקציה לא שולחת אותה. קיימת רק כדי ששינוי שגרסה 2 רשמה בתור הסנכרון (נעשה בלי רשת לפני העדכון) לא יאבד: "הושלם" סוגר את כל תתי המשימות; סטטוס אחר עובר לתת-המשימה רק כשיש בדיוק אחת; אחרת no-op. הסטטוס של המשימה נגזר מחדש |
 | `task/complete` | taskId, subtaskIds? | "לסגור את כולה" (מחלון האבק, ראו `DUST.md`): תתי המשימות שב-`subtaskIds` (בלעדיו - כולן) עוברות ל"הושלם" (אותה לוגיקה כמו `task/setStatus` עם done). כך replay לא סוגר תת-משימה שנוספה במכשיר אחר אחרי ההחלטה. משימה שכבר הושלמה - no-op. האפליקציה שולחת אותה כ-`undoable` |
 | `task/touch` | taskId | "לנער את האבק": `updatedAt = now`, רק אם `now` מאוחר יותר (אחרת no-op, כך שגם replay לא מזיז אחורה) |
 | `task/delete` | taskId | |
 | `tasks/reorder` | orderedIds | סדר ידני (גרירה). המשימות שברשימה מחליפות מקומות רק בין המקומות שהן כבר תפסו, וכל משימה שלא ברשימה (מוסתרת בסינון) נשארת במקומה. מזהים לא מוכרים או כפולים מתעלמים |
 | `subtask/setMyDay` | taskId, subtaskId, date | `date` הוא `YYYY-MM-DD` או `null` (הסרה). תאריך לא תקין או חסר - no-op. בחירה כשכבר יש `LIMITS.myDay` (3) תתי משימות **פתוחות** לאותו תאריך - no-op (`countOpenMyDay`). הסרה מוחקת את השדה. כמו כל שינוי בתת-משימה, מעדכן את `updatedAt` של משימת האב |
+| `subtask/agentSync` | taskId, subtaskId, jobId, jobStatus, jobCreatedAt | מעתיק לתת-המשימה את מצב העבודה האחרונה של האייג'נט (`agentJob`) ומזיז את הסטטוס שלה לפי `subtaskStatusForJob`: נשלח / עובד -> ממתין לתגובה, סיים / נכשל / בוטל -> בעבודה אצלי, ותת-משימה שסומנה "הושלם" נפתחת רק בשליחה חדשה. עדכון ישן - עבודה ישנה יותר, או מצב שאותה עבודה כבר עברה (`isNewerJobState`) - הוא no-op, ולכן replay וכמה מכשירים מגיעים לאותה תוצאה. שומר על מגבלת "היום שלי" כמו `setStatus` |
 | `subtask/add` / `update` / `setStatus` / `delete` | taskId, subtaskId, ... | עד 300 תתי משימות למשימה; `setStatus` מעדכן את `statusChangedAt` של תת-המשימה. פתיחה מחדש של תת-משימה שהושלמה ונבחרה ל"היום שלי", כשביום שלה כבר יש 3 פתוחות, מוציאה אותה מהרשימה (`keepMyDayLimit`), כדי שהמגבלה תישמר. כל שינוי מעדכן את `updatedAt` של משימת האב וגוזר מחדש את הסטטוס שלה (`statusChangedAt` של המשימה מתעדכן רק כשהסטטוס הנגזר השתנה). מחיקת תת-המשימה האחרונה של משימה נדחית (no-op) |
 | `category/add` | name, color | שם כפול (ללא תלות באותיות גדולות/קטנות) נדחה; צבע לא חוקי -> `#64748b`; עד 50 קטגוריות |
 | `category/update` | categoryId, changes{name, color} | ערכים לא חוקיים מתעלמים |
@@ -66,6 +70,7 @@
 - פריטים בלי כותרת נזרקים; חותמות זמן לא תקינות מוחלפות.
 - חותמות זמן עתידיות נחתכות ל-`now` (אחרת "זמן בעבודה" היה שלילי).
 - אותן תקרות כמו ב-reducer: עד 2000 משימות ו-300 תתי משימות למשימה, כדי שקובץ חריג לא יתקע את הדף.
+- `agentProject` של משימה נשמר רק כשהוא מפתח תקין; `agentJob` של תת-משימה רק כשיש לו `id` (עד 100 תווים), סטטוס עבודה מוכר ו-`createdAt` חיובי (`normalizeAgentJobRef`).
 - `myDay` של תת-משימה נשמר רק כשהוא תאריך אמיתי בפורמט `YYYY-MM-DD` (לא 2026-02-31), ולא ישן מ-30 יום. כל ערך אחר נזרק, כך שבחירות ישנות לא מצטברות במסמך.
 - שדות לא מוכרים נזרקים.
 
@@ -125,5 +130,5 @@
 - undo זוכר צעד אחד בלבד.
 - שתי לשוניות שעורכות בו-זמנית: השמירה האחרונה גוברת (אין מיזוג).
 - לשונית שעדיין מריצה גרסה ישנה של האתר שומרת את המסמך בפורמט 2, וכשהוא נטען כאן הוא מוסב שוב: משימה שסומנה שם "הושלם" סוגרת את תתי המשימות שלה, ומשימה שקיבלה שם סטטוס שתתי המשימות לא מייצרות מקבלת תת-משימה מהמשימה עצמה. גם שינוי של תת-משימה בלשונית הישנה משאיר את הסטטוס השמור של המשימה ישן, ואז עלולה להיווצר תת-משימה כזו בלי שהתכוונו. לכן אחרי עדכון צריך לרענן לשוניות פתוחות בכל המכשירים.
-- לשונית שעדיין מריצה גרסה ישנה של האתר לא מכירה את `myDay` ומוחקת אותו כשהיא שומרת, ולכן בחירות "היום שלי" נעלמות. גם כאן צריך לרענן לשוניות פתוחות אחרי עדכון.
+- לשונית שעדיין מריצה גרסה ישנה של האתר לא מכירה את `myDay`, `agentProject` ו-`agentJob` ומוחקת אותם כשהיא שומרת, ולכן בחירות "היום שלי" והשיוך לאייג'נט נעלמים. גם כאן צריך לרענן לשוניות פתוחות אחרי עדכון.
 - `normalizeState` הופך סטטוס לא מוכר ל-`todo`. לכן לשונית שעדיין מריצה גרסה ישנה של האתר (בלי סטטוס חדש) ממירה אותו ל"לביצוע", ובשינוי הבא שלה גם שומרת כך לענן. אחרי עדכון שמוסיף סטטוס צריך לרענן לשוניות פתוחות בכל המכשירים.

@@ -3,6 +3,7 @@
 
 import { DEFAULT_STATUS, LEGACY_STATUS_MAP, deriveTaskStatus, isValidStatus } from './statuses.js';
 import { cleanText, createId, isDateStamp, isHexColor, toTimestamp } from './utils.js';
+import { isAgentJobStatus, isAgentProjectKey, isNewerJobState, normalizeAgentJobRef, subtaskStatusForJob } from './agent-model.js';
 
 // Version 3: every task has subtasks, and a task's status is derived from them.
 export const SCHEMA_VERSION = 3;
@@ -105,6 +106,8 @@ export function reduce(state, action, { now, makeId = createId }) {
         subtask => keepMyDayLimit(state, subtask, withStatus(subtask, action.status, now)));
     case 'subtask/setMyDay':
       return setSubtaskMyDay(state, action, now);
+    case 'subtask/agentSync':
+      return syncSubtaskAgentJob(state, action, now);
     case 'subtask/delete':
       return mapTask(state, action.taskId, task => removeSubtask(task, action.subtaskId, now));
     case 'category/add':
@@ -252,9 +255,46 @@ function applyTextChanges(item, changes, fields, now) {
 
 function updateTaskFields(state, task, changes, now) {
   const withText = applyTextChanges(task, changes, TASK_TEXT_FIELDS, now);
-  if (!changes || typeof changes !== 'object' || !Object.hasOwn(changes, 'categoryId')) return withText;
-  const categoryId = resolveCategoryId(state, changes.categoryId);
-  return categoryId === withText.categoryId ? withText : { ...withText, categoryId, updatedAt: now };
+  if (!changes || typeof changes !== 'object') return withText;
+  const withCategory = Object.hasOwn(changes, 'categoryId') ? withCategoryId(state, withText, changes.categoryId, now) : withText;
+  return Object.hasOwn(changes, 'agentProject') ? withAgentProject(withCategory, changes.agentProject, now) : withCategory;
+}
+
+function withCategoryId(state, task, rawCategoryId, now) {
+  const categoryId = resolveCategoryId(state, rawCategoryId);
+  return categoryId === task.categoryId ? task : { ...task, categoryId, updatedAt: now };
+}
+
+/**
+ * agentProject is optional: only a task linked to an agent project carries it (a project key a runner
+ * offers - see agent-model.js). null or '' unlinks the task; an invalid key is ignored.
+ */
+function withAgentProject(task, agentProject, now) {
+  if (agentProject === null || agentProject === '') {
+    if (task.agentProject === undefined) return task;
+    const { agentProject: _removed, ...rest } = task;
+    return { ...rest, updatedAt: now };
+  }
+  if (!isAgentProjectKey(agentProject) || agentProject === task.agentProject) return task;
+  return { ...task, agentProject, updatedAt: now };
+}
+
+/**
+ * Mirrors the newest agent job of a subtask (sent from the agent window, or reported by the runner through
+ * the cloud) into the document, and moves the subtask's status with it (subtaskStatusForJob). Stale news is
+ * a no-op: an older job, or a state the same job already passed - so replays and several devices agree.
+ */
+function syncSubtaskAgentJob(state, action, now) {
+  const { jobId, jobStatus } = action;
+  const jobCreatedAt = toTimestamp(action.jobCreatedAt, null);
+  const agentJob = normalizeAgentJobRef({ id: jobId, status: jobStatus, createdAt: jobCreatedAt });
+  if (!agentJob || !isAgentJobStatus(jobStatus)) return state;
+  return mapSubtask(state, action.taskId, action.subtaskId, now, subtask => {
+    if (!isNewerJobState(subtask.agentJob, agentJob.id, agentJob.status, agentJob.createdAt)) return subtask;
+    const withJob = { ...subtask, agentJob, updatedAt: now };
+    const status = subtaskStatusForJob(agentJob.status, subtask.status);
+    return status ? keepMyDayLimit(state, subtask, withStatus(withJob, status, now)) : withJob;
+  });
 }
 
 // A status change restarts the "time in status" clock.
@@ -439,6 +479,8 @@ export function normalizeState(raw, { now = Date.now(), makeId = createId } = {}
         ? cleanText(`${description}\nאיש קשר: ${contact}`, LIMITS.description, { multiline: true })
         : description,
       categoryId: categoryIds.has(rawTask.categoryId) ? rawTask.categoryId : null,
+      // Optional: only a task linked to an agent project carries it.
+      ...(isAgentProjectKey(rawTask.agentProject) ? { agentProject: rawTask.agentProject } : {}),
       subtasks,
     });
   }
@@ -473,8 +515,14 @@ function normalizeSubtask(raw, uniqueId, now) {
   if (!base) return null;
   const contact = legacyContactOf(raw);
   const subtask = contact ? { ...base, title: cleanText(`${base.title} - ${contact}`, LIMITS.title) } : base;
-  // myDay is optional: only a subtask picked for "my day" carries it. Picks of long-gone days are dropped.
-  return isRecentMyDay(raw.myDay, now) ? { ...subtask, myDay: raw.myDay } : subtask;
+  // Optional fields: myDay only on a subtask picked for "my day" (picks of long-gone days are dropped),
+  // agentJob only on a subtask that was sent to an agent.
+  const agentJob = normalizeAgentJobRef(raw.agentJob);
+  return {
+    ...subtask,
+    ...(isRecentMyDay(raw.myDay, now) ? { myDay: raw.myDay } : {}),
+    ...(agentJob ? { agentJob } : {}),
+  };
 }
 
 // A "my day" pick is kept for MY_DAY_KEEP_DAYS after its day, then it is only clutter in the document.

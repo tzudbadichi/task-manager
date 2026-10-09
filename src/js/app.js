@@ -1,15 +1,15 @@
 // Entry point: connects the store to the DOM, handles all user events (delegated), the task
 // grid with drag-and-drop (or the animated people view), dialogs, "my day", "what now?", the status
 // report, celebrations, seasonal themes, voice dictation, backup import/export, and - when Supabase
-// is configured - login and cloud sync.
+// is configured - login, cloud sync and the agent farm (sending subtasks to agents on dev machines).
 
 import { LIMITS, STORAGE_KEY, countOpenMyDay, createInitialState, createStore } from './store.js';
 import { NO_CATEGORY, listNextCandidates, pickWeighted, selectVisibleTasks } from './selectors.js';
 import { DEFAULT_FILTERS, DISPLAY_TOGGLE_KEYS, loadUiPrefs, saveUiPrefs } from './ui-prefs.js';
 import {
-  ONLY_SUBTASK_MESSAGE, fillCategorySelect, fillSeasonSelect, fillStatusSelect, renderBackupBanner, renderCategoriesList,
-  renderDashboard, renderFilters, renderNextPick, renderSeasonBadge, renderSwatches, renderSyncStatus, renderTaskDetail,
-  renderTaskGrid, renderTasksEmptyState, renderTodayBar, suggestCategoryColor,
+  ONLY_SUBTASK_MESSAGE, fillCategorySelect, fillSeasonSelect, fillStatusSelect, renderAgentPanel, renderAgentRunners,
+  renderBackupBanner, renderCategoriesList, renderDashboard, renderFilters, renderNextPick, renderSeasonBadge, renderSwatches,
+  renderSyncStatus, renderTaskDetail, renderTaskGrid, renderTasksEmptyState, renderTodayBar, suggestCategoryColor,
 } from './render.js';
 import { hydrateIcons } from './icons.js';
 import { h } from './dom.js';
@@ -24,6 +24,11 @@ import { buildPersona } from './people-model.js';
 import { MAX_PEOPLE, createPeopleWorld } from './people-view.js';
 import { burstConfetti, playChime, prefersReducedMotion } from './celebrate.js';
 import { isVoiceSupported, startDictation, voiceErrorMessage } from './voice.js';
+import { createAgentHub } from './agent-hub.js';
+import {
+  agentSyncActions, composeAgentPrompt, isJobActive, isRunnerOnline, jobsOfSubtask, latestJobBySubtask, listAgentProjects,
+  pickRunnerForJob, promptContextFor,
+} from './agent-model.js';
 
 const TICK_INTERVAL_MS = 30_000;
 const MAX_IMPORT_BYTES = 5 * 1024 * 1024;
@@ -73,6 +78,16 @@ const els = {
   reportForm: byId('report-form'),
   reportText: byId('report-text'),
   reportShare: byId('report-share'),
+  agentDialog: byId('agent-dialog'),
+  agentForm: byId('agent-form'),
+  agentContext: byId('agent-context'),
+  agentThread: byId('agent-thread'),
+  agentMessage: byId('agent-message'),
+  agentMessageLabel: byId('agent-message-label'),
+  agentHint: byId('agent-hint'),
+  agentSend: byId('agent-send'),
+  agentsSection: byId('agents-section'),
+  agentsList: byId('agents-list'),
   accountSection: byId('account-section'),
   accountEmail: byId('account-email'),
   storageNote: byId('storage-note'),
@@ -112,6 +127,12 @@ let currentUser = null;
 let isSignOutRequested = false;
 // Arriving from a password-reset link: stay on the "new password" form until it is saved.
 let isRecoveringPassword = window.location.hash.includes('type=recovery');
+
+// Agent farm (cloud mode, once the account's tasks are loaded)
+let agentHub = null;
+let agentSnapshot = { status: 'off', runners: [], jobs: [] };
+let agentTarget = null; // { taskId, subtaskId } shown in the agent window
+let isAgentSending = false;
 
 function byId(id) {
   return document.getElementById(id);
@@ -170,6 +191,8 @@ function render() {
   renderTasks(state, now, today);
   if (els.categoriesDialog.open) renderCategoriesList(els.categoriesList, state, paletteCategoryId);
   if (els.detailDialog.open && !renderTaskDetail(els.detailBody, state, detailTaskId, now, detailOptions(today))) els.detailDialog.close();
+  renderAgentDialog();
+  if (els.settingsDialog.open) renderAgentsSettings();
   syncDictationButtons();
   restoreFocus(focusSnapshot);
 }
@@ -214,7 +237,7 @@ function myDayDate(now = Date.now()) {
 }
 
 function detailOptions(today) {
-  return { today, voice: isVoiceAvailable() };
+  return { today, voice: isVoiceAvailable(), agents: agentView() };
 }
 
 function isVoiceAvailable() {
@@ -233,6 +256,7 @@ function applySeason(now) {
 
 // Changes from another device must not wipe text the user is typing - those wait until the field is left.
 function onStoreChange(state, change) {
+  if (change?.kind === 'remote') reconcileAgentJobs(); // a copy from the cloud may lag behind the agent jobs
   if (change?.kind === 'remote' && isEditingUnsavedText()) {
     isRenderDeferred = true;
     return;
@@ -410,6 +434,8 @@ const clickActions = {
     isBackupBannerDismissed = true;
     render();
   },
+  'open-agent': ({ taskId, subtaskId }) => openAgentDialog(taskId, subtaskId),
+  'agent-cancel': ({ jobId, close }) => cancelAgentJob(jobId, { close: close === 'true' }),
   'close-dialog': (_, element) => element.closest('dialog')?.close(),
   'sync-retry': () => {
     if (!sync) return;
@@ -422,6 +448,8 @@ const clickActions = {
 const changeActions = {
   'set-task-category': ({ taskId }, element) =>
     store.dispatch({ type: 'task/update', taskId, changes: { categoryId: element.value || null } }),
+  'set-task-agent': ({ taskId }, element) =>
+    store.dispatch({ type: 'task/update', taskId, changes: { agentProject: element.value || null } }),
   'set-subtask-status': ({ taskId, subtaskId }, element) =>
     setSubtaskStatus(taskId, subtaskId, element.value, element.closest('.status-mini, .status-chip') ?? element),
   'edit-task-title': ({ taskId }, element) =>
@@ -1013,6 +1041,7 @@ function syncSettingsForm() {
     : 'היום אין חג בלוח. ב"תצוגה מקדימה" אפשר לראות כל אחת מהערכות.';
   els.accountSection.hidden = mode !== 'cloud' || !currentUser;
   els.accountEmail.textContent = currentUser?.email ?? '';
+  renderAgentsSettings();
   els.storageNote.textContent = mode === 'cloud'
     ? 'המשימות נשמרות בחשבון ומסונכרנות בין כל המכשירים שמחוברים אליו. עותק מקומי נשמר בדפדפן, כך שאפשר לעבוד גם בלי רשת.'
     : 'הנתונים נשמרים רק בדפדפן הזה ולא נשלחים לשום שרת. כדי לא לאבד אותם, או כדי להעביר אותם למחשב אחר, מייצאים קובץ גיבוי ומייבאים אותו.';
@@ -1074,6 +1103,193 @@ async function importBackup(input) {
 }
 
 // ---------------------------------------------------------------------------
+// Agent farm: subtasks sent to agents that a runner on a dev machine runs (AGENT_FARM.md)
+// ---------------------------------------------------------------------------
+
+/** Runs once the account's tasks are loaded, so agent states are only ever written into this account's tasks. */
+function startAgents(user) {
+  stopAgents();
+  agentSnapshot = { status: 'loading', runners: [], jobs: [] };
+  const hub = createAgentHub({
+    remote: cloud.createAgentRemote(user.id),
+    onChange: snapshot => {
+      if (agentHub === hub) onAgentsChange(snapshot);
+    },
+  });
+  agentHub = hub;
+  hub.start();
+}
+
+function stopAgents() {
+  agentHub?.stop();
+  agentHub = null;
+  agentSnapshot = { status: 'off', runners: [], jobs: [] };
+  if (els.agentDialog.open) els.agentDialog.close();
+}
+
+function onAgentsChange(snapshot) {
+  agentSnapshot = snapshot;
+  reconcileAgentJobs();
+  // The agent window and the machines list never touch text being typed; the rest waits for the field to be left.
+  renderAgentDialog();
+  if (els.settingsDialog.open) renderAgentsSettings();
+  if (isEditingUnsavedText()) isRenderDeferred = true;
+  else render();
+}
+
+/** Brings each subtask's mirrored agent job (and with it, its status) up to date with the jobs in the cloud. */
+function reconcileAgentJobs() {
+  if (!isSyncReady || agentSnapshot.status !== 'ready') return;
+  for (const action of agentSyncActions(store.getState(), agentSnapshot.jobs)) store.dispatch(action, { notify: false });
+}
+
+/** What the task window needs for its agent picker and buttons; null outside cloud mode. */
+function agentView(now = Date.now()) {
+  if (!agentHub) return null;
+  return {
+    status: agentSnapshot.status,
+    projects: listAgentProjects(agentSnapshot.runners, now),
+    latestBySubtask: latestJobBySubtask(agentSnapshot.jobs),
+  };
+}
+
+function findAgentProject(projectKey, now) {
+  return projectKey ? listAgentProjects(agentSnapshot.runners, now).find(project => project.key === projectKey) ?? null : null;
+}
+
+function openAgentDialog(taskId, subtaskId) {
+  agentTarget = { taskId, subtaskId };
+  els.agentMessage.value = '';
+  els.agentMessage.setCustomValidity('');
+  renderAgentDialog({ isOpening: true });
+  if (!els.agentDialog.open) els.agentDialog.showModal();
+  els.agentThread.scrollTop = els.agentThread.scrollHeight;
+  // On touch screens this would pop up the keyboard uninvited.
+  if (finePointerQuery.matches && !els.agentSend.disabled) els.agentMessage.focus();
+}
+
+/** Why a message cannot be sent right now (Hebrew, shown under the message box), or null. */
+function agentSendBlocker(task, project, activeJob) {
+  if (agentSnapshot.status === 'unavailable') return 'צריך קודם להריץ את supabase/schema.sql המעודכן ב-Supabase.';
+  if (agentSnapshot.status !== 'ready') return 'מתחבר לרשימת המחשבים...';
+  if (!task.agentProject) return 'קודם בוחרים בחלון המשימה לאיזה פרויקט היא שייכת.';
+  if (!project?.online) return 'אף מחשב שמכיר את הפרויקט הזה לא מחובר כרגע. אפשר לשלוח כשהראנר יעלה.';
+  if (project.isMismatched) return 'הפרויקט מוגדר אחרת במחשבים שונים (מנוע או פרופיל). צריך להתאים את ההגדרות של הראנרים.';
+  if (activeJob) return 'האייג\'נט עוד עובד על ההודעה הקודמת. את הבאה שולחים כשהוא מסיים (או עוצרים אותו).';
+  return null;
+}
+
+function renderAgentDialog({ isOpening = false } = {}) {
+  if (!agentTarget || (!els.agentDialog.open && !isOpening)) return;
+  const state = store.getState();
+  const task = state.tasks.find(item => item.id === agentTarget.taskId);
+  const subtask = task?.subtasks.find(item => item.id === agentTarget.subtaskId);
+  if (!subtask) {
+    els.agentDialog.close();
+    return;
+  }
+  const now = Date.now();
+  const jobs = jobsOfSubtask(agentSnapshot.jobs, task.id, subtask.id);
+  const project = findAgentProject(task.agentProject, now);
+  // Follow the conversation as it grows, unless the user scrolled up to read.
+  const thread = els.agentThread;
+  const wasAtEnd = thread.scrollHeight - thread.scrollTop - thread.clientHeight < 40;
+  const onlineRunnerIds = new Set(agentSnapshot.runners.filter(runner => isRunnerOnline(runner, now)).map(runner => runner.id));
+  renderAgentPanel(els.agentContext, thread, { task, subtask, project, jobs, now, hubStatus: agentSnapshot.status, onlineRunnerIds });
+  if (wasAtEnd) thread.scrollTop = thread.scrollHeight;
+
+  const blocker = agentSendBlocker(task, project, jobs.find(job => isJobActive(job.status)));
+  els.agentSend.disabled = Boolean(blocker) || isAgentSending;
+  els.agentMessageLabel.textContent = jobs.length > 0 ? 'תשובה או הנחיה נוספת' : 'מה לעשות? (אופציונלי)';
+  els.agentHint.textContent = blocker ?? (jobs.length > 0
+    ? 'ההודעה ממשיכה את אותה שיחה, באותה תיקיית עבודה. Ctrl+Enter שולח.'
+    : 'הכותרת, התיאור ותת-המשימה נשלחים לאייג\'נט יחד עם מה שכתוב כאן. אפשר גם לשלוח בלי לכתוב כלום.');
+  els.agentHint.classList.toggle('is-warning', Boolean(blocker));
+}
+
+async function sendToAgent() {
+  const target = agentTarget;
+  const state = store.getState();
+  const task = state.tasks.find(item => item.id === target?.taskId);
+  const subtask = task?.subtasks.find(item => item.id === target.subtaskId);
+  if (!subtask || !agentHub || isAgentSending) return;
+  const now = Date.now();
+  const jobs = jobsOfSubtask(agentSnapshot.jobs, task.id, subtask.id);
+  const blocker = agentSendBlocker(task, findAgentProject(task.agentProject, now), jobs.find(job => isJobActive(job.status)));
+  if (blocker) {
+    showToast(blocker, { tone: 'warning' });
+    return;
+  }
+  const taskJobs = agentSnapshot.jobs.filter(job => job.taskId === task.id);
+  const runner = pickRunnerForJob(task.agentProject, agentSnapshot.runners, taskJobs, now);
+  if (!runner) return; // the blocker above already covers "no connected machine"
+  // The conversation lives on the machine: one that has not seen this task (or subtask) yet gets its context.
+  const context = promptContextFor(taskJobs, subtask.id, runner.id);
+  const message = els.agentMessage.value;
+  if (context === 'none' && message.trim() === '') {
+    els.agentMessage.setCustomValidity('צריך לכתוב לאייג\'נט מה לעשות');
+    els.agentMessage.reportValidity();
+    return;
+  }
+
+  isAgentSending = true;
+  renderAgentDialog();
+  try {
+    // The hub reports the new job right away, and reconcileAgentJobs marks the subtask "waiting for a reply".
+    await agentHub.send({
+      id: createId(),
+      runnerId: runner.id,
+      projectKey: task.agentProject,
+      taskId: task.id,
+      subtaskId: subtask.id,
+      prompt: composeAgentPrompt({ task, subtask, message, context }),
+    });
+    if (agentTarget === target) els.agentMessage.value = '';
+    showToast(`נשלח לאייג'נט (${runner.name})`, { tone: 'success', durationMs: 2500 });
+  } catch {
+    showToast('השליחה לאייג\'נט נכשלה. כדאי לבדוק את החיבור ולנסות שוב.', { tone: 'error' });
+  } finally {
+    isAgentSending = false;
+    renderAgentDialog();
+  }
+}
+
+/** close: the job's machine is not connected - the run is closed here instead of waiting for that machine to stop it. */
+async function cancelAgentJob(jobId, { close = false } = {}) {
+  if (!agentHub) return;
+  if (close && !window.confirm('המחשב שמריץ את זה לא מחובר. לסגור את הריצה כאן? אם המחשב יחזור באמצע, התשובה שלו לא תירשם.')) return;
+  try {
+    const job = await agentHub.cancel(jobId, { close });
+    if (!job) showToast('הריצה כבר הסתיימה', { tone: 'warning' });
+  } catch {
+    showToast('לא הצלחנו לעצור את האייג\'נט. כדאי לנסות שוב.', { tone: 'error' });
+  }
+}
+
+function renderAgentsSettings() {
+  els.agentsSection.hidden = !agentHub;
+  if (agentHub) renderAgentRunners(els.agentsList, { ...agentSnapshot, now: Date.now() });
+}
+
+els.agentForm.addEventListener('submit', event => {
+  event.preventDefault();
+  sendToAgent();
+});
+
+els.agentMessage.addEventListener('input', () => els.agentMessage.setCustomValidity(''));
+els.agentMessage.addEventListener('keydown', event => {
+  if (event.key === 'Enter' && (event.ctrlKey || event.metaKey) && !event.isComposing) {
+    event.preventDefault();
+    els.agentForm.requestSubmit();
+  }
+});
+
+els.agentDialog.addEventListener('close', () => {
+  agentTarget = null;
+  render(); // the task window behind it shows the agent state of its subtasks
+});
+
+// ---------------------------------------------------------------------------
 // Cloud mode: login and sync
 // ---------------------------------------------------------------------------
 
@@ -1132,6 +1348,7 @@ async function enterApp(user) {
     return;
   }
   sync?.stop();
+  stopAgents();
   isSyncReady = false;
   // If this device's copy belongs to nobody or someone else, keep it hidden until the account's tasks arrive.
   const isOwnCopy = loadSyncMeta(storage).userId === user.id;
@@ -1158,12 +1375,14 @@ async function enterApp(user) {
     if (!(await activeSync.ready) || sync !== activeSync) return;
   }
   isSyncReady = true;
+  startAgents(user);
   if (!isRecoveringPassword) setView('app');
 }
 
 function onSignedOut() {
   sync?.stop();
   sync = null;
+  stopAgents();
   isSyncReady = false;
   currentUser = null;
   if (isSignOutRequested) {

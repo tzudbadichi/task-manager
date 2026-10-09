@@ -6,7 +6,10 @@
   "type": "module",
   "scripts": {
     "test": "node --test \"tests/*.test.js\"",
-    "serve": "python -m http.server 8080 --directory src"
+    "serve": "python -m http.server 8080 --directory src",
+    "runner": "node runner/runner.js",
+    "runner:login": "node runner/runner.js login",
+    "runner:check": "node runner/runner.js check"
   },
   "engines": {
     "node": ">=22"

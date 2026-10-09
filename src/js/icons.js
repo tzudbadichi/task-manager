@@ -42,6 +42,12 @@ const ICON_PATHS = Object.freeze({
   play: ['M6 3l14 9-14 9V3Z'],
   maximize: ['M8 3H5a2 2 0 0 0-2 2v3', 'M21 8V5a2 2 0 0 0-2-2h-3', 'M3 16v3a2 2 0 0 0 2 2h3', 'M16 21h3a2 2 0 0 0 2-2v-3'],
   minimize: ['M8 3v3a2 2 0 0 1-2 2H3', 'M21 8h-3a2 2 0 0 1-2-2V3', 'M3 16h3a2 2 0 0 1 2 2v3', 'M16 21v-3a2 2 0 0 1 2-2h3'],
+  bot: ['M12 8V4H8', 'M6 8h12a2 2 0 0 1 2 2v8a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2v-8a2 2 0 0 1 2-2Z', 'M2 14h2', 'M20 14h2', 'M15 13v2', 'M9 13v2'],
+  code: ['m16 18 6-6-6-6', 'm8 6-6 6 6 6'],
+  'git-branch': ['M6 3v12', 'M18 3a3 3 0 1 0 0 6a3 3 0 1 0 0-6Z', 'M6 15a3 3 0 1 0 0 6a3 3 0 1 0 0-6Z', 'M18 9a9 9 0 0 1-9 9'],
+  send: ['M22 2 11 13', 'M22 2 15 22l-4-9-9-4Z'],
+  stop: ['M7 7h10v10H7Z'],
+  file: ['M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8Z', 'M14 2v6h6'],
 });
 
 // Icons drawn as dots need a thicker stroke to be visible.

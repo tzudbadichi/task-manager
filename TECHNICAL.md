@@ -1,6 +1,6 @@
 # TECHNICAL - מפת המערכת
 
-מנהל משימות אישי: משימות בריבועים שאפשר לגרור ולסדר (או כדמויות מונפשות שחיות במשרד משותף), לכל משימה תתי משימות, ארבעה סטטוסים (לביצוע / בעבודה אצלי / ממתין לתגובה / הושלם) שנקבעים לתתי המשימות - והסטטוס של המשימה נגזר מהן, קטגוריות צבעוניות, "היום שלי", "מה עכשיו?", דוח מצב, חגיגות, אבק על משימות נטושות, ערכות חג לפי הלוח העברי, הכתבה קולית, והתחברות עם סנכרון בין מכשירים דרך Supabase. אתר סטטי, נפרס ל-GitHub Pages, מותאם לנייד.
+מנהל משימות אישי: משימות בריבועים שאפשר לגרור ולסדר (או כדמויות מונפשות שחיות במשרד משותף), לכל משימה תתי משימות, ארבעה סטטוסים (לביצוע / בעבודה אצלי / ממתין לתגובה / הושלם) שנקבעים לתתי המשימות - והסטטוס של המשימה נגזר מהן, קטגוריות צבעוניות, "היום שלי", "מה עכשיו?", דוח מצב, חגיגות, אבק על משימות נטושות, ערכות חג לפי הלוח העברי, הכתבה קולית, והתחברות עם סנכרון בין מכשירים דרך Supabase. חוות אייג'נטים: תת-משימה של משימת פיתוח נשלחת לאייג'נט (Claude Code לעבודה, Codex לאישי) שרץ על מחשב הפיתוח דרך ראנר מקומי, והוא מדווח בחזרה ללוח. אתר סטטי, נפרס ל-GitHub Pages, מותאם לנייד.
 
 ## סקירת ארכיטקטורה
 
@@ -21,11 +21,16 @@
                   |-- ui-prefs.js   (העדפות המכשיר: סינון, מיון, תצוגה, ערכה, מתגים)
                   |-- auth-view.js  (מסך התחברות)
                   |-- sync.js       (פעולות ממתינות, שמירה עם version, replay)
+                  |-- agent-hub.js  (מחשבים ועבודות אייג'נט: טעינה, realtime, שליחה) -> agent-model.js (כללים טהורים)
                   |-- cloud.js      -> vendor/supabase.js -> [Supabase: Auth + Postgres/RLS + Realtime]
+                                                                    ^ agent_runners, agent_jobs (תור)
+runner/ (Node, על מחשב הפיתוח) -> תופס עבודות -> claude -p / codex exec ב-worktree -> מדווח לתור
 GitHub push -> Actions: בדיקות -> config.js מ-Variables -> GitHub Pages
 ```
 
 זרימה: פעולת משתמש -> `store.dispatch(action)` -> reducer מחזיר state חדש -> נשמר ב-localStorage -> `render()` בונה מחדש את התצוגה -> (מצב ענן) `sync.js` רושם את הפעולה ושומר אותה בענן.
+
+זרימת אייג'נט: שליחה מחלון האייג'נט -> שורה ב-`agent_jobs` -> הראנר במחשב הנבחר מריץ את האייג'נט ומעדכן את השורה -> realtime -> `subtask/agentSync` מעדכן את תת-המשימה במסמך (ממתין לתגובה בזמן עבודה, בעבודה אצלי כשסיים).
 
 ## מבנה הקבצים
 
@@ -42,7 +47,9 @@ project-root/
 │       ├── app.js                # נקודת כניסה: חיווט, דיאלוגים, התחברות וסנכרון, גיבוי, חגיגות, הכתבה
 │       ├── drag.js               # גרירה לסידור הגריד (עכבר + מגע)
 │       ├── sync.js               # מנוע סנכרון ענן (ללא DOM)
-│       ├── cloud.js              # Supabase: config, client, adapter, שגיאות התחברות
+│       ├── cloud.js              # Supabase: config, client, adapter למסמך ולטבלאות האייג'נטים, שגיאות התחברות
+│       ├── agent-hub.js          # חוות אייג'נטים בדפדפן: מחשבים ועבודות, realtime, שליחה וביטול (ללא DOM)
+│       ├── agent-model.js        # חוות אייג'נטים: כללים טהורים - מיפוי סטטוסים, נרמול, בחירת מחשב, ניסוח הודעה
 │       ├── auth-view.js          # מסך התחברות / הרשמה / איפוס סיסמה
 │       ├── store.js              # reducer, נרמול והסבת נתונים, שמירה, undo
 │       ├── selectors.js          # סינון, מיון, ספירות, אבק, היום שלי, מועמדים ל"מה עכשיו?"
@@ -60,12 +67,25 @@ project-root/
 │       ├── dom.js                # בונה DOM בטוח (טקסט בלבד, בלי innerHTML)
 │       ├── icons.js              # אייקוני SVG
 │       └── utils.js              # עזרים טהורים (ניקוי טקסט, זמנים, תאריכים, צבעים, hash)
-├── supabase/schema.sql           # טבלת המסמכים, RLS, trigger לגרסה, realtime
-├── tests/                        # בדיקות יחידה (node:test)
-│   └── fixtures/                 # localStorage מדומה, מחולל מזהים, Supabase מדומה
+├── runner/                       # ראנר האייג'נטים - תוכנית Node שרצה על מחשב הפיתוח (לא נפרס)
+│   ├── runner.js                 # הפקודות start / login / logout / check
+│   ├── config.js                 # בדיקת runner.config.json ואכיפת ההפרדה בין פרופילים (עבודה / אישי)
+│   ├── worker.js                 # הלולאה: heartbeat, תור, הרצה, דיווח
+│   ├── engines.js                # claude -p / codex exec: שורות פקודה, הרצת תהליך, פענוח תשובה
+│   ├── git.js                    # worktree וענף לכל משימה, ספירת קבצים שהשתנו
+│   ├── outcome.js                # הנחיות דיווח לאייג'נט, סיכום minimal / full לענן
+│   ├── remote.js                 # גישה לטבלאות התור (מסונן לפי המחשב)
+│   ├── local-state.js            # state.json מקומי: מזהה המחשב והשיחה של כל משימה
+│   ├── supabase-node.js          # supabase-js ב-Node, התחברות שמורה בקובץ
+│   ├── console-log.js, paths.js  # פלט צבעוני באנגלית + לוג; עזרי נתיבים
+│   └── runner.config.example.json  # תבנית ההגדרות (runner.config.json לא בגיט)
+├── supabase/schema.sql           # טבלת המסמכים, טבלאות האייג'נטים, RLS, triggers, realtime
+├── tests/                        # בדיקות יחידה (node:test), כולל הראנר
+│   └── fixtures/                 # localStorage מדומה, מחולל מזהים, Supabase מדומה, client שאילתות מדומה
+├── html/agent-farm-setup-guide.html     # מדריך התקנה לחוות האייג'נטים (עם צ'קבוקסים)
 ├── .github/workflows/deploy-pages.yml   # בדיקות + config.js + פריסה ל-GitHub Pages
 ├── Kingdom_of_Claudes_Beloved_MDs/      # מסמכי פירוט לכל רכיב
-├── package.json                  # סקריפטים: test, serve
+├── package.json                  # סקריפטים: test, serve, runner, runner:login, runner:check
 ├── TECHNICAL.md                  # המסמך הזה
 └── README.md                     # הוראות שימוש והרצה
 ```
@@ -105,6 +125,9 @@ project-root/
 **[התחברות וסנכרון ענן]** - Supabase: מודל המסמך והאבטחה (RLS), מנוע הסנכרון (פעולות ממתינות, version, replay, offline, realtime), כניסה ראשונה ומיזוג, התחברות והתנתקות.
 > Detail: `Kingdom_of_Claudes_Beloved_MDs/CLOUD_SYNC.md`
 
+**[חוות אייג'נטים]** - משימה משויכת לפרויקט; כל תת-משימה נשלחת לאייג'נט דרך תור בענן (`agent_jobs`), והראנר במחשב הפיתוח מריץ את Claude Code או Codex ב-worktree משלה ומדווח בחזרה. ההפרדה בין חשבון העבודה לחשבון האישי נאכפת בהגדרות של הראנר, ובפרויקטים של העבודה עולה לענן רק סיכום מצומצם, בלי קוד.
+> Detail: `Kingdom_of_Claudes_Beloved_MDs/AGENT_FARM.md`
+
 **[פריסה ובדיקות]** - GitHub Actions ל-GitHub Pages, יצירת config.js מ-Variables, חיבור פרויקט Supabase, הרצה מקומית ובדיקות.
 > Detail: `Kingdom_of_Claudes_Beloved_MDs/DEPLOYMENT.md`
 
@@ -117,8 +140,11 @@ project-root/
 | מטא-דאטה של סנכרון | `taskManager.sync.v1` | החשבון, הגרסה בענן, פעולות שעוד לא נשמרו |
 | עותקים חד-פעמיים | `taskManager.state.v1.before-schema-3`, `taskManager.state.v1.before-login` | לפני הסבה מגרסה ישנה / משימות מקומיות שלא נוספו לחשבון |
 | `vars.SUPABASE_URL`, `vars.SUPABASE_ANON_KEY` | GitHub repository Variables | הופכים ל-`src/config.js` בפריסה; בלעדיהם - מצב מקומי |
-| טבלה בענן | `public.task_manager_documents` | נוצרת מ-`supabase/schema.sql` |
-| סודות | אין | מפתח ה-publishable ציבורי מעצם הגדרתו; ההגנה היא RLS |
+| טבלאות בענן | `public.task_manager_documents`, `public.agent_runners`, `public.agent_jobs` | נוצרות מ-`supabase/schema.sql` (מריצים שוב אחרי עדכון - הקובץ אידמפוטנטי) |
+| הגדרות הראנר | `runner/runner.config.json` | פרופילים (מנוע, חשבון, תיקיות מותרות), פרויקטים. לא בגיט; תבנית ב-`runner.config.example.json` |
+| תיקיית המצב של הראנר | `%LOCALAPPDATA%\task-manager-runner` | `auth.json` (session), `state.json`, `runner.log`, `logs/`, `worktrees/` |
+| חשבון לכל פרופיל | `CLAUDE_CONFIG_DIR` / `CODEX_HOME` | נקבעים מהשדות `claudeConfigDir` / `codexHome` של הפרופיל |
+| סודות | `auth.json` של הראנר בלבד | מפתח ה-publishable ציבורי מעצם הגדרתו (ההגנה היא RLS); ה-refresh token של הראנר נשמר רק בפרופיל המשתמש במחשב |
 
 ## הרצה ופקודות
 
@@ -127,6 +153,7 @@ project-root/
 | הרצה מקומית | `npm run serve` ואז `http://localhost:8080` (דורש Python; כל שרת סטטי מתאים). למצב ענן: `src/config.js` מתוך `config.example.js` |
 | בדיקות יחידה | `npm test` |
 | פריסה | `git push` ל-`main` - GitHub Actions מריץ בדיקות ומפרסם |
+| ראנר האייג'נטים | `npm run runner:login` (פעם אחת), `npm run runner:check`, `npm run runner`. מדריך: `html/agent-farm-setup-guide.html` |
 
 פתיחת `index.html` ישירות מהדיסק (file://) לא תעבוד - מודולי ES דורשים שרת HTTP.
 
@@ -134,6 +161,7 @@ project-root/
 
 | חבילה | שימוש |
 |-------|-------|
-| `@supabase/supabase-js` 2.117.2 | התחברות, גישה לטבלה, realtime. מוגש מקומית מ-`src/vendor/supabase.js` (נטען רק במצב ענן) |
-| Node.js 22+ | הרצת הבדיקות (`node:test`) בלבד |
+| `@supabase/supabase-js` 2.117.2 | התחברות, גישה לטבלאות, realtime. מוגש מקומית מ-`src/vendor/supabase.js` (נטען רק במצב ענן); הראנר טוען את אותו קובץ ב-Node |
+| Node.js 22+ | הבדיקות (`node:test`) והראנר (fetch ו-WebSocket מובנים) |
+| Claude Code CLI / Codex CLI / git | במחשב שהראנר רץ עליו: המנועים של האייג'נטים, ו-worktrees |
 | actions/checkout, setup-node, configure-pages, upload-pages-artifact, deploy-pages | פריסה ב-GitHub Actions |
