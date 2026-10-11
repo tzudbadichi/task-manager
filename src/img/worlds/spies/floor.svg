@@ -1,0 +1,39 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="240" height="240" viewBox="0 0 240 240">
+  <!-- Spies ground: dark tech floor panels with fine seams, screws, a vent and faint traces (seamless
+       240 x 240 tile; the seams sit inside the tile so it wraps cleanly). Original art for this app. -->
+  <rect width="240" height="240" fill="#2b3442"/>
+  <!-- panel seams -->
+  <path d="M60 0 V240 M180 0 V240 M0 60 H240 M0 180 H240" stroke="#232b37" stroke-width="1.8"/>
+  <path d="M61.6 0 V240 M181.6 0 V240 M0 61.6 H240 M0 181.6 H240" stroke="#333d4b" stroke-width="0.7"/>
+  <!-- inner bevels of the panels -->
+  <g fill="none" stroke="#2f3846" stroke-width="0.9">
+    <rect x="68" y="68" width="104" height="104" rx="2"/>
+    <path d="M188 68 H240 M0 68 H52 M188 172 H240 M0 172 H52 M188 68 V172 M52 68 V172"/>
+    <path d="M68 188 V240 M68 0 V52 M172 188 V240 M172 0 V52 M68 188 H172 M68 52 H172"/>
+    <path d="M188 188 H240 M0 188 H52 M188 52 H240 M0 52 H52 M188 188 V240 M188 0 V52 M52 188 V240 M52 0 V52"/>
+  </g>
+  <!-- screws at the panel corners -->
+  <g fill="#3b4656" stroke="#1d242e" stroke-width="0.6">
+    <circle cx="66" cy="66" r="1.4"/><circle cx="174" cy="66" r="1.4"/><circle cx="66" cy="174" r="1.4"/><circle cx="174" cy="174" r="1.4"/>
+    <circle cx="54" cy="66" r="1.4"/><circle cx="186" cy="66" r="1.4"/><circle cx="54" cy="174" r="1.4"/><circle cx="186" cy="174" r="1.4"/>
+    <circle cx="66" cy="54" r="1.4"/><circle cx="174" cy="54" r="1.4"/><circle cx="66" cy="186" r="1.4"/><circle cx="174" cy="186" r="1.4"/>
+    <circle cx="54" cy="54" r="1.4"/><circle cx="186" cy="54" r="1.4"/><circle cx="54" cy="186" r="1.4"/><circle cx="186" cy="186" r="1.4"/>
+  </g>
+  <!-- a vent grille on the middle panel -->
+  <g stroke="#262e3a" stroke-width="1.8" stroke-linecap="round">
+    <path d="M100 106 H140 M100 113 H140 M100 120 H140 M100 127 H140 M100 134 H140"/>
+  </g>
+  <path d="M100 107.4 H140 M100 114.4 H140 M100 121.4 H140 M100 128.4 H140 M100 135.4 H140" stroke="#38434f" stroke-width="0.6"/>
+  <!-- faint circuit traces -->
+  <g fill="none" stroke="#323d4d" stroke-width="0.9" stroke-linecap="round">
+    <path d="M200 100 H220 L228 108 V140"/>
+    <path d="M14 200 H34 V220 H44"/>
+    <path d="M90 14 V30 L100 40 H124"/>
+  </g>
+  <g fill="#3d4a5c">
+    <circle cx="200" cy="100" r="1.6"/><circle cx="228" cy="140" r="1.6"/><circle cx="14" cy="200" r="1.6"/><circle cx="44" cy="220" r="1.6"/><circle cx="90" cy="14" r="1.6"/><circle cx="124" cy="40" r="1.6"/>
+  </g>
+  <!-- two tiny status lights -->
+  <circle cx="120" cy="196" r="1.3" fill="#2dd4bf" opacity="0.55"/>
+  <circle cx="206" cy="24" r="1.2" fill="#2dd4bf" opacity="0.4"/>
+</svg>

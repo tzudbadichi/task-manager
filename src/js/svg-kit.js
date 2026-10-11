@@ -1,4 +1,4 @@
-// Tiny SVG builder shared by the art modules (art.js, art-worlds.js). Elements are created with
+// Tiny SVG builder shared by the art modules (art.js, figure-kit.js, world-art/*.js). Elements are created with
 // createElementNS and attributes only - no markup strings, no inline styles - so the art works under
 // the strict Content-Security-Policy. Nothing touches the DOM until a function is called.
 

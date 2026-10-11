@@ -2,25 +2,18 @@
 export default Object.freeze({
   key: 'cyber',
   label: 'עיר העתיד (סייברפאנק)',
-  room: 'neon',
   accent: { light: '#c026d3', dark: '#f0abfc' },
-  decor: {
-    window: 'neon',
-    door: 'neon',
-    sofa: 'beanbags',
-    coffee: 'dispenser',
-    cooler: 'tank',
-    plant: 'neonplant',
-    shelf: 'servers',
-    picture: 'screen',
-  },
   stations: { desk: 'neonterminal', craft: 'workbench' },
+  scene: { wallScale: 1.6 },
   cast: {
-    kinds: [['human', 60], ['robot', 20], ['droid', 10], ['alien', 10]],
-    outfits: [['neon', 55], ['jumpsuit', 25], ['hoodie', 20]],
-    headwear: [[null, 40], ['visor', 40], ['headphones', 20]],
-    eyewear: [[null, 60], ['goggles', 20], ['sun', 20]],
-    held: [['gadget', 30], [null, 70]],
+    archetypes: [
+      { key: 'hacker', weight: 24, kind: 'human', size: 0.94 },
+      { key: 'cyborg', weight: 18, kind: 'cyborg', size: 1.04 },
+      { key: 'android', weight: 16, kind: 'robot', size: 1.02 },
+      { key: 'samurai', weight: 14, kind: 'human', size: 1.06 },
+      { key: 'courier', weight: 16, kind: 'human', size: 0.96 },
+      { key: 'idol', weight: 12, kind: 'human', size: 0.92 },
+    ],
   },
   lines: {
     openers: {

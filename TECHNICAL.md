@@ -13,7 +13,7 @@
                   |-- store.js      (reducer טהור + מטמון localStorage + undo)
                   |-- selectors.js  (סינון, מיון, ספירות, אבק, היום שלי, מועמדים ל"מה עכשיו?")
                   |-- render.js     (גריד ריבועים, פרטי משימה, פס היום שלי, "מה עכשיו?")  -> dom.js, icons.js
-                  |-- people-view.js (המשרד: תנועה, שגרה, שיחות) -> people-model.js (מי, מה עושים ואומרים), world-layout.js (גיאומטריה), art.js + art-worlds.js (SVG), worlds/ (ערכות נושא)
+                  |-- people-view.js (המשרד: תנועה, שגרה, שיחות) -> people-model.js (מי, מה עושים ואומרים), world-layout.js (גיאומטריה), art.js + figure-kit.js (SVG), worlds/ + world-art/ (ערכות נושא)
                   |-- report.js     (טקסט דוח המצב)
                   |-- seasons.js    (ערכת חג לפי הלוח העברי, Intl)
                   |-- celebrate.js  (קונפטי וצליל)       voice.js (הכתבה, Web Speech API)
@@ -42,6 +42,8 @@ project-root/
 │   ├── manifest.webmanifest      # הוספה למסך הבית בנייד
 │   ├── config.example.js         # תבנית לפרטי Supabase (config.js נוצר ב-CI, לא בגיט)
 │   ├── css/styles.css            # עיצוב, גריד ריבועים, ערכות בהירה/כהה, תצוגת נייד
+│   ├── css/worlds.css            # הפנורמה והאדמה של כל ערכת נושא בתצוגת הדמויות
+│   ├── img/worlds/<key>/         # backdrop.svg (פנורמה 2400x400) ו-floor.svg (אריח 240x240) לכל עולם
 │   ├── vendor/                   # supabase.js (עותק נעול של supabase-js) + LICENSES.txt
 │   └── js/
 │       ├── app.js                # נקודת כניסה: חיווט, דיאלוגים, התחברות וסנכרון, גיבוי, חגיגות, הכתבה
@@ -57,10 +59,11 @@ project-root/
 │       ├── people-model.js       # תצוגת הדמויות: מראה, פעילות, מצב רוח, התנהגות ומשפטי שיחה (טהור)
 │       ├── people-view.js        # תצוגת הדמויות: מנוע המשרד - תנועה בכל פריים, כניסה/יציאה, שיחות
 │       ├── world-layout.js       # תצוגת הדמויות: גיאומטריית המשרד - קיר, שולחנות, טרקלין, נקודות יעד (טהור)
-│       ├── art.js                # SVG: דמויות (28 סוגים ועשרות תכונות), שולחנות, ריהוט, סמלי חגים
-│       ├── art-worlds.js         # SVG: הריהוט ותחנות העבודה של ערכות הנושא
+│       ├── art.js                # SVG: דמויות המשרד (12 סוגים ועשרות תכונות), שולחנות, ריהוט, סמלי חגים
+│       ├── figure-kit.js         # SVG: הרכבת דמות לשלד המונפש, פנים לפי מצב רוח, ערכת אבני בניין לטיפוסים
 │       ├── svg-kit.js            # עזרי SVG משותפים (יצירת אלמנטים, ערבוב צבעים)
 │       ├── worlds/               # ערכות הנושא של הדמויות: קובץ נתונים לכל עולם + index.js (רשימה, getWorld)
+│       ├── world-art/            # הציור של כל עולם: טיפוסי דמויות, ריהוט, תחנות + index.js (worldArtOf)
 │       ├── report.js             # טקסט דוח המצב (טהור)
 │       ├── seasons.js            # ערכות חג לפי הלוח העברי (טהור)
 │       ├── celebrate.js          # קונפטי (canvas) וצליל (Web Audio)
@@ -84,9 +87,10 @@ project-root/
 │   └── runner.config.example.json  # תבנית ההגדרות (runner.config.json לא בגיט)
 ├── supabase/schema.sql           # טבלת המסמכים, טבלאות האייג'נטים, RLS, triggers, realtime
 ├── tests/                        # בדיקות יחידה (node:test), כולל הראנר
-│   └── fixtures/                 # localStorage מדומה, מחולל מזהים, Supabase מדומה, client שאילתות מדומה
+│   └── fixtures/                 # localStorage מדומה, מחולל מזהים, Supabase מדומה, client שאילתות מדומה, DOM של SVG מדומה, גלריית ציורי העולמות (דף פיתוח)
 ├── html/agent-farm-setup-guide.html     # מדריך התקנה לחוות האייג'נטים (עם צ'קבוקסים)
 ├── html/agent-farm-architecture.html    # דיאגרמת הארכיטקטורה: לוח, Supabase, ראנרים, מנועים, ומה עובר בכל חץ
+├── html/multi-user-access-guide.html    # מדריך להכנסת משתמשים נוספים: הרשמה סגורה, הוספת משתמשים, בדיקת ההפרדה
 ├── .github/workflows/deploy-pages.yml   # בדיקות + config.js + פריסה ל-GitHub Pages
 ├── Kingdom_of_Claudes_Beloved_MDs/      # מסמכי פירוט לכל רכיב
 ├── package.json                  # סקריפטים: test, serve, runner, runner:login, runner:check
@@ -108,7 +112,7 @@ project-root/
 **[תצוגת הדמויות]** - חלופה לגריד (כפתור בסרגל העליון או ההגדרות): משרד משותף שבו כל משימה היא דמות מונפשת ושונה (בני אדם, חיות, רובוטים, חייזרים). כל דמות עובדת בשולחן שלה כשהמשימה בעבודה, ובשאר הזמן משוטטת, יוצאת להפסקות, יושבת על הספה ורוקדת כשהמשימה הושלמה. הדמויות ניגשות זו לזו ומדברות, נכנסות ויוצאות בדלת, ויש מסך מלא.
 > Detail: `Kingdom_of_Claudes_Beloved_MDs/PEOPLE_VIEW.md`
 
-**[ערכות נושא לדמויות]** - 16 עולמות (המשרד, קוסמים, ארץ התיכונה, מרגלים צעירים, חלל, פיראטים ועוד): לכל אחד חדר, ריהוט, תחנות, צוות דמויות וכ-100 משפטים, וצבע מבטא לאפליקציה. נתונים טהורים ב-`worlds/`, ציורים ב-art-worlds.js.
+**[ערכות נושא לדמויות]** - 16 עולמות (המשרד, קוסמים, ארץ התיכונה, מרגלים צעירים, חלל, פיראטים ועוד): לכל אחד פנורמה מצוירת ואדמה (`img/worlds/`, `css/worlds.css`), טיפוסי דמויות משלו, ריהוט, תחנות, כ-100 משפטים וצבע מבטא. נתונים ב-`worlds/`, ציור ב-`world-art/` דרך figure-kit.js.
 > Detail: `Kingdom_of_Claudes_Beloved_MDs/WORLDS.md`
 
 **["היום שלי" ו"מה עכשיו?"]** - עד 3 תתי משימות פתוחות להיום (שדה `myDay`, מתאפס לבד למחרת), והגרלה משוקללת של תת-משימה לעבוד עליה, עם אנימציית מכונת מזל.

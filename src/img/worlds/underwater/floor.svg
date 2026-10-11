@@ -1,0 +1,48 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="240" height="240" viewBox="0 0 240 240">
+  <!-- Underwater ground: rippled sea sand with small shells, a starfish, pebbles and grains (seamless 240 x 240 tile). Original art for this app. -->
+  <rect width="240" height="240" fill="#e7cf8d"/>
+  <g fill="none" stroke-linecap="round">
+    <g stroke="#d2b571" stroke-width="1.8" opacity="0.7">
+      <path d="M14 24 Q24 19 34 24 T54 24 T74 24 T94 24"/>
+      <path d="M130 52 Q140 47 150 52 T170 52 T190 52 T210 52 T230 52"/>
+      <path d="M40 86 Q50 81 60 86 T80 86 T100 86 T120 86"/>
+      <path d="M150 118 Q160 113 170 118 T190 118 T210 118"/>
+      <path d="M8 146 Q18 141 28 146 T48 146 T68 146 T88 146"/>
+      <path d="M104 176 Q114 171 124 176 T144 176 T164 176 T184 176 T204 176"/>
+      <path d="M24 214 Q34 209 44 214 T64 214 T84 214 T104 214"/>
+      <path d="M170 226 Q180 221 190 226 T210 226 T230 226"/>
+    </g>
+    <g stroke="#f7e6b4" stroke-width="1.4" opacity="0.8">
+      <path d="M16 27 Q24 23 32 27 M56 27 Q64 23 72 27"/>
+      <path d="M132 55 Q140 51 148 55 M172 55 Q180 51 188 55 M212 55 Q220 51 228 55"/>
+      <path d="M42 89 Q50 85 58 89 M82 89 Q90 85 98 89"/>
+      <path d="M152 121 Q160 117 168 121 M192 121 Q200 117 208 121"/>
+      <path d="M10 149 Q18 145 26 149 M50 149 Q58 145 66 149"/>
+      <path d="M106 179 Q114 175 122 179 M146 179 Q154 175 162 179 M186 179 Q194 175 202 179"/>
+      <path d="M26 217 Q34 213 42 217 M66 217 Q74 213 82 217"/>
+    </g>
+  </g>
+  <g>
+    <path d="M196 32 L189 27 Q190 20 196 19.4 Q202 20 203 27 Z" fill="#f6d8cc" stroke="#c8968a" stroke-width="0.9"/>
+    <path d="M196 32 L192 22 M196 32 V20 M196 32 L200 22" stroke="#c8968a" stroke-width="0.8"/>
+    <path d="M70 128 L64 124 Q65 118 70 117.6 Q75 118 76 124 Z" fill="#fbe8d8" stroke="#c8a08a" stroke-width="0.9" transform="rotate(-20 70 124)"/>
+    <path d="M118 236 Q112 232 114 226 Q120 222 124 228 Q126 234 118 236 Z" fill="#e8c8b8" stroke="#b8907a" stroke-width="0.8"/>
+    <path d="M118 234 Q116 230 119 227" stroke="#b8907a" stroke-width="0.7" fill="none"/>
+  </g>
+  <g transform="translate(160 200) rotate(12)" opacity="0.8">
+    <path d="M0 -7 L2.1 -2.5 L7 -2.1 L3.2 1.1 L4.5 6.3 L0 3.5 L-4.5 6.3 L-3.2 1.1 L-7 -2.1 L-2.1 -2.5 Z" fill="#e99a68" stroke="#b8683a" stroke-width="0.8"/>
+    <circle cx="0" cy="-3" r="0.7" fill="#ffd2a8"/><circle cx="2.4" cy="0" r="0.7" fill="#ffd2a8"/><circle cx="-2.4" cy="0" r="0.7" fill="#ffd2a8"/>
+  </g>
+  <g fill="#b9a98a" stroke="#97876a" stroke-width="0.6">
+    <ellipse cx="100" cy="40" rx="3.4" ry="2.4"/><ellipse cx="106" cy="42" rx="2.4" ry="1.8"/><ellipse cx="103" cy="37.6" rx="1.8" ry="1.4"/>
+    <ellipse cx="220" cy="150" rx="3" ry="2.2"/><ellipse cx="225" cy="152.6" rx="2" ry="1.6"/>
+    <ellipse cx="30" cy="190" rx="2.6" ry="1.8"/>
+  </g>
+  <g fill="#c8ae6c" opacity="0.7">
+    <circle cx="20" cy="60" r="1"/><circle cx="84" cy="10" r="0.9"/><circle cx="150" cy="84" r="1"/><circle cx="230" cy="96" r="0.9"/><circle cx="60" cy="168" r="1"/>
+    <circle cx="200" cy="200" r="0.9"/><circle cx="130" cy="140" r="1"/><circle cx="10" cy="110" r="0.9"/><circle cx="96" cy="230" r="1"/><circle cx="176" cy="8" r="0.9"/>
+  </g>
+  <g fill="#fff4cc" opacity="0.8">
+    <circle cx="50" cy="44" r="0.9"/><circle cx="170" cy="100" r="0.9"/><circle cx="110" cy="200" r="0.9"/><circle cx="214" cy="80" r="0.8"/><circle cx="36" cy="130" r="0.8"/>
+  </g>
+</svg>

@@ -1,0 +1,13 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="240" height="240" viewBox="0 0 240 240">
+  <!-- Olympus ground: polished marble slabs with soft veins and small gold inlays (seamless 240 x 240 tile). Original art for this app. -->
+  <rect width="240" height="240" fill="#ece6da"/>
+  <rect x="1" y="1" width="118" height="118" fill="#ffffff" fill-opacity="0.18"/><rect x="121" y="1" width="118" height="118" fill="#d8c8b0" fill-opacity="0.12"/><rect x="1" y="121" width="118" height="118" fill="#d8c8b0" fill-opacity="0.1"/><rect x="121" y="121" width="118" height="118" fill="#ffffff" fill-opacity="0.12"/>
+  <g fill="none" stroke-linecap="round">
+    <path d="M10 92 Q30 70 46 74 Q62 78 74 58 Q86 40 108 34 M24 112 Q40 98 52 100 Q66 102 72 90 M132 20 Q150 34 170 30 Q190 26 200 44 Q210 60 230 64 M150 104 Q160 92 176 96 Q196 100 212 84 M8 140 Q22 160 40 158 Q60 156 70 176 Q80 196 104 202 M60 230 Q72 214 90 216 M128 226 Q146 206 166 210 Q186 214 196 196 Q206 178 228 170 M140 140 Q156 150 170 146" stroke="#cdbfa9" stroke-width="1.1" opacity="0.45"/>
+    <path d="M46 74 Q50 86 62 90 M74 58 Q82 62 92 60 M170 30 Q172 18 182 12 M40 158 Q38 172 30 180 M166 210 Q164 196 152 190 M196 196 Q204 204 214 204 M200 44 Q192 54 196 66" stroke="#d6cab8" stroke-width="0.7" opacity="0.55"/>
+    <path d="M12 94 Q32 72 48 76" stroke="#ffffff" stroke-width="1.2" opacity="0.5"/>
+  </g>
+  <path d="M0 0.6 H240 M0 120 H240 M0.6 0 V240 M120 0 V240" stroke="#d6cbb9" stroke-width="1.4" fill="none"/>
+  <path d="M1 2.2 H240 M1 121.6 H240 M2.2 1 V240 M121.6 1 V240" stroke="#f8f4ec" stroke-width="1" fill="none" opacity="0.8"/>
+  <g fill="#d9c08a" stroke="#c2a468" stroke-width="0.6"><path d="M0 -5 L5 0 L0 5 L-5 0 Z"/><path d="M240 -5 L245 0 L240 5 L235 0 Z"/><path d="M0 235 L5 240 L0 245 L-5 240 Z"/><path d="M240 235 L245 240 L240 245 L235 240 Z"/><path d="M120 -5 L125 0 L120 5 L115 0 Z"/><path d="M120 235 L125 240 L120 245 L115 240 Z"/><path d="M0 115 L5 120 L0 125 L-5 120 Z"/><path d="M240 115 L245 120 L240 125 L235 120 Z"/><path d="M120 115 L125 120 L120 125 L115 120 Z"/></g>
+</svg>

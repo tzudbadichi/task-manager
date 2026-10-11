@@ -1,0 +1,18 @@
+/* The world art gallery (world-gallery.html) - a dev page, not deployed. */
+body { margin: 0; padding: 16px; background: #f1f5f9; font-family: system-ui, sans-serif; color: #0f172a; }
+h1 { margin: 0 0 8px; font-size: 20px; }
+h2 { margin: 22px 0 8px; font-size: 15px; color: #334155; }
+.panorama { display: block; width: 1600px; max-width: 100%; height: auto; border: 1px solid #cbd5e1; }
+.rooms { display: flex; flex-wrap: wrap; gap: 14px; align-items: flex-start; }
+.room-sim { position: relative; overflow: hidden; border: 1px solid #94a3b8; }
+.room-sim > .world-backdrop { position: absolute; top: 0; left: 0; }
+.tile-check { width: 720px; height: 480px; border: 1px solid #94a3b8; }
+.cast { display: flex; flex-wrap: wrap; gap: 6px; direction: ltr; }
+.cell { display: flex; flex-direction: column; align-items: center; width: 150px; padding: 6px 4px; background: #ffffff; border: 1px solid #e2e8f0; border-radius: 8px; }
+.cell.on-ground { background: none; }
+.cell .character { position: relative; width: 120px; pointer-events: none; }
+.cell small { font-size: 11px; color: #64748b; }
+.pieces { display: flex; flex-wrap: wrap; gap: 14px; align-items: flex-end; direction: ltr; }
+.piece { display: flex; flex-direction: column; align-items: center; gap: 4px; padding: 8px; background: #ffffff; border: 1px solid #e2e8f0; border-radius: 8px; }
+.piece svg { display: block; height: auto; overflow: visible; }
+.missing { color: #b91c1c; font-weight: 700; }

@@ -1,0 +1,47 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="240" height="240" viewBox="0 0 240 240">
+  <!-- Pirates ground: worn deck planks with seams, butt joints, nail heads and grain (seamless 240 x 240 tile). Original art for this app. -->
+  <rect width="240" height="240" fill="#a8743f"/>
+  <g fill="#000000" opacity="0.05">
+    <rect y="30" width="240" height="30"/><rect y="120" width="240" height="30"/><rect y="180" width="240" height="30"/>
+  </g>
+  <g fill="#ffffff" opacity="0.05">
+    <rect y="60" width="240" height="30"/><rect y="210" width="240" height="30"/>
+  </g>
+  <g stroke="#ffd9a0" stroke-width="1" opacity="0.18">
+    <path d="M0 1 H240 M0 31 H240 M0 61 H240 M0 91 H240 M0 121 H240 M0 151 H240 M0 181 H240 M0 211 H240"/>
+  </g>
+  <g stroke="#6e4524" stroke-width="2" opacity="0.6">
+    <path d="M0 29 H240 M0 59 H240 M0 89 H240 M0 119 H240 M0 149 H240 M0 179 H240 M0 209 H240 M0 239 H240"/>
+  </g>
+  <g stroke="#6e4524" stroke-width="1.8" opacity="0.55">
+    <path d="M70 0 V28 M190 30 V58 M30 60 V88 M150 90 V118 M100 120 V148 M220 150 V178 M50 180 V208 M170 210 V238"/>
+  </g>
+  <g fill="#5a3a20" opacity="0.55">
+    <circle cx="65" cy="8" r="1.3"/><circle cx="65" cy="21" r="1.3"/><circle cx="75" cy="8" r="1.3"/><circle cx="75" cy="21" r="1.3"/>
+    <circle cx="185" cy="38" r="1.3"/><circle cx="185" cy="51" r="1.3"/><circle cx="195" cy="38" r="1.3"/><circle cx="195" cy="51" r="1.3"/>
+    <circle cx="25" cy="68" r="1.3"/><circle cx="25" cy="81" r="1.3"/><circle cx="35" cy="68" r="1.3"/><circle cx="35" cy="81" r="1.3"/>
+    <circle cx="145" cy="98" r="1.3"/><circle cx="145" cy="111" r="1.3"/><circle cx="155" cy="98" r="1.3"/><circle cx="155" cy="111" r="1.3"/>
+    <circle cx="95" cy="128" r="1.3"/><circle cx="95" cy="141" r="1.3"/><circle cx="105" cy="128" r="1.3"/><circle cx="105" cy="141" r="1.3"/>
+    <circle cx="215" cy="158" r="1.3"/><circle cx="215" cy="171" r="1.3"/><circle cx="225" cy="158" r="1.3"/><circle cx="225" cy="171" r="1.3"/>
+    <circle cx="45" cy="188" r="1.3"/><circle cx="45" cy="201" r="1.3"/><circle cx="55" cy="188" r="1.3"/><circle cx="55" cy="201" r="1.3"/>
+    <circle cx="165" cy="218" r="1.3"/><circle cx="165" cy="231" r="1.3"/><circle cx="175" cy="218" r="1.3"/><circle cx="175" cy="231" r="1.3"/>
+  </g>
+  <g stroke="#8a5a2e" stroke-width="1" fill="none" opacity="0.5" stroke-linecap="round">
+    <path d="M90 12 Q120 9 160 13 Q190 16 220 12"/>
+    <path d="M8 44 Q40 41 80 45 Q110 47 140 44"/>
+    <path d="M60 74 Q100 70 140 75 M170 80 Q200 78 236 81"/>
+    <path d="M10 102 Q40 99 80 104 Q100 106 120 103"/>
+    <path d="M120 134 Q150 131 190 135 Q210 137 232 134"/>
+    <path d="M14 162 Q60 158 110 163 Q150 166 200 162"/>
+    <path d="M70 192 Q100 189 130 193 Q160 196 200 192"/>
+    <path d="M6 224 Q40 221 80 225 Q110 227 150 224"/>
+  </g>
+  <g stroke="#c08a52" stroke-width="1" fill="none" opacity="0.45" stroke-linecap="round">
+    <path d="M100 20 Q130 18 150 21 M14 52 Q40 50 60 52 M200 66 Q220 64 236 67 M40 112 Q70 110 96 113 M140 142 Q170 140 196 143 M120 172 Q150 170 180 172 M80 200 Q110 198 140 201 M196 230 Q216 228 234 231"/>
+  </g>
+  <g fill="none" stroke="#7a4f2a" stroke-width="1" opacity="0.55">
+    <ellipse cx="130" cy="44" rx="5" ry="2.6"/><ellipse cx="130" cy="44" rx="2.2" ry="1.1"/>
+    <ellipse cx="200" cy="104" rx="4" ry="2.2"/>
+    <ellipse cx="30" cy="166" rx="4.6" ry="2.4"/><ellipse cx="30" cy="166" rx="1.8" ry="0.9"/>
+  </g>
+</svg>

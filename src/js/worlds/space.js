@@ -2,15 +2,18 @@
 export default Object.freeze({
   key: 'space',
   label: 'תחנת חלל',
-  room: 'station',
   accent: { light: '#0369a1', dark: '#7dd3fc' },
-  decor: { window: 'space', door: 'airlock', sofa: 'pods', coffee: 'dispenser', cooler: 'tank', plant: 'fern', shelf: 'servers', picture: 'poster' },
   stations: { desk: 'console', craft: 'workbench' },
+  scene: { wallScale: 1.6 },
   cast: {
-    kinds: [['human', 50], ['robot', 18], ['alien', 18], ['droid', 14]],
-    outfits: [['spacesuit', 60], ['jumpsuit', 40]],
-    headwear: [[null, 40], ['bubble', 35], ['headphones', 15], ['visor', 10]],
-    held: [['gadget', 30], [null, 70]],
+    archetypes: [
+      { key: 'astronaut', weight: 28, kind: 'human', size: 1.02 },
+      { key: 'engineer', weight: 20, kind: 'human', size: 0.98 },
+      { key: 'scientist', weight: 16, kind: 'human', size: 0.98 },
+      { key: 'commander', weight: 12, kind: 'human', size: 1.04 },
+      { key: 'robot', weight: 12, kind: 'robot', size: 0.86 },
+      { key: 'alien', weight: 12, kind: 'alien', size: 0.9 },
+    ],
   },
   lines: {
     openers: {

@@ -2,24 +2,18 @@
 export default Object.freeze({
   key: 'olympus',
   label: 'האולימפוס',
-  room: 'temple',
   accent: { light: '#a16207', dark: '#fcd34d' },
-  decor: {
-    window: 'clouds',
-    door: 'stone',
-    sofa: 'marble',
-    coffee: 'fountain',
-    cooler: 'amphora',
-    plant: 'olive',
-    shelf: 'scrolls',
-    picture: 'poster',
-  },
   stations: { desk: 'altar', craft: 'anvil' },
+  scene: { wallScale: 1.6 },
   cast: {
-    kinds: [['human', 80], ['horse', 10], ['owl', 10]],
-    outfits: [['toga', 85], ['armor', 15]],
-    headwear: [['laurel', 60], ['helmet', 15], ['crown', 10], [null, 15]],
-    held: [['bolt', 20], ['trident', 15], ['scroll', 15], ['staff', 10], [null, 40]],
+    archetypes: [
+      { key: 'god', weight: 18, kind: 'human', size: 1.12 },
+      { key: 'goddess', weight: 20, kind: 'human', size: 1.04 },
+      { key: 'hero', weight: 20, kind: 'human', size: 1 },
+      { key: 'muse', weight: 16, kind: 'human', size: 0.96 },
+      { key: 'faun', weight: 14, kind: 'faun', size: 0.86 },
+      { key: 'cyclops', weight: 12, kind: 'cyclops', size: 1.24 },
+    ],
   },
   lines: {
     openers: {

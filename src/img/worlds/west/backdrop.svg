@@ -1,0 +1,485 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="2400" height="400" viewBox="0 0 2400 400">
+  <!-- Wild west backdrop: a frontier town at sunset - red mesas and buttes, the sun going down between
+       them, a main street of false-front buildings (saloon, store, sheriff, hotel, livery barn), a steam
+       train at the water tower, a windmill ranch, saguaros and circling vultures. Original art for this app. -->
+  <defs>
+    <linearGradient id="sky" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#34406e"/>
+      <stop offset="0.2" stop-color="#5f5288"/>
+      <stop offset="0.4" stop-color="#b9668a"/>
+      <stop offset="0.56" stop-color="#ec8d63"/>
+      <stop offset="0.7" stop-color="#f7b566"/>
+      <stop offset="0.84" stop-color="#fbd38e"/>
+      <stop offset="1" stop-color="#fde2a8"/>
+    </linearGradient>
+    <radialGradient id="sunGlow">
+      <stop offset="0" stop-color="#fff7da" stop-opacity="1"/>
+      <stop offset="0.1" stop-color="#ffe7a8" stop-opacity="0.95"/>
+      <stop offset="0.32" stop-color="#ffbf72" stop-opacity="0.5"/>
+      <stop offset="0.65" stop-color="#ff9a6a" stop-opacity="0.16"/>
+      <stop offset="1" stop-color="#ff9a6a" stop-opacity="0"/>
+    </radialGradient>
+    <linearGradient id="farMesa" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#c98a95"/>
+      <stop offset="1" stop-color="#e9ad8f"/>
+    </linearGradient>
+    <linearGradient id="haze" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#fbcf98" stop-opacity="0"/>
+      <stop offset="1" stop-color="#fbcf98" stop-opacity="0.7"/>
+    </linearGradient>
+    <linearGradient id="mesa" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#d9693f"/>
+      <stop offset="0.4" stop-color="#b54e2e"/>
+      <stop offset="0.75" stop-color="#bf6239"/>
+      <stop offset="1" stop-color="#d08a56"/>
+    </linearGradient>
+    <linearGradient id="mesaLit" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#f6a466"/>
+      <stop offset="1" stop-color="#e98a52"/>
+    </linearGradient>
+    <linearGradient id="desert" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#eeb57a"/>
+      <stop offset="0.5" stop-color="#e3b67c"/>
+      <stop offset="1" stop-color="#d9b77a"/>
+    </linearGradient>
+    <linearGradient id="road" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#cfa466"/>
+      <stop offset="0.5" stop-color="#d6b071"/>
+      <stop offset="1" stop-color="#d9b77a"/>
+    </linearGradient>
+    <linearGradient id="cactus" x1="0" y1="0" x2="1" y2="0">
+      <stop offset="0" stop-color="#3f7346"/>
+      <stop offset="0.45" stop-color="#5c9658"/>
+      <stop offset="0.8" stop-color="#7cb06a"/>
+      <stop offset="1" stop-color="#4a7e4a"/>
+    </linearGradient>
+    <radialGradient id="lamp" cx="0.5" cy="0.4" r="0.75">
+      <stop offset="0" stop-color="#fff2b8"/>
+      <stop offset="0.6" stop-color="#f8c46a"/>
+      <stop offset="1" stop-color="#d9873a"/>
+    </radialGradient>
+    <linearGradient id="smoke" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#f7ece6"/>
+      <stop offset="1" stop-color="#cfa9ad"/>
+    </linearGradient>
+
+    <!-- A saguaro (base at 0, about 118 tall) -->
+    <g id="saguaro">
+      <path d="M-8 0 V-108 Q-8 -118 0 -118 Q8 -118 8 -108 V0 Z" fill="url(#cactus)" stroke="#2c5232" stroke-width="1.6"/>
+      <path d="M-7 -50 H-20 Q-29 -50 -29 -59 V-84 Q-29 -92 -22.5 -92 Q-16 -92 -16 -84 V-63 H-7 Z" fill="url(#cactus)" stroke="#2c5232" stroke-width="1.6"/>
+      <path d="M7 -66 H18 Q27 -66 27 -75 V-95 Q27 -101 21 -101 Q15 -101 15 -95 V-78 H7 Z" fill="url(#cactus)" stroke="#2c5232" stroke-width="1.6"/>
+      <path d="M-3 -113 V-2 M3 -113 V-2 M-22.5 -88 V-56 M21 -97 V-70" stroke="#3a6a40" stroke-width="1"/>
+      <circle cx="0" cy="-118" r="2.6" fill="#f8f1e0"/>
+    </g>
+    <!-- A prickly pear clump -->
+    <g id="pear">
+      <ellipse cx="0" cy="-12" rx="9" ry="12" fill="#5c9658" stroke="#2c5232" stroke-width="1.2"/>
+      <ellipse cx="-12" cy="-8" rx="7" ry="9" fill="#4f8a50" stroke="#2c5232" stroke-width="1.2" transform="rotate(-24 -12 -8)"/>
+      <ellipse cx="11" cy="-26" rx="7" ry="9.5" fill="#6aa462" stroke="#2c5232" stroke-width="1.2" transform="rotate(18 11 -26)"/>
+      <circle cx="13" cy="-35" r="2.4" fill="#e2566a"/><circle cx="-14" cy="-16" r="2" fill="#f59e0b"/>
+    </g>
+    <!-- Desert scrub -->
+    <g id="scrub">
+      <circle cx="-6" cy="-3" r="5" fill="#9a9a5a"/><circle cx="2" cy="-5" r="6" fill="#a8a666"/><circle cx="9" cy="-2.6" r="4.4" fill="#8f8f52"/>
+    </g>
+    <!-- A rock -->
+    <g id="rock">
+      <path d="M-16 0 L-12 -10 L-2 -15 L10 -12 L17 0 Z" fill="#b07a54" stroke="#7a4e34" stroke-width="1.2"/>
+      <path d="M-2 -15 L10 -12 L17 0 L4 0 Z" fill="#8f5f40" opacity="0.6"/>
+    </g>
+    <!-- A vulture gliding -->
+    <g id="vulture">
+      <path d="M-14 0 Q-8 -6 -2 -1 L0 1 L2 -1 Q8 -6 14 0 Q8 -2.6 2 2.4 L0 3.4 L-2 2.4 Q-8 -2.6 -14 0 Z" fill="#2a2230"/>
+    </g>
+    <!-- A long evening cloud -->
+    <g id="streak">
+      <ellipse cx="0" cy="0" rx="170" ry="8" fill="#f8b896" opacity="0.8"/>
+      <ellipse cx="-50" cy="-6" rx="90" ry="7" fill="#ffd2ae" opacity="0.85"/>
+      <ellipse cx="30" cy="6" rx="130" ry="4.4" fill="#93587e" opacity="0.32"/>
+    </g>
+    <!-- A barrel -->
+    <g id="barrel">
+      <path d="M-7 0 Q-9 -8 -7 -16 H7 Q9 -8 7 0 Z" fill="#8a5a32" stroke="#4a2c16" stroke-width="1"/>
+      <path d="M-8.4 -4 H8.4 M-8.4 -12 H8.4" stroke="#3a3434" stroke-width="1.4"/>
+    </g>
+    <radialGradient id="winGlow">
+      <stop offset="0" stop-color="#ffd27a" stop-opacity="0.55"/>
+      <stop offset="1" stop-color="#ffb04a" stop-opacity="0"/>
+    </radialGradient>
+    <!-- A rider on horseback, a far silhouette facing right -->
+    <g id="rider">
+      <path d="M-16 -16 Q-17 -24 -8 -25 L8 -25 Q13 -25 15 -29 L19 -36 Q22 -38 24 -35 L22 -30 Q20 -26 18 -20 Q16 -15 10 -14 L-10 -14 Q-15 -14 -16 -16 Z"/>
+      <path d="M-12 -15 L-14 0 M-7 -15 L-6 0 M7 -15 L6 0 M12 -15 L14 0" stroke-width="2.6" stroke-linecap="round"/>
+      <path d="M-16 -22 Q-22 -18 -22 -8" stroke-width="2.4" fill="none" stroke-linecap="round"/>
+      <path d="M-4 -24 L-3 -40 Q0 -44 4 -40 L4 -24 Z"/>
+      <circle cx="0" cy="-45" r="3.6"/>
+      <path d="M-7 -47 H7 L5 -49 Q0 -54 -5 -49 Z"/>
+    </g>
+    <!-- A horse at the rail, facing left, with a saddle -->
+    <g id="horse">
+      <path d="M-20 -30 Q-22 -42 -12 -44 L14 -44 Q24 -44 24 -32 Q24 -24 18 -22 L-14 -22 Q-21 -23 -20 -30 Z" fill="#6b3f24" stroke="#3a2214" stroke-width="1.2"/>
+      <path d="M-12 -40 Q-18 -52 -22 -60 L-30 -56 Q-26 -46 -20 -34 Z" fill="#6b3f24" stroke="#3a2214" stroke-width="1.2"/>
+      <path d="M-22 -62 Q-30 -62 -38 -52 Q-40 -48 -36 -47 L-30 -52 Q-26 -54 -22 -56 Z" fill="#6b3f24" stroke="#3a2214" stroke-width="1.2"/>
+      <path d="M-22 -62 L-20 -68 L-24 -63 Z" fill="#6b3f24" stroke="#3a2214" stroke-width="1"/>
+      <path d="M-14 -58 Q-12 -50 -10 -42" stroke="#2a1810" stroke-width="3" fill="none" stroke-linecap="round"/>
+      <path d="M-14 -22 V0 M-8 -22 V0 M12 -22 V0 M18 -22 V0" stroke="#5a341e" stroke-width="3.6" stroke-linecap="round"/>
+      <path d="M24 -38 Q32 -30 28 -14" stroke="#2a1810" stroke-width="3.4" fill="none" stroke-linecap="round"/>
+      <path d="M-4 -44 Q2 -50 10 -44 L10 -32 H-4 Z" fill="#8b3a2a" stroke="#4a1a16" stroke-width="1"/>
+      <path d="M-4 -46 Q-4 -52 0 -52" stroke="#4a2c16" stroke-width="1.6" fill="none"/>
+    </g>
+  </defs>
+
+  <!-- Sky, the first stars, the setting sun and its rays -->
+  <rect width="2400" height="400" fill="url(#sky)"/>
+  <g fill="#ffffff">
+    <circle cx="120" cy="24" r="1.4" opacity="0.7"/><circle cx="420" cy="44" r="1.1" opacity="0.6"/><circle cx="700" cy="18" r="1.5" opacity="0.8"/>
+    <circle cx="980" cy="38" r="1.1" opacity="0.6"/><circle cx="1560" cy="22" r="1.4" opacity="0.7"/><circle cx="1880" cy="40" r="1.1" opacity="0.6"/>
+    <circle cx="2140" cy="16" r="1.5" opacity="0.8"/><circle cx="2330" cy="48" r="1.1" opacity="0.5"/><circle cx="1240" cy="12" r="1.2" opacity="0.6"/>
+  </g>
+  <g fill="#fff3c8" opacity="0.07">
+    <path d="M1340 228 L960 0 L1030 0 Z"/><path d="M1340 228 L1180 0 L1220 0 Z"/><path d="M1340 228 L1440 0 L1490 0 Z"/>
+    <path d="M1340 228 L1720 0 L1790 0 Z"/><path d="M1340 228 L1980 80 L2000 112 Z"/><path d="M1340 228 L680 84 L668 116 Z"/>
+  </g>
+  <circle cx="1340" cy="228" r="560" fill="url(#sunGlow)"/>
+  <circle cx="1340" cy="228" r="46" fill="#fff0c4"/>
+  <circle cx="1340" cy="228" r="38" fill="#fffaea"/>
+
+  <!-- Evening clouds lit from below -->
+  <use href="#streak" transform="translate(380 92)"/>
+  <use href="#streak" transform="translate(860 140) scale(0.7)"/>
+  <use href="#streak" transform="translate(1180 70) scale(0.6)"/>
+  <use href="#streak" transform="translate(1720 84) scale(1.1)"/>
+  <use href="#streak" transform="translate(2200 132) scale(0.8)"/>
+  <use href="#streak" transform="translate(620 52) scale(0.5)"/>
+
+  <!-- Vultures circling over the buttes -->
+  <use href="#vulture" transform="translate(1508 136)"/>
+  <use href="#vulture" transform="translate(1560 156) scale(0.8)"/>
+  <use href="#vulture" transform="translate(1466 166) scale(0.7)"/>
+
+  <!-- Far mesas in the haze -->
+  <path d="M0 290 L0 232 L46 230 L60 218 L190 216 L206 230 L290 236 L330 226 L344 212 L470 210 L486 226 L560 236 L640 240 L700 230 L716 220 L800 218 L812 230 L900 238 L1000 242 L1080 236 L1100 226 L1180 224 L1196 238 L1260 246 L1420 248 L1480 240 L1500 230 L1600 228 L1616 240 L1700 244 L1800 238 L1820 222 L1960 220 L1976 236 L2060 240 L2140 232 L2156 216 L2290 214 L2306 230 L2400 234 L2400 290 Z" fill="url(#farMesa)"/>
+  <path d="M60 218 L190 216 L206 230 L66 226 Z M344 212 L470 210 L486 226 L350 222 Z M1820 222 L1960 220 L1976 236 L1826 232 Z M2156 216 L2290 214 L2306 230 L2162 226 Z" fill="#f2b9a0" opacity="0.6"/>
+  <rect y="200" width="2400" height="100" fill="url(#haze)"/>
+
+  <!-- The great mesa on the left -->
+  <path d="M0 300 L0 176 L18 170 L40 168 L60 164 L420 162 L436 170 L446 186 L452 204 L470 214 L500 236 L540 262 L600 300 Z" fill="url(#mesa)"/>
+  <path d="M0 176 L18 170 L40 168 L60 164 L420 162 L436 170 L60 174 L0 182 Z" fill="#ee9462"/>
+  <path d="M420 162 L436 170 L446 186 L452 204 L470 214 L500 236 L540 262 L600 300 L470 300 L452 240 L440 206 L432 184 Z" fill="url(#mesaLit)" opacity="0.8"/>
+  <g fill="none" stroke="#8a3822" stroke-opacity="0.35" stroke-width="2">
+    <path d="M6 190 Q120 186 220 190 T430 188"/><path d="M4 206 Q140 202 260 207 T440 204"/><path d="M10 222 Q160 218 300 224 T456 220"/>
+  </g>
+  <g stroke="#7a3020" stroke-opacity="0.28" stroke-width="3" stroke-linecap="round">
+    <path d="M70 178 V214 M112 176 V200 M150 178 V226 M196 176 V206 M240 178 V230 M284 176 V204 M330 178 V222 M372 176 V200 M404 178 V214"/>
+  </g>
+
+  <!-- Two buttes and a mesa on the right -->
+  <path d="M1420 300 Q1470 262 1500 240 L1504 160 L1512 152 L1580 150 L1588 158 L1592 236 L1600 236 L1602 196 L1608 190 L1614 196 L1618 240 Q1650 262 1700 300 Z" fill="url(#mesa)"/>
+  <path d="M1504 160 L1512 152 L1580 150 L1588 158 L1510 162 Z" fill="#ee9462"/>
+  <path d="M1500 240 L1504 160 L1520 162 L1518 244 Q1490 270 1460 300 L1420 300 Q1470 262 1500 240 Z M1602 196 L1608 190 L1610 240 L1600 236 Z" fill="url(#mesaLit)" opacity="0.8"/>
+  <path d="M1690 300 Q1730 268 1752 246 L1756 172 L1764 166 L1820 164 L1826 172 L1830 246 Q1860 270 1900 300 Z" fill="url(#mesa)"/>
+  <path d="M1756 172 L1764 166 L1820 164 L1826 172 L1762 174 Z" fill="#ee9462"/>
+  <path d="M1752 246 L1756 172 L1770 174 L1768 250 Q1744 272 1726 300 L1690 300 Q1730 268 1752 246 Z" fill="url(#mesaLit)" opacity="0.8"/>
+  <path d="M1880 300 Q1930 270 1962 236 L1972 184 L1990 176 L2380 172 L2400 174 L2400 300 Z" fill="url(#mesa)"/>
+  <path d="M1972 184 L1990 176 L2380 172 L2400 174 L2400 182 L1990 184 Z" fill="#ee9462"/>
+  <path d="M1880 300 Q1930 270 1962 236 L1972 184 L1990 184 L1980 240 Q1956 272 1930 300 Z" fill="url(#mesaLit)" opacity="0.8"/>
+  <g fill="none" stroke="#8a3822" stroke-opacity="0.35" stroke-width="2">
+    <path d="M1508 180 Q1546 177 1586 180 M1506 204 Q1546 201 1590 205 M1506 226 Q1546 223 1592 227"/>
+    <path d="M1760 190 Q1792 187 1826 190 M1758 214 Q1792 211 1828 214"/>
+    <path d="M1976 200 Q2190 194 2400 200 M1970 222 Q2190 216 2400 222"/>
+  </g>
+  <g stroke="#7a3020" stroke-opacity="0.28" stroke-width="3" stroke-linecap="round">
+    <path d="M1530 160 V196 M1560 158 V214 M1784 174 V210 M2020 186 V214 M2080 184 V230 M2150 184 V206 M2230 182 V226 M2300 182 V208 M2370 180 V222"/>
+  </g>
+
+  <!-- The desert plain -->
+  <path d="M0 290 Q300 282 600 288 Q900 294 1200 286 Q1500 278 1800 288 Q2100 296 2400 284 L2400 400 L0 400 Z" fill="url(#desert)"/>
+  <g opacity="0.75">
+    <use href="#scrub" x="90" y="300"/><use href="#scrub" x="560" y="298"/><use href="#scrub" x="1010" y="296"/>
+    <use href="#scrub" x="1640" y="300"/><use href="#scrub" x="1960" y="304"/><use href="#scrub" x="2290" y="298"/>
+  </g>
+  <g opacity="0.55">
+    <use href="#saguaro" transform="translate(760 304) scale(0.32)"/>
+    <use href="#saguaro" transform="translate(1720 304) scale(0.3)"/>
+    <use href="#saguaro" transform="translate(2360 300) scale(0.34)"/>
+    <use href="#saguaro" transform="translate(30 304) scale(0.3)"/>
+  </g>
+
+  <g fill="#6a3a3a" stroke="#6a3a3a" opacity="0.7">
+    <use href="#rider" transform="translate(1872 300) scale(0.62)"/>
+    <use href="#rider" transform="translate(1904 302) scale(0.6)"/>
+  </g>
+
+  <!-- The railroad, the train and its smoke -->
+  <path d="M0 316 Q300 310 780 314 L780 326 Q300 322 0 330 Z" fill="#c4945e"/>
+  <path d="M0 315 Q300 309.4 780 313.4" fill="none" stroke="#5a4a40" stroke-width="2"/>
+  <path d="M0 318 Q300 312.4 780 316.4" fill="none" stroke="#6b4a32" stroke-width="3" stroke-dasharray="3 6"/>
+  <g stroke="#5a3e34" stroke-linecap="round">
+    <path d="M40 318 V266 M30 272 H50 M210 316 V264 M200 270 H220 M560 314 V262 M550 268 H570 M736 314 V262 M726 268 H746" stroke-width="2.4"/>
+    <path d="M32 272 Q121 284 202 270 M48 272 Q129 284 218 270 M218 270 Q385 284 552 268 M568 268 Q648 280 728 268" stroke-width="0.8" fill="none"/>
+  </g>
+  <g fill="url(#smoke)">
+    <ellipse cx="476" cy="228" rx="11" ry="9" opacity="0.95"/>
+    <ellipse cx="458" cy="212" rx="15" ry="12" opacity="0.85"/>
+    <ellipse cx="430" cy="198" rx="20" ry="15" opacity="0.72"/>
+    <ellipse cx="394" cy="186" rx="25" ry="17" opacity="0.58"/>
+    <ellipse cx="350" cy="178" rx="28" ry="17" opacity="0.44"/>
+    <ellipse cx="302" cy="174" rx="30" ry="16" opacity="0.3"/>
+    <ellipse cx="252" cy="172" rx="30" ry="14" opacity="0.18"/>
+  </g>
+  <g transform="translate(400 313)">
+    <!-- second car, first car, tender -->
+    <g>
+      <path d="M-248 -48 Q-202 -58 -156 -48 Z" fill="#4a3a30"/>
+      <rect x="-248" y="-48" width="92" height="34" fill="#4f6f5a" stroke="#2c3e32" stroke-width="1.4"/>
+      <rect x="-248" y="-20" width="92" height="4" fill="#2c3e32"/>
+      <g fill="url(#lamp)"><rect x="-240" y="-42" width="11" height="13" rx="2"/><rect x="-222" y="-42" width="11" height="13" rx="2"/><rect x="-204" y="-42" width="11" height="13" rx="2"/><rect x="-186" y="-42" width="11" height="13" rx="2"/><rect x="-168" y="-42" width="8" height="13" rx="2"/></g>
+      <circle cx="-232" cy="-7" r="7" fill="#3a2f2f"/><circle cx="-172" cy="-7" r="7" fill="#3a2f2f"/>
+      <path d="M-155 -12 H-150" stroke="#2a2424" stroke-width="2"/>
+      <path d="M-150 -48 Q-104 -58 -58 -48 Z" fill="#4a3a30"/>
+      <rect x="-150" y="-48" width="92" height="34" fill="#c79a3a" stroke="#7a5a1e" stroke-width="1.4"/>
+      <rect x="-150" y="-20" width="92" height="4" fill="#7a5a1e"/>
+      <g fill="url(#lamp)"><rect x="-142" y="-42" width="11" height="13" rx="2"/><rect x="-124" y="-42" width="11" height="13" rx="2"/><rect x="-106" y="-42" width="11" height="13" rx="2"/><rect x="-88" y="-42" width="11" height="13" rx="2"/><rect x="-70" y="-42" width="8" height="13" rx="2"/></g>
+      <circle cx="-134" cy="-7" r="7" fill="#3a2f2f"/><circle cx="-74" cy="-7" r="7" fill="#3a2f2f"/>
+      <path d="M-57 -12 H-52" stroke="#2a2424" stroke-width="2"/>
+      <rect x="-54" y="-38" width="52" height="26" rx="2" fill="#3a2f2f" stroke="#1e1818" stroke-width="1.2"/>
+      <g fill="#8a5a32" stroke="#4a2c16" stroke-width="0.8"><circle cx="-46" cy="-40" r="4"/><circle cx="-38" cy="-41" r="4"/><circle cx="-30" cy="-40" r="4"/><circle cx="-22" cy="-41" r="4"/><circle cx="-14" cy="-40" r="4"/><circle cx="-34" cy="-45" r="4"/><circle cx="-24" cy="-45" r="4"/></g>
+      <circle cx="-44" cy="-7" r="7" fill="#2a2424"/><circle cx="-14" cy="-7" r="7" fill="#2a2424"/>
+    </g>
+    <!-- the locomotive -->
+    <g>
+      <rect x="-3" y="-60" width="36" height="6" rx="1.4" fill="#2a2424"/>
+      <rect x="0" y="-55" width="30" height="36" fill="#8e3b2c" stroke="#4a1a16" stroke-width="1.2"/>
+      <rect x="8" y="-49" width="14" height="13" rx="1.6" fill="url(#lamp)" stroke="#4a1a16" stroke-width="1"/>
+      <rect x="30" y="-46" width="66" height="27" rx="7" fill="#2f3238" stroke="#16181c" stroke-width="1.2"/>
+      <path d="M44 -46 V-19 M62 -46 V-19 M80 -46 V-19" stroke="#c99a3a" stroke-width="2.2"/>
+      <path d="M36 -42 H90" stroke="#5a5f68" stroke-width="2" stroke-linecap="round"/>
+      <rect x="93" y="-49" width="11" height="31" rx="2" fill="#23262b" stroke="#16181c" stroke-width="1"/>
+      <path d="M56 -46 Q56 -57 62 -57 Q68 -57 68 -46 Z" fill="#c99a3a" stroke="#7a5a1e" stroke-width="1"/>
+      <path d="M71 -46 Q71 -51 74 -51 Q77 -51 77 -46 Z" fill="#c99a3a"/>
+      <rect x="81" y="-63" width="7" height="17" fill="#23262b"/>
+      <path d="M75 -75 H94 L89 -62 H80 Z" fill="#23262b" stroke="#16181c" stroke-width="1"/>
+      <rect x="95" y="-60" width="12" height="11" rx="1.4" fill="#8e3b2c" stroke="#4a1a16" stroke-width="1"/>
+      <circle cx="107" cy="-54.4" r="4" fill="#fff2b8"/>
+      <path d="M109 -58 L170 -70 L170 -40 L109 -51 Z" fill="#fff2b8" opacity="0.18"/>
+      <rect x="-2" y="-20" width="108" height="6" fill="#2a2424"/>
+      <path d="M98 -16 H105 L124 0 H98 Z" fill="#8e3b2c" stroke="#4a1a16" stroke-width="1"/>
+      <path d="M104 -14 L106 0 M110 -10 L113 0 M116 -6 L119 0" stroke="#4a1a16" stroke-width="1"/>
+      <g fill="#9c3b2c" stroke="#3a1612" stroke-width="1.6">
+        <circle cx="46" cy="-11" r="11"/><circle cx="70" cy="-11" r="11"/><circle cx="90" cy="-6" r="6"/><circle cx="16" cy="-7" r="7"/>
+      </g>
+      <path d="M46 -22 V0 M35 -11 H57 M38.2 -18.8 L53.8 -3.2 M38.2 -3.2 L53.8 -18.8 M70 -22 V0 M59 -11 H81 M62.2 -18.8 L77.8 -3.2 M62.2 -3.2 L77.8 -18.8" stroke="#3a1612" stroke-width="1.2"/>
+      <path d="M46 -15 H72" stroke="#9aa3ad" stroke-width="2.4" stroke-linecap="round"/>
+      <circle cx="46" cy="-11" r="2.4" fill="#c99a3a"/><circle cx="70" cy="-11" r="2.4" fill="#c99a3a"/>
+    </g>
+  </g>
+
+  <!-- The water tower by the tracks -->
+  <g transform="translate(646 322)">
+    <path d="M-26 0 L-18 -62 M26 0 L18 -62 M-9 0 L-6 -62 M9 0 L6 -62" stroke="#6e4423" stroke-width="4" stroke-linecap="round"/>
+    <path d="M-24 -12 L22 -40 M24 -12 L-22 -40 M-22 -40 L20 -58 M22 -40 L-20 -58" stroke="#7a4a28" stroke-width="1.6"/>
+    <rect x="-24" y="-64" width="48" height="5" fill="#5e3a1a"/>
+    <path d="M-26 -96 H26 L27 -64 H-27 Z" fill="#8a5a32" stroke="#4a2c16" stroke-width="1.4"/>
+    <path d="M-18 -96 V-64 M-9 -96 V-64 M0 -96 V-64 M9 -96 V-64 M18 -96 V-64" stroke="#6e4423" stroke-width="1"/>
+    <path d="M-26.4 -88 H26.4 M-26.8 -73 H26.8" stroke="#3a3434" stroke-width="2"/>
+    <path d="M-30 -96 L0 -116 L30 -96 Z" fill="#5e3a1a" stroke="#3a2214" stroke-width="1.2"/>
+    <path d="M-26 -70 L-46 -56 L-50 -60" fill="none" stroke="#3a3434" stroke-width="3" stroke-linecap="round"/>
+    <path d="M18 -96 L26 -88" stroke="#f6a466" stroke-width="1.4" opacity="0.6"/>
+  </g>
+
+  <!-- A windmill, a ranch house and a corral on the right -->
+  <g>
+    <path d="M2064 342 L2077 226 M2096 342 L2083 226 M2066 324 L2094 300 M2094 324 L2068 300 M2068 300 L2092 276 M2092 300 L2070 276 M2070 276 L2090 252 M2090 276 L2072 252 M2072 252 L2088 232 M2088 252 L2074 232" stroke="#6b5a4c" stroke-width="2"/>
+    <rect x="2072" y="222" width="16" height="6" fill="#5a4a40"/>
+    <path d="M2086 214 H2124 L2130 202 L2132 226 L2124 216 H2086 Z" fill="#8a929c" stroke="#4b5563" stroke-width="1"/>
+    <g transform="translate(2080 214)">
+      <path d="M7 0 L30 0 M6.5 2.7 L27.7 11.5 M4.9 4.9 L21.2 21.2 M2.7 6.5 L11.5 27.7 M0 7 L0 30 M-2.7 6.5 L-11.5 27.7 M-4.9 4.9 L-21.2 21.2 M-6.5 2.7 L-27.7 11.5 M-7 0 L-30 0 M-6.5 -2.7 L-27.7 -11.5 M-4.9 -4.9 L-21.2 -21.2 M-2.7 -6.5 L-11.5 -27.7 M0 -7 L0 -30 M2.7 -6.5 L11.5 -27.7 M4.9 -4.9 L21.2 -21.2 M6.5 -2.7 L27.7 -11.5" stroke="#9aa3ad" stroke-width="5"/>
+      <circle r="30" fill="none" stroke="#5a636e" stroke-width="1.6"/>
+      <circle r="18" fill="none" stroke="#5a636e" stroke-width="1.2"/>
+      <circle r="5" fill="#4b5563"/>
+    </g>
+    <ellipse cx="2040" cy="342" rx="22" ry="5" fill="#8a929c" stroke="#5a636e" stroke-width="1"/>
+    <ellipse cx="2040" cy="340" rx="18" ry="2.6" fill="#8ec5e8"/>
+    <path d="M2150 344 V300 L2206 276 L2262 300 V344 Z" fill="#b98a5a" stroke="#6e4423" stroke-width="1.4"/>
+    <path d="M2140 302 L2206 270 L2272 302 L2266 306 L2206 278 L2146 306 Z" fill="#6e4a32" stroke="#4a2c16" stroke-width="1.2"/>
+    <rect x="2194" y="314" width="18" height="30" fill="#5e3a1a"/>
+    <rect x="2164" y="312" width="18" height="14" fill="url(#lamp)" stroke="#6e4423" stroke-width="1.4"/>
+    <rect x="2228" y="312" width="18" height="14" fill="url(#lamp)" stroke="#6e4423" stroke-width="1.4"/>
+    <rect x="2240" y="270" width="8" height="18" fill="#7a4a3a"/>
+    <path d="M1930 346 H2030 M1930 336 H2030 M1934 332 V350 M1958 332 V350 M1982 332 V350 M2006 332 V350 M2028 332 V350" stroke="#7a5a3a" stroke-width="2.4" stroke-linecap="round"/>
+  </g>
+
+  <!-- Main street: livery barn, general store, saloon, sheriff, hotel and a barber's -->
+  <!-- Livery barn -->
+  <g>
+    <path d="M782 362 V268 L838 230 L894 268 V362 Z" fill="#9c3b2c" stroke="#4a1a16" stroke-width="1.6"/>
+    <path d="M792 270 V362 M804 262 V362 M816 254 V362 M828 248 V362 M848 248 V362 M860 254 V362 M872 262 V362 M884 270 V362" stroke="#7a2a20" stroke-width="1"/>
+    <path d="M770 272 L838 222 L906 272 L900 276 L838 230 L776 276 Z" fill="#4a3434" stroke="#2a1c1c" stroke-width="1.2"/>
+    <rect x="826" y="242" width="24" height="22" fill="#2a1a14" stroke="#efe2c4" stroke-width="2"/>
+    <path d="M828 264 Q832 254 838 258 Q844 252 848 264 Z" fill="#e3c26a"/>
+    <path d="M838 236 V226 H858" fill="none" stroke="#5e3a1a" stroke-width="2.4"/>
+    <rect x="814" y="300" width="48" height="62" fill="#3a2016" stroke="#efe2c4" stroke-width="2.4"/>
+    <path d="M838 300 V362 M814 300 L838 362 M838 300 L814 362 M862 300 L838 362 M838 300 L862 362" stroke="#efe2c4" stroke-width="2"/>
+    <path d="M820 362 Q826 350 834 356 Q842 348 850 358 Q856 352 860 362 Z" fill="#e3c26a" opacity="0.9"/>
+  </g>
+  <!-- General store -->
+  <g>
+    <path d="M906 362 V256 H912 V246 H930 V240 H1016 V246 H1034 V256 H1040 V362 Z" fill="#c8954a" stroke="#6e4423" stroke-width="1.6"/>
+    <path d="M908 270 H1038 M908 282 H1038 M908 294 H1038 M914 258 H1032 M932 248 H1014" stroke="#a87a38" stroke-width="1" opacity="0.7"/>
+    <rect x="904" y="260" width="138" height="5" fill="#8a5a32"/>
+    <rect x="930" y="266" width="86" height="20" rx="2" fill="#efe2c4" stroke="#8a5a32" stroke-width="1.6"/>
+    <path d="M944 276 L950 270 L956 276 L950 282 Z M990 276 L996 270 L1002 276 L996 282 Z" fill="#b33a2e"/>
+    <path d="M962 276 H984" stroke="#2f5d8a" stroke-width="3" stroke-linecap="round"/>
+    <path d="M898 300 H1048 L1052 314 H894 Z" fill="#efe2c4" stroke="#6e4423" stroke-width="1.2"/>
+    <path d="M910 300 L908 314 M934 300 L932 314 M958 300 L957 314 M982 300 L982 314 M1006 300 L1007 314 M1030 300 L1032 314" stroke="#b33a2e" stroke-width="9" opacity="0.9"/>
+    <path d="M894 314 Q900 318 906 314 Q912 318 918 314 Q924 318 930 314 Q936 318 942 314 Q948 318 954 314 Q960 318 966 314 Q972 318 978 314 Q984 318 990 314 Q996 318 1002 314 Q1008 318 1014 314 Q1020 318 1026 314 Q1032 318 1038 314 Q1044 318 1052 314" fill="#efe2c4" stroke="#6e4423" stroke-width="1"/>
+    <rect x="914" y="322" width="38" height="30" fill="url(#lamp)" stroke="#6e4423" stroke-width="2"/>
+    <rect x="994" y="322" width="38" height="30" fill="url(#lamp)" stroke="#6e4423" stroke-width="2"/>
+    <path d="M933 322 V352 M914 337 H952 M1013 322 V352 M994 337 H1032" stroke="#6e4423" stroke-width="1.4"/>
+    <rect x="960" y="320" width="26" height="42" fill="#5e3a1a" stroke="#3a2214" stroke-width="1.2"/>
+    <rect x="964" y="324" width="18" height="14" fill="url(#lamp)"/>
+    <path d="M902 314 V362 M1044 314 V362" stroke="#6e4423" stroke-width="3"/>
+    <use href="#barrel" x="918" y="362"/><use href="#barrel" x="934" y="362"/>
+    <rect x="1010" y="350" width="16" height="12" fill="#b5793f" stroke="#6e4423" stroke-width="1"/>
+    <path d="M1010 356 H1026 M1018 350 V362" stroke="#6e4423" stroke-width="0.8"/>
+  </g>
+  <!-- Saloon -->
+  <g>
+    <path d="M1056 362 V226 H1080 V216 H1112 Q1157 186 1202 216 H1234 V226 H1258 V362 Z" fill="#4f7a80" stroke="#2a4448" stroke-width="1.8"/>
+    <path d="M1058 244 H1256 M1058 262 H1256 M1058 280 H1256" stroke="#41686e" stroke-width="1" opacity="0.8"/>
+    <path d="M1080 216 H1112 Q1157 186 1202 216 H1234" fill="none" stroke="#efe2c4" stroke-width="3"/>
+    <path d="M1157 214 m-18 0 a18 14 0 0 1 36 0 Z" fill="#efe2c4"/>
+    <path d="M1157 214 L1143 204 M1157 214 L1150 200 M1157 214 L1157 198 M1157 214 L1164 200 M1157 214 L1171 204" stroke="#b33a2e" stroke-width="2"/>
+    <rect x="1052" y="226" width="210" height="6" fill="#efe2c4" stroke="#2a4448" stroke-width="1"/>
+    <g>
+      <path d="M1074 284 V250 Q1074 240 1087 240 Q1100 240 1100 250 V284 Z" fill="url(#lamp)" stroke="#efe2c4" stroke-width="2.4"/>
+      <path d="M1134 284 V250 Q1134 240 1147 240 Q1160 240 1160 250 V284 Z" fill="url(#lamp)" stroke="#efe2c4" stroke-width="2.4"/>
+      <path d="M1194 284 V250 Q1194 240 1207 240 Q1220 240 1220 250 V284 Z" fill="url(#lamp)" stroke="#efe2c4" stroke-width="2.4"/>
+      <path d="M1076 248 Q1080 262 1076 282 H1082 Q1086 262 1080 246 Z M1098 248 Q1094 262 1098 282 H1092 Q1088 262 1094 246 Z M1136 248 Q1140 262 1136 282 H1142 Q1146 262 1140 246 Z M1158 248 Q1154 262 1158 282 H1152 Q1148 262 1154 246 Z M1196 248 Q1200 262 1196 282 H1202 Q1206 262 1200 246 Z M1218 248 Q1214 262 1218 282 H1212 Q1208 262 1214 246 Z" fill="#a8322a"/>
+    </g>
+    <rect x="1048" y="290" width="218" height="7" fill="#7a4a28" stroke="#3a2214" stroke-width="1"/>
+    <path d="M1050 278 H1264 M1050 290 V278 M1060 290 V278 M1070 290 V278 M1080 290 V278 M1090 290 V278 M1100 290 V278 M1110 290 V278 M1120 290 V278 M1130 290 V278 M1140 290 V278 M1150 290 V278 M1160 290 V278 M1170 290 V278 M1180 290 V278 M1190 290 V278 M1200 290 V278 M1210 290 V278 M1220 290 V278 M1230 290 V278 M1240 290 V278 M1250 290 V278 M1262 290 V278" stroke="#efe2c4" stroke-width="1.8"/>
+    <rect x="1068" y="312" width="48" height="34" fill="url(#lamp)" stroke="#efe2c4" stroke-width="2.4"/>
+    <rect x="1198" y="312" width="48" height="34" fill="url(#lamp)" stroke="#efe2c4" stroke-width="2.4"/>
+    <path d="M1092 312 V346 M1068 329 H1116 M1222 312 V346 M1198 329 H1246" stroke="#efe2c4" stroke-width="1.6"/>
+    <path d="M1080 346 Q1084 334 1090 336 Q1092 330 1098 334 Q1104 336 1104 346 Z" fill="#7a3a2a" opacity="0.55"/>
+    <rect x="1132" y="304" width="50" height="58" fill="#3a2214"/>
+    <rect x="1132" y="304" width="50" height="24" fill="url(#lamp)" opacity="0.75"/>
+    <path d="M1135 322 Q1145 318 1156 321 V346 H1135 Z M1179 322 Q1169 318 1158 321 V346 H1179 Z" fill="#b5793f" stroke="#5e3a1a" stroke-width="1.2"/>
+    <path d="M1137 328 H1154 M1137 334 H1154 M1137 340 H1154 M1160 328 H1177 M1160 334 H1177 M1160 340 H1177" stroke="#7a4a28" stroke-width="1.2"/>
+    <path d="M1054 297 V362 M1128 297 V362 M1186 297 V362 M1260 297 V362" stroke="#5e3a1a" stroke-width="3.4"/>
+    <path d="M1124 306 V300 H1132" fill="none" stroke="#3a3434" stroke-width="1.2"/>
+    <rect x="1119" y="306" width="8" height="10" rx="1" fill="#ffd97a" stroke="#3a3434" stroke-width="1"/>
+  </g>
+  <!-- Sheriff's office -->
+  <g>
+    <path d="M1276 362 V280 H1282 V270 H1394 V280 H1400 V362 Z" fill="#a5543a" stroke="#5a2418" stroke-width="1.6"/>
+    <path d="M1278 290 H1398 M1278 300 H1398 M1278 310 H1398 M1278 320 H1398 M1278 330 H1398 M1278 340 H1398 M1278 350 H1398" stroke="#8a3e2a" stroke-width="1"/>
+    <path d="M1278 295 H1398 M1278 315 H1398 M1278 335 H1398 M1278 355 H1398" stroke="#7a3424" stroke-width="10" stroke-dasharray="1 15" opacity="0.6"/>
+    <rect x="1274" y="276" width="128" height="5" fill="#d9c09a"/>
+    <rect x="1304" y="284" width="68" height="18" rx="2" fill="#efe2c4" stroke="#5a2418" stroke-width="1.4"/>
+    <path d="M1338 286 L1340.6 291.4 L1346.4 292 L1342 296 L1343.4 301.6 L1338 298.6 L1332.6 301.6 L1334 296 L1329.6 292 L1335.4 291.4 Z" fill="#d9a83a" stroke="#8a6416" stroke-width="0.8"/>
+    <rect x="1288" y="312" width="34" height="28" fill="#2a1a14" stroke="#d9c09a" stroke-width="2.4"/>
+    <rect x="1290" y="314" width="30" height="12" fill="url(#lamp)" opacity="0.6"/>
+    <path d="M1294 312 V340 M1300 312 V340 M1306 312 V340 M1312 312 V340 M1318 312 V340" stroke="#3a3434" stroke-width="1.8"/>
+    <rect x="1340" y="310" width="26" height="52" fill="#6e4423" stroke="#3a2214" stroke-width="1.4"/>
+    <rect x="1345" y="316" width="16" height="12" fill="url(#lamp)" stroke="#3a2214" stroke-width="1"/>
+    <circle cx="1361" cy="338" r="1.6" fill="#d9a83a"/>
+    <rect x="1374" y="314" width="18" height="22" fill="#efe2c4" stroke="#8a6a44" stroke-width="1"/>
+    <circle cx="1383" cy="322" r="4.4" fill="#5a4a40"/><path d="M1377 334 Q1383 326 1389 334 Z" fill="#5a4a40"/>
+    <path d="M1286 350 H1398 M1290 344 V362 M1394 344 V362" stroke="#6e4423" stroke-width="3" stroke-linecap="round"/>
+  </g>
+  <use href="#horse" transform="translate(1316 362) scale(0.95)"/>
+  <!-- Hotel -->
+  <g>
+    <path d="M1414 362 V224 H1590 V362 Z" fill="#e3cfa4" stroke="#7a6a4a" stroke-width="1.6"/>
+    <path d="M1416 250 H1588 M1416 270 H1588 M1416 316 H1588 M1416 336 H1588" stroke="#cdb787" stroke-width="1"/>
+    <rect x="1408" y="216" width="188" height="12" fill="#4f6f5a" stroke="#2c3e32" stroke-width="1.2"/>
+    <path d="M1414 230 H1590" stroke="#2c3e32" stroke-width="3" stroke-dasharray="4 6"/>
+    <g>
+      <rect x="1428" y="244" width="22" height="34" fill="url(#lamp)" stroke="#2c3e32" stroke-width="2"/>
+      <rect x="1468" y="244" width="22" height="34" fill="url(#lamp)" stroke="#2c3e32" stroke-width="2"/>
+      <rect x="1514" y="244" width="22" height="34" fill="url(#lamp)" stroke="#2c3e32" stroke-width="2"/>
+      <rect x="1554" y="244" width="22" height="34" fill="url(#lamp)" stroke="#2c3e32" stroke-width="2"/>
+      <path d="M1420 244 h7 v34 h-7 Z M1451 244 h7 v34 h-7 Z M1460 244 h7 v34 h-7 Z M1491 244 h7 v34 h-7 Z M1506 244 h7 v34 h-7 Z M1537 244 h7 v34 h-7 Z M1546 244 h7 v34 h-7 Z M1577 244 h7 v34 h-7 Z" fill="#4f6f5a" stroke="#2c3e32" stroke-width="0.8"/>
+      <path d="M1439 244 V278 M1428 261 H1450 M1479 244 V278 M1468 261 H1490 M1525 244 V278 M1514 261 H1536 M1565 244 V278 M1554 261 H1576" stroke="#2c3e32" stroke-width="1.2"/>
+    </g>
+    <rect x="1408" y="290" width="188" height="7" fill="#7a4a28" stroke="#3a2214" stroke-width="1"/>
+    <path d="M1410 280 H1594 M1416 290 V280 M1428 290 V280 M1440 290 V280 M1452 290 V280 M1464 290 V280 M1476 290 V280 M1488 290 V280 M1500 290 V280 M1512 290 V280 M1524 290 V280 M1536 290 V280 M1548 290 V280 M1560 290 V280 M1572 290 V280 M1584 290 V280" stroke="#efe2c4" stroke-width="1.6"/>
+    <rect x="1426" y="312" width="40" height="32" fill="url(#lamp)" stroke="#2c3e32" stroke-width="2"/>
+    <rect x="1538" y="312" width="40" height="32" fill="url(#lamp)" stroke="#2c3e32" stroke-width="2"/>
+    <path d="M1446 312 V344 M1558 312 V344" stroke="#2c3e32" stroke-width="1.4"/>
+    <rect x="1486" y="306" width="32" height="56" fill="#4f6f5a" stroke="#2c3e32" stroke-width="1.6"/>
+    <rect x="1490" y="310" width="24" height="10" fill="url(#lamp)"/>
+    <path d="M1502 320 V362" stroke="#2c3e32" stroke-width="1.2"/>
+    <path d="M1412 297 V362 M1592 297 V362" stroke="#5e3a1a" stroke-width="3.4"/>
+  </g>
+  <!-- Barber's shop -->
+  <g>
+    <path d="M1600 362 V262 H1690 V362 Z" fill="#9a8f84" stroke="#4a4038" stroke-width="1.6"/>
+    <path d="M1602 276 H1688 M1602 290 H1688 M1602 304 H1688 M1602 318 H1688 M1602 332 H1688 M1602 346 H1688" stroke="#857a70" stroke-width="1"/>
+    <rect x="1596" y="258" width="98" height="6" fill="#6b6158"/>
+    <rect x="1610" y="308" width="30" height="28" fill="url(#lamp)" stroke="#4a4038" stroke-width="2"/>
+    <rect x="1652" y="304" width="24" height="58" fill="#5e4b3c" stroke="#3a2c22" stroke-width="1.2"/>
+    <rect x="1656" y="308" width="16" height="14" fill="url(#lamp)"/>
+    <rect x="1644" y="306" width="5" height="34" rx="2.5" fill="#f4f1ea" stroke="#4a4038" stroke-width="1"/>
+    <path d="M1644 312 L1649 308 M1644 320 L1649 316 M1644 328 L1649 324 M1644 336 L1649 332" stroke="#b33a2e" stroke-width="2.2"/>
+    <circle cx="1646.5" cy="304.6" r="2.6" fill="#d9a83a"/>
+  </g>
+  <!-- Lamplight from the windows and the last sun on the rooftops -->
+  <g fill="url(#winGlow)">
+    <circle cx="933" cy="337" r="30"/><circle cx="1013" cy="337" r="30"/><circle cx="1092" cy="329" r="34"/><circle cx="1222" cy="329" r="34"/>
+    <circle cx="1157" cy="318" r="36"/><circle cx="1087" cy="262" r="24"/><circle cx="1147" cy="262" r="24"/><circle cx="1207" cy="262" r="24"/>
+    <circle cx="1446" cy="328" r="30"/><circle cx="1558" cy="328" r="30"/><circle cx="1625" cy="322" r="24"/><circle cx="2173" cy="319" r="20"/><circle cx="2237" cy="319" r="20"/>
+  </g>
+  <g fill="none" stroke="#ffd08a" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" opacity="0.75">
+    <path d="M776 270 L838 226 L900 270"/>
+    <path d="M906 256 H912 V246 H930 V240 H1016 V246 H1034 V256 H1040"/>
+    <path d="M1080 216 H1112 Q1157 186 1202 216 H1234"/>
+    <path d="M1282 270 H1394"/>
+    <path d="M1408 216 H1596"/>
+    <path d="M1596 258 H1694"/>
+  </g>
+
+  <!-- Boardwalk -->
+  <rect x="768" y="360" width="930" height="9" fill="#8a5a32" stroke="#4a2c16" stroke-width="1"/>
+  <path d="M780 360 V369 M800 360 V369 M820 360 V369 M840 360 V369 M860 360 V369 M880 360 V369 M900 360 V369 M920 360 V369 M940 360 V369 M960 360 V369 M980 360 V369 M1000 360 V369 M1020 360 V369 M1040 360 V369 M1060 360 V369 M1080 360 V369 M1100 360 V369 M1120 360 V369 M1140 360 V369 M1160 360 V369 M1180 360 V369 M1200 360 V369 M1220 360 V369 M1240 360 V369 M1260 360 V369 M1280 360 V369 M1300 360 V369 M1320 360 V369 M1340 360 V369 M1360 360 V369 M1380 360 V369 M1400 360 V369 M1420 360 V369 M1440 360 V369 M1460 360 V369 M1480 360 V369 M1500 360 V369 M1520 360 V369 M1540 360 V369 M1560 360 V369 M1580 360 V369 M1600 360 V369 M1620 360 V369 M1640 360 V369 M1660 360 V369 M1680 360 V369" stroke="#6e4423" stroke-width="1"/>
+
+  <!-- A covered wagon at the edge of town -->
+  <g transform="translate(250 364)">
+    <path d="M40 -22 L78 -10" stroke="#6e4423" stroke-width="3" stroke-linecap="round"/>
+    <rect x="-52" y="-36" width="94" height="18" fill="#8a5a32" stroke="#4a2c16" stroke-width="1.4"/>
+    <path d="M-52 -28 H42" stroke="#6e4423" stroke-width="1"/>
+    <path d="M-48 -36 Q-54 -72 -30 -76 Q-4 -82 22 -76 Q44 -72 38 -36 Z" fill="#f1e8d4" stroke="#a89878" stroke-width="1.6"/>
+    <path d="M-30 -76 Q-34 -56 -32 -36 M-4 -80 V-36 M22 -76 Q24 -56 22 -36" stroke="#cbbd9e" stroke-width="1.6" fill="none"/>
+    <path d="M-48 -36 Q-54 -72 -30 -76 Q-40 -60 -38 -36 Z" fill="#000000" opacity="0.08"/>
+    <g fill="none" stroke="#4a2c16" stroke-width="2.6"><circle cx="-30" cy="-16" r="16"/><circle cx="26" cy="-12" r="12"/></g>
+    <path d="M-30 -32 V0 M-46 -16 H-14 M-41.3 -27.3 L-18.7 -4.7 M-41.3 -4.7 L-18.7 -27.3 M26 -24 V0 M14 -12 H38 M17.5 -20.5 L34.5 -3.5 M17.5 -3.5 L34.5 -20.5" stroke="#6e4423" stroke-width="1.4"/>
+  </g>
+
+  <!-- The street in front, saguaros, rocks and a tumbleweed -->
+  <path d="M0 368 Q600 362 1200 366 Q1800 370 2400 364 L2400 400 L0 400 Z" fill="url(#road)"/>
+  <g fill="none" stroke="#bf975a" stroke-width="2" stroke-linecap="round" opacity="0.55">
+    <path d="M0 382 Q600 376 1200 380 Q1800 384 2400 378"/><path d="M0 390 Q600 385 1200 389 Q1800 393 2400 387"/>
+  </g>
+  <use href="#saguaro" transform="translate(726 380)"/>
+  <use href="#saguaro" transform="translate(1760 382) scale(1.1)"/>
+  <use href="#saguaro" transform="translate(62 384) scale(0.9)"/>
+  <use href="#saguaro" transform="translate(2318 384) scale(0.95)"/>
+  <use href="#pear" x="690" y="384"/>
+  <use href="#pear" x="1820" y="386"/>
+  <use href="#pear" x="420" y="382"/>
+  <use href="#pear" x="2210" y="380"/>
+  <use href="#rock" x="110" y="388"/>
+  <use href="#rock" x="1990" y="386"/>
+  <use href="#rock" transform="translate(540 384) scale(0.7)"/>
+  <use href="#scrub" x="1880" y="388"/>
+  <use href="#scrub" x="360" y="388"/>
+  <use href="#barrel" x="1704" y="378"/>
+  <g fill="none" stroke="#a8824a" stroke-width="1.4" stroke-linecap="round">
+    <circle cx="1196" cy="378" r="10"/>
+    <path d="M1187 372 Q1196 366 1205 376 Q1200 388 1188 382 Q1184 376 1194 370 M1190 386 Q1202 384 1203 371 M1188 376 Q1198 380 1206 380 M1192 368 Q1196 378 1192 388"/>
+  </g>
+  <rect y="372" width="2400" height="28" fill="#d9b77a" opacity="0.55"/>
+  <rect y="384" width="2400" height="16" fill="#d9b77a"/>
+</svg>

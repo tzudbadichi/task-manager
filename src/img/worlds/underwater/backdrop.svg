@@ -1,0 +1,342 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="2400" height="400" viewBox="0 0 2400 400">
+  <!-- Underwater backdrop: a coral reef kingdom - sun rays through the shimmering surface, a deep blue-green
+       haze, a kelp forest, a sunken sailing ship, a pearly palace with spiral shell domes on a rock, schools of
+       fish, a sea turtle, jellyfish, bubbles, and a reef of corals, sea fans and anemones on rippled sand.
+       Original art for this app. -->
+  <defs>
+    <linearGradient id="water" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#9ff0ea"/>
+      <stop offset="0.14" stop-color="#4fcad6"/>
+      <stop offset="0.42" stop-color="#2399bc"/>
+      <stop offset="0.72" stop-color="#1d7fab"/>
+      <stop offset="1" stop-color="#2a8aa8"/>
+    </linearGradient>
+    <linearGradient id="depthHaze" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#5fc6d8" stop-opacity="0"/>
+      <stop offset="0.6" stop-color="#6ccad6" stop-opacity="0.5"/>
+      <stop offset="1" stop-color="#8ad4d0" stop-opacity="0.75"/>
+    </linearGradient>
+    <linearGradient id="ray" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#fffbe0" stop-opacity="0.5"/>
+      <stop offset="0.6" stop-color="#e8fff8" stop-opacity="0.12"/>
+      <stop offset="1" stop-color="#e8fff8" stop-opacity="0"/>
+    </linearGradient>
+    <linearGradient id="farRock" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#2f8cb0"/>
+      <stop offset="1" stop-color="#4aa6bc"/>
+    </linearGradient>
+    <linearGradient id="midRock" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#3a7f98"/>
+      <stop offset="1" stop-color="#2f6c84"/>
+    </linearGradient>
+    <linearGradient id="pearl" x1="0" y1="0" x2="1" y2="0">
+      <stop offset="0" stop-color="#fbe8e2"/>
+      <stop offset="0.6" stop-color="#f0c8c2"/>
+      <stop offset="1" stop-color="#c890a8"/>
+    </linearGradient>
+    <linearGradient id="dome" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0" stop-color="#fff4ec"/>
+      <stop offset="0.5" stop-color="#f6c6b4"/>
+      <stop offset="1" stop-color="#d0909c"/>
+    </linearGradient>
+    <linearGradient id="hull" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#4f7474"/>
+      <stop offset="1" stop-color="#36585e"/>
+    </linearGradient>
+    <linearGradient id="sand" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#d9c99a"/>
+      <stop offset="0.5" stop-color="#e4ce90"/>
+      <stop offset="1" stop-color="#e7cf8d"/>
+    </linearGradient>
+    <linearGradient id="farSand" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#9fc8c0"/>
+      <stop offset="1" stop-color="#c4cba6"/>
+    </linearGradient>
+    <radialGradient id="glow">
+      <stop offset="0" stop-color="#fff6c8" stop-opacity="0.9"/>
+      <stop offset="0.4" stop-color="#fff0b0" stop-opacity="0.35"/>
+      <stop offset="1" stop-color="#fff0b0" stop-opacity="0"/>
+    </radialGradient>
+    <radialGradient id="jelly" cx="0.5" cy="0.35" r="0.65">
+      <stop offset="0" stop-color="#ffe6f4" stop-opacity="0.95"/>
+      <stop offset="1" stop-color="#f08ac8" stop-opacity="0.55"/>
+    </radialGradient>
+
+    <!-- A kelp strand from the sea floor (y 0) up 380 units; color = currentColor -->
+    <g id="kelp">
+      <path d="M0 0 Q-14 -50 0 -100 Q14 -150 0 -200 Q-14 -250 0 -300 Q12 -340 2 -380" stroke="currentColor" stroke-width="4.4" fill="none" stroke-linecap="round"/>
+      <g fill="currentColor">
+        <path d="M-4 -40 Q-26 -50 -30 -70 Q-16 -60 -2 -52 Z"/><path d="M4 -86 Q26 -94 32 -114 Q16 -104 2 -98 Z"/>
+        <path d="M-4 -140 Q-26 -150 -30 -170 Q-16 -160 -2 -152 Z"/><path d="M4 -186 Q26 -194 32 -214 Q16 -204 2 -198 Z"/>
+        <path d="M-4 -240 Q-26 -250 -30 -270 Q-16 -260 -2 -252 Z"/><path d="M4 -286 Q24 -294 28 -312 Q14 -304 2 -298 Z"/>
+        <path d="M-2 -336 Q-20 -346 -22 -362 Q-12 -354 0 -348 Z"/>
+        <ellipse cx="-3" cy="-60" rx="2.6" ry="3.4"/><ellipse cx="3" cy="-160" rx="2.6" ry="3.4"/><ellipse cx="-3" cy="-262" rx="2.6" ry="3.4"/>
+      </g>
+    </g>
+    <!-- A small fish facing right; color = currentColor -->
+    <g id="fish">
+      <path d="M0 0 Q7 -5 14 0 Q7 5 0 0 Z M1 0 L-5 -4 L-4 0 L-5 4 Z" fill="currentColor"/>
+      <circle cx="10" cy="-0.8" r="0.9" fill="#13324a"/>
+    </g>
+    <!-- A striped angelfish facing left -->
+    <g id="angelfish">
+      <path d="M0 0 Q6 -14 18 -20 Q14 -8 20 0 Q14 8 18 20 Q6 14 0 0 Z" fill="#ffd84a" stroke="#c08a10" stroke-width="1"/>
+      <path d="M20 0 L30 -7 L28 0 L30 7 Z" fill="#ffd84a" stroke="#c08a10" stroke-width="1"/>
+      <path d="M8 -12 Q10 0 8 12 M14 -16 Q16 0 14 16" stroke="#1f2a44" stroke-width="2.6" fill="none"/>
+      <circle cx="4" cy="-1.6" r="1.6" fill="#13324a"/>
+    </g>
+    <!-- A rising column of bubbles -->
+    <g id="bubbles" fill="#e6fffd" fill-opacity="0.25" stroke="#e6fffd" stroke-width="1.2" stroke-opacity="0.8">
+      <circle cx="0" cy="0" r="3"/><circle cx="4" cy="-14" r="2.2"/><circle cx="-2" cy="-28" r="3.6"/><circle cx="5" cy="-44" r="2.4"/>
+      <circle cx="0" cy="-60" r="4.2"/><circle cx="6" cy="-80" r="2.6"/><circle cx="-1" cy="-98" r="3.2"/>
+    </g>
+    <!-- Corals and reef life -->
+    <g id="brain">
+      <path d="M-30 0 Q-30 -30 0 -32 Q30 -30 30 0 Z" fill="currentColor" stroke="#7a4a3a" stroke-width="1.4" stroke-opacity="0.5"/>
+      <path d="M-22 -6 q4 -8 8 0 q4 -8 8 0 q4 -8 8 0 q4 -8 8 0 q4 -8 8 0 M-18 -16 q4 -8 8 0 q4 -8 8 0 q4 -8 8 0 q4 -8 8 0 M-10 -25 q4 -6 8 0 q4 -6 8 0 q4 -6 8 0" stroke="#000000" stroke-opacity="0.18" stroke-width="1.6" fill="none"/>
+      <path d="M-20 -22 Q-8 -30 6 -28" stroke="#ffffff" stroke-opacity="0.4" stroke-width="2.4" fill="none" stroke-linecap="round"/>
+    </g>
+    <g id="staghorn">
+      <path d="M0 0 L0 -20 L-12 -36 L-14 -52 M0 -20 L8 -40 L4 -58 M8 -40 L20 -50 L22 -64 M-12 -36 L-24 -44 L-28 -58 M0 -10 L14 -22 L26 -26" stroke="currentColor" stroke-width="6" fill="none" stroke-linecap="round" stroke-linejoin="round"/>
+      <path d="M-1 -20 L-12 -35 M7 -39 L4 -56 M19 -50 L21 -62" stroke="#ffffff" stroke-opacity="0.35" stroke-width="1.8" fill="none" stroke-linecap="round"/>
+    </g>
+    <g id="seafan">
+      <path d="M0 0 V-10" stroke="#5a2a6a" stroke-width="3"/>
+      <path d="M0 -8 Q-34 -24 -30 -58 Q-14 -76 0 -74 Q16 -76 30 -58 Q34 -24 0 -8 Z" fill="currentColor" fill-opacity="0.85"/>
+      <path d="M0 -8 L-22 -50 M0 -8 L-10 -64 M0 -8 L2 -70 M0 -8 L14 -62 M0 -8 L24 -48 M-12 -32 L-26 -40 M-6 -42 L-18 -62 M8 -40 L20 -58 M12 -30 L28 -36" stroke="#000000" stroke-opacity="0.25" stroke-width="1.2" fill="none"/>
+    </g>
+    <g id="tubes">
+      <path d="M-12 0 V-30 Q-12 -34 -6 -34 Q0 -34 0 -30 V0 Z M0 0 V-46 Q0 -50 6 -50 Q12 -50 12 -46 V0 Z M10 0 V-22 Q10 -26 16 -26 Q22 -26 22 -22 V0 Z" fill="currentColor" stroke="#000000" stroke-opacity="0.25" stroke-width="1.2"/>
+      <ellipse cx="-6" cy="-32" rx="4.4" ry="1.8" fill="#000000" fill-opacity="0.35"/><ellipse cx="6" cy="-48" rx="4.4" ry="1.8" fill="#000000" fill-opacity="0.35"/><ellipse cx="16" cy="-24" rx="4.4" ry="1.8" fill="#000000" fill-opacity="0.35"/>
+    </g>
+    <g id="anemone">
+      <path d="M-12 0 Q-14 -10 -10 -14 H10 Q14 -10 12 0 Z" fill="#c0507a"/>
+      <path d="M-10 -14 Q-20 -24 -16 -34 M-6 -14 Q-12 -28 -6 -38 M0 -14 Q-2 -30 2 -42 M5 -14 Q8 -28 4 -38 M9 -14 Q18 -24 16 -34 M-8 -14 Q-24 -16 -26 -26 M8 -14 Q24 -16 26 -24" stroke="currentColor" stroke-width="3.4" fill="none" stroke-linecap="round"/>
+    </g>
+    <g id="grass">
+      <path d="M0 0 Q-6 -16 -2 -34 M3 0 Q8 -14 6 -28 M-3 0 Q-12 -10 -14 -22 M6 0 Q14 -8 18 -18" stroke="currentColor" stroke-width="2.6" fill="none" stroke-linecap="round"/>
+    </g>
+    <g id="star">
+      <path d="M0 -10 L3 -3.6 L10 -3 L4.6 1.6 L6.4 9 L0 5 L-6.4 9 L-4.6 1.6 L-10 -3 L-3 -3.6 Z" fill="#f2864a" stroke="#b24e22" stroke-width="1"/>
+      <g fill="#ffd2a8"><circle cx="0" cy="-5" r="0.9"/><circle cx="4" cy="-1" r="0.9"/><circle cx="-4" cy="-1" r="0.9"/><circle cx="2.6" cy="4" r="0.9"/><circle cx="-2.6" cy="4" r="0.9"/></g>
+    </g>
+    <g id="shell">
+      <path d="M0 0 L-9 -6 Q-8 -16 0 -17 Q8 -16 9 -6 Z" fill="#f6d2c4" stroke="#c08a7a" stroke-width="1"/>
+      <path d="M0 0 L-5 -14 M0 0 L0 -16 M0 0 L5 -14" stroke="#c08a7a" stroke-width="1"/>
+    </g>
+    <g id="jellyfish">
+      <path d="M-16 0 Q-16 -20 0 -20 Q16 -20 16 0 Q8 -3 0 0 Q-8 -3 -16 0 Z" fill="url(#jelly)"/>
+      <path d="M-10 0 Q-14 12 -8 22 Q-4 30 -8 40 M-3 0 Q-6 14 -1 26 M4 0 Q8 12 3 24 Q0 32 4 42 M11 0 Q14 10 10 20" stroke="#f6b2dc" stroke-width="1.6" fill="none" stroke-opacity="0.8"/>
+      <path d="M-8 -14 Q-2 -18 6 -16" stroke="#ffffff" stroke-width="2" fill="none" stroke-opacity="0.7" stroke-linecap="round"/>
+    </g>
+  </defs>
+
+  <!-- Water, the shimmering surface and sun rays -->
+  <rect width="2400" height="400" fill="url(#water)"/>
+  <path d="M0 8 Q30 2 60 8 T120 8 T180 8 T240 8 T300 8 T360 8 T420 8 T480 8 T540 8 T600 8 T660 8 T720 8 T780 8 T840 8 T900 8 T960 8 T1020 8 T1080 8 T1140 8 T1200 8 T1260 8 T1320 8 T1380 8 T1440 8 T1500 8 T1560 8 T1620 8 T1680 8 T1740 8 T1800 8 T1860 8 T1920 8 T1980 8 T2040 8 T2100 8 T2160 8 T2220 8 T2280 8 T2340 8 T2400 8 V0 H0 Z" fill="#dafff8" opacity="0.7"/>
+  <g stroke="#e8fffa" stroke-width="2" fill="none" stroke-linecap="round" opacity="0.55">
+    <path d="M40 22 q20 -8 40 0 q20 8 40 0 M220 30 q16 -6 32 0 q16 6 32 0 M430 20 q20 -8 40 0 M640 34 q16 -6 32 0 q16 6 32 0 M860 22 q20 -8 40 0 q20 8 40 0 M1080 32 q16 -6 32 0 M1260 20 q20 -8 40 0 q20 8 40 0 M1500 30 q16 -6 32 0 q16 6 32 0 M1720 22 q20 -8 40 0 M1940 32 q16 -6 32 0 q16 6 32 0 M2160 20 q20 -8 40 0 q20 8 40 0"/>
+  </g>
+  <g>
+    <path d="M120 0 H210 L420 380 H260 Z" fill="url(#ray)"/>
+    <path d="M520 0 H570 L760 380 H660 Z" fill="url(#ray)"/>
+    <path d="M880 0 H990 L1240 390 H1060 Z" fill="url(#ray)"/>
+    <path d="M1240 0 H1300 L1480 380 H1380 Z" fill="url(#ray)"/>
+    <path d="M1560 0 H1660 L1900 390 H1740 Z" fill="url(#ray)"/>
+    <path d="M1980 0 H2030 L2200 380 H2110 Z" fill="url(#ray)"/>
+    <path d="M2240 0 H2320 L2460 380 H2380 Z" fill="url(#ray)"/>
+  </g>
+
+  <!-- Far: a hazy ridge with rock arches and pinnacles, a manta ray, a far school of fish -->
+  <path d="M0 330 L0 268 Q40 238 80 250 Q110 200 140 214 Q170 236 200 240 Q260 232 300 252 L360 244 Q420 226 470 246 Q540 262 600 248 Q660 216 720 230 Q780 244 840 236 Q900 222 960 240 L1500 236 Q1560 214 1620 222 Q1660 180 1700 186 Q1730 214 1760 222 Q1800 230 1850 220 Q1910 196 1960 214 Q2020 236 2080 230 Q2140 210 2200 222 Q2280 246 2340 234 Q2380 228 2400 236 V330 Z" fill="url(#farRock)" opacity="0.75"/>
+  <path d="M1640 330 V250 Q1640 210 1690 208 Q1740 210 1740 250 V330 H1716 V262 Q1716 236 1690 236 Q1664 236 1664 262 V330 Z" fill="#3594b4" opacity="0.7"/>
+  <path d="M540 120 Q560 106 590 116 Q604 120 616 116 Q630 106 650 120 Q632 124 610 128 L604 156 L600 128 Q570 124 540 120 Z" fill="#1f6f90" opacity="0.45"/>
+  <g color="#bfe9f2" opacity="0.6">
+    <use href="#fish" x="760" y="150"/><use href="#fish" x="778" y="144"/><use href="#fish" x="790" y="156"/><use href="#fish" x="806" y="148"/><use href="#fish" x="770" y="164"/>
+    <use href="#fish" x="822" y="160"/><use href="#fish" x="836" y="150"/><use href="#fish" x="800" y="168"/><use href="#fish" x="850" y="164"/>
+  </g>
+  <rect y="180" width="2400" height="160" fill="url(#depthHaze)"/>
+
+  <!-- Far sand and kelp in the haze -->
+  <path d="M0 340 Q200 318 420 326 Q700 334 960 322 Q1240 312 1500 324 Q1800 334 2060 320 Q2260 312 2400 322 V400 H0 Z" fill="url(#farSand)"/>
+  <g color="#3f8a7a" opacity="0.55">
+    <use href="#kelp" x="1880" y="340" transform="translate(1880 340) scale(0.8) translate(-1880 -340)"/>
+    <use href="#kelp" x="1930" y="338" transform="translate(1930 338) scale(0.7) translate(-1930 -338)"/>
+    <use href="#kelp" x="160" y="340" transform="translate(160 340) scale(0.75) translate(-160 -340)"/>
+    <use href="#kelp" x="760" y="336" transform="translate(760 336) scale(0.55) translate(-760 -336)"/>
+  </g>
+
+  <!-- Mid-distance coral outcrops in the haze -->
+  <g opacity="0.9">
+    <path d="M1690 334 Q1680 292 1708 262 Q1736 238 1776 246 Q1814 254 1828 292 Q1836 314 1832 334 Z" fill="#3f8aa4"/>
+    <path d="M1708 262 Q1736 238 1776 246" stroke="#7ac0d0" stroke-width="3" fill="none" stroke-linecap="round" opacity="0.7"/>
+    <g color="#d88aa8" opacity="0.8"><use href="#staghorn" x="1740" y="250" transform="translate(1740 250) scale(0.7) translate(-1740 -250)"/></g>
+    <g color="#9a86d0" opacity="0.8"><use href="#seafan" x="1790" y="252" transform="translate(1790 252) scale(0.8) translate(-1790 -252)"/></g>
+    <g color="#e8b07a" opacity="0.8"><use href="#brain" x="1712" y="268" transform="translate(1712 268) scale(0.5) translate(-1712 -268)"/></g>
+    <path d="M664 334 Q660 306 684 294 Q710 284 734 298 Q750 312 748 334 Z" fill="#3f8aa4"/>
+    <g color="#e8a07a" opacity="0.8"><use href="#tubes" x="700" y="296" transform="translate(700 296) scale(0.7) translate(-700 -296)"/></g>
+    <g color="#7ad0b0" opacity="0.8"><use href="#anemone" x="728" y="300" transform="translate(728 300) scale(0.7) translate(-728 -300)"/></g>
+  </g>
+
+  <!-- The sunken ship, settled on its side in the sand, overgrown -->
+  <g>
+    <path d="M300 236 L250 204" stroke="#3e5e60" stroke-width="7" stroke-linecap="round"/>
+    <path d="M232 234 Q246 300 300 334 L600 336 Q636 306 650 262 L612 256 L596 272 L572 258 L548 270 L520 256 Q420 250 232 234 Z" fill="url(#hull)"/>
+    <path d="M244 258 Q400 272 640 280 M256 282 Q420 296 630 302 M272 306 Q430 318 614 322" stroke="#2b4a50" stroke-width="1.6" fill="none"/>
+    <path d="M232 234 Q420 250 520 256" stroke="#7aa0a0" stroke-width="2.4" fill="none" stroke-opacity="0.6"/>
+    <g fill="#1d3a42">
+      <circle cx="320" cy="270" r="6"/><circle cx="380" cy="274" r="6"/><circle cx="440" cy="278" r="6"/><circle cx="500" cy="281" r="6"/>
+    </g>
+    <g fill="none" stroke="#6f9494" stroke-width="2"><circle cx="320" cy="270" r="6"/><circle cx="380" cy="274" r="6"/><circle cx="440" cy="278" r="6"/><circle cx="500" cy="281" r="6"/></g>
+    <path d="M572 258 L578 330 M596 272 L600 330 M612 256 L622 318" stroke="#2b4a50" stroke-width="5" stroke-linecap="round"/>
+    <path d="M420 252 L478 134" stroke="#3e5e60" stroke-width="9" stroke-linecap="round"/>
+    <path d="M440 170 L510 184" stroke="#3e5e60" stroke-width="5" stroke-linecap="round"/>
+    <path d="M450 172 Q470 196 462 230 Q480 214 500 222 Q490 200 506 184 Z" fill="#9ab6b0" opacity="0.7"/>
+    <path d="M478 134 L486 120" stroke="#3e5e60" stroke-width="5" stroke-linecap="round"/>
+    <g fill="#e87aa0" opacity="0.85"><circle cx="270" cy="296" r="5"/><circle cx="280" cy="290" r="4"/><circle cx="560" cy="318" r="6"/><circle cx="548" cy="324" r="4"/><circle cx="430" cy="248" r="4"/></g>
+    <g fill="#f2b05a" opacity="0.85"><circle cx="340" cy="320" r="5"/><circle cx="352" cy="326" r="4"/><circle cx="640" cy="276" r="4"/></g>
+    <g stroke="#4f8a5a" stroke-width="2.6" fill="none" stroke-linecap="round" opacity="0.9">
+      <path d="M300 254 Q296 270 302 284 M360 258 Q354 276 362 292 M470 262 Q466 280 474 296 M540 264 Q536 278 542 290"/>
+    </g>
+  </g>
+
+  <!-- The palace: pearly walls on a rock, spiral shell domes, glowing arches -->
+  <g>
+    <path d="M920 344 Q930 306 980 296 Q1020 286 1060 292 L1380 292 Q1430 286 1470 298 Q1500 312 1508 344 Z" fill="url(#midRock)"/>
+    <path d="M960 330 Q1000 312 1040 316 M1400 314 Q1440 310 1480 326" stroke="#5a9ab0" stroke-width="2.4" fill="none" opacity="0.7"/>
+    <circle cx="1214" cy="232" r="190" fill="url(#glow)" opacity="0.35"/>
+    <!-- side towers -->
+    <path d="M1010 296 V176 H1064 V296 Z" fill="url(#pearl)"/>
+    <path d="M1364 296 V184 H1418 V296 Z" fill="url(#pearl)"/>
+    <path d="M1004 180 L1037 92 L1070 180 Z" fill="url(#dome)"/>
+    <path d="M1010 166 Q1037 160 1064 168 M1016 150 Q1037 144 1058 152 M1022 134 Q1037 128 1052 136 M1028 118 Q1037 114 1046 120 M1032 104 Q1037 101 1042 106" stroke="#c0808c" stroke-width="2" fill="none"/>
+    <circle cx="1037" cy="88" r="5" fill="#fff8f0" stroke="#d8b0b8" stroke-width="1"/>
+    <path d="M1352 188 Q1350 136 1391 122 Q1432 136 1430 188 Z" fill="url(#dome)"/>
+    <path d="M1391 122 L1360 186 M1391 122 L1372 188 M1391 122 L1384 189 M1391 122 L1398 189 M1391 122 L1410 188 M1391 122 L1422 186" stroke="#c0808c" stroke-width="1.8" fill="none"/>
+    <path d="M1352 188 Q1360 194 1366 188 Q1372 194 1378 188 Q1384 194 1391 188 Q1398 194 1404 188 Q1410 194 1416 188 Q1422 194 1430 188" stroke="#c0808c" stroke-width="2" fill="#f6d2c4"/>
+    <circle cx="1391" cy="118" r="5" fill="#fff8f0" stroke="#d8b0b8" stroke-width="1"/>
+    <!-- main hall -->
+    <path d="M1070 296 V222 H1356 V296 Z" fill="url(#pearl)"/>
+    <path d="M1066 222 H1360 L1352 212 H1074 Z" fill="#f8dcd4" stroke="#d0a0a8" stroke-width="1.2"/>
+    <g fill="#fff0b8">
+      <path d="M1090 296 V262 Q1090 248 1104 248 Q1118 248 1118 262 V296 Z"/>
+      <path d="M1136 296 V262 Q1136 248 1150 248 Q1164 248 1164 262 V296 Z"/>
+      <path d="M1262 296 V262 Q1262 248 1276 248 Q1290 248 1290 262 V296 Z"/>
+      <path d="M1308 296 V262 Q1308 248 1322 248 Q1336 248 1336 262 V296 Z"/>
+      <path d="M1188 296 V252 Q1188 230 1213 230 Q1238 230 1238 252 V296 Z"/>
+      <path d="M1026 220 V206 Q1026 198 1037 198 Q1048 198 1048 206 V220 Z M1026 262 V248 Q1026 240 1037 240 Q1048 240 1048 248 V262 Z"/>
+      <path d="M1380 226 V212 Q1380 204 1391 204 Q1402 204 1402 212 V226 Z M1380 266 V252 Q1380 244 1391 244 Q1402 244 1402 252 V266 Z"/>
+    </g>
+    <path d="M1188 296 V252 Q1188 230 1213 230 Q1238 230 1238 252 V296 M1090 296 V262 Q1090 248 1104 248 Q1118 248 1118 262 V296 M1136 296 V262 Q1136 248 1150 248 Q1164 248 1164 262 V296 M1262 296 V262 Q1262 248 1276 248 Q1290 248 1290 262 V296 M1308 296 V262 Q1308 248 1322 248 Q1336 248 1336 262 V296" stroke="#c88a9a" stroke-width="2.6" fill="none"/>
+    <!-- central spiral dome -->
+    <path d="M1150 214 Q1144 160 1213 120 Q1282 160 1276 214 Z" fill="url(#dome)"/>
+    <path d="M1152 200 Q1200 186 1274 204 M1156 182 Q1210 166 1268 186 M1166 164 Q1214 148 1258 168 M1180 146 Q1214 134 1244 150 M1196 132 Q1214 126 1230 136" stroke="#c0808c" stroke-width="2.2" fill="none"/>
+    <path d="M1170 196 Q1166 160 1206 132" stroke="#ffffff" stroke-width="4" fill="none" stroke-opacity="0.55" stroke-linecap="round"/>
+    <path d="M1213 120 V104" stroke="#e8c0c4" stroke-width="3"/>
+    <circle cx="1213" cy="100" r="7" fill="#fffaf2" stroke="#d8b0b8" stroke-width="1.2"/>
+    <circle cx="1210.6" cy="97.6" r="2.2" fill="#ffffff"/>
+    <!-- small turrets -->
+    <path d="M1100 222 V196 H1124 V222 Z M1302 222 V196 H1326 V222 Z" fill="url(#pearl)"/>
+    <path d="M1096 198 L1112 158 L1128 198 Z M1298 198 L1314 158 L1330 198 Z" fill="url(#dome)"/>
+    <path d="M1100 190 Q1112 186 1124 190 M1104 178 Q1112 175 1120 178 M1108 168 Q1112 166 1116 168 M1302 190 Q1314 186 1326 190 M1306 178 Q1314 175 1322 178 M1310 168 Q1314 166 1318 168" stroke="#c0808c" stroke-width="1.6" fill="none"/>
+    <!-- pearl strings between the towers -->
+    <path d="M1064 200 Q1088 214 1100 204 M1124 204 Q1166 230 1196 214 M1230 214 Q1260 230 1302 204 M1326 204 Q1344 214 1364 204" stroke="#fff8ee" stroke-width="2.6" fill="none" stroke-dasharray="0.1 5" stroke-linecap="round"/>
+    <!-- coral growing on the rock -->
+    <g color="#f07a9a"><use href="#staghorn" x="996" y="300" transform="translate(996 300) scale(0.6) translate(-996 -300)"/></g>
+    <g color="#ffa45a"><use href="#staghorn" x="1440" y="302" transform="translate(1440 302) scale(0.55) translate(-1440 -302)"/></g>
+    <use href="#bubbles" x="1213" y="92" transform="translate(1213 92) scale(0.7) translate(-1213 -92)"/>
+  </g>
+
+  <!-- Swimmers: a sea turtle, jellyfish, angelfish, a school of fish -->
+  <g transform="translate(1610 150) rotate(-10)">
+    <path d="M-34 6 Q-52 22 -60 30 Q-44 30 -26 16 Z" fill="#7fa86a" stroke="#4a6a3a" stroke-width="1.4"/>
+    <path d="M16 8 Q22 30 14 42 Q4 30 6 12 Z" fill="#7fa86a" stroke="#4a6a3a" stroke-width="1.4"/>
+    <path d="M-30 -6 Q-44 -24 -58 -26 Q-46 -12 -28 0 Z" fill="#7fa86a" stroke="#4a6a3a" stroke-width="1.4"/>
+    <path d="M14 -10 Q30 -34 52 -40 Q40 -20 20 -2 Z" fill="#7fa86a" stroke="#4a6a3a" stroke-width="1.4"/>
+    <ellipse cx="-6" cy="0" rx="34" ry="20" fill="#8a6a3a" stroke="#5a4020" stroke-width="1.6"/>
+    <path d="M-20 -14 L-8 -6 L6 -14 M-8 -6 L-6 8 M-26 2 L-6 8 L14 2 M-6 8 L-4 18 M-32 -4 L-20 -14 M6 -14 L22 -6" stroke="#5a4020" stroke-width="1.4" fill="none"/>
+    <path d="M-28 -10 Q-12 -20 8 -16" stroke="#c9a46a" stroke-width="3" fill="none" stroke-linecap="round" opacity="0.7"/>
+    <ellipse cx="38" cy="-2" rx="12" ry="9" fill="#8fb87a" stroke="#4a6a3a" stroke-width="1.4"/>
+    <circle cx="42" cy="-5" r="2" fill="#1d2a1a"/>
+    <path d="M44 3 Q47 3 49 1" stroke="#3a5a2a" stroke-width="1.2" fill="none"/>
+  </g>
+  <use href="#jellyfish" x="840" y="94"/>
+  <use href="#jellyfish" x="872" y="130" transform="translate(872 130) scale(0.6) translate(-872 -130)"/>
+  <use href="#jellyfish" x="2060" y="120" transform="translate(2060 120) scale(0.8) translate(-2060 -120)"/>
+  <use href="#angelfish" x="1500" y="250"/>
+  <use href="#angelfish" x="700" y="220" transform="translate(700 220) scale(0.8) translate(-700 -220)"/>
+  <use href="#angelfish" x="1830" y="270" transform="translate(1830 270) scale(0.7) translate(-1830 -270)"/>
+  <g color="#ffd65a">
+    <use href="#fish" x="1340" y="80"/><use href="#fish" x="1360" y="72"/><use href="#fish" x="1356" y="90"/><use href="#fish" x="1378" y="82"/><use href="#fish" x="1394" y="74"/>
+    <use href="#fish" x="1384" y="96"/><use href="#fish" x="1404" y="88"/><use href="#fish" x="1420" y="80"/><use href="#fish" x="1414" y="100"/><use href="#fish" x="1434" y="92"/>
+    <use href="#fish" x="1372" y="104"/><use href="#fish" x="1450" y="86"/>
+  </g>
+  <g color="#d6f2fa">
+    <use href="#fish" x="300" y="150"/><use href="#fish" x="318" y="142"/><use href="#fish" x="322" y="160"/><use href="#fish" x="340" y="150"/><use href="#fish" x="336" y="168"/><use href="#fish" x="356" y="158"/><use href="#fish" x="360" y="142"/>
+  </g>
+  <g color="#ff8a6a">
+    <use href="#fish" x="1060" y="320" transform="translate(1060 320) scale(1.4) translate(-1060 -320)"/>
+    <use href="#fish" x="1090" y="328" transform="translate(1090 328) scale(1.2) translate(-1090 -328)"/>
+  </g>
+  <g color="#7ad6ff">
+    <use href="#fish" x="1860" y="200" transform="translate(1860 200) scale(1.3) translate(-1860 -200)"/>
+    <use href="#fish" x="1884" y="210" transform="translate(1884 210) scale(1.1) translate(-1884 -210)"/>
+  </g>
+  <use href="#bubbles" x="560" y="300"/>
+  <use href="#bubbles" x="1560" y="330" transform="translate(1560 330) scale(1.2) translate(-1560 -330)"/>
+  <use href="#bubbles" x="2240" y="320"/>
+  <use href="#bubbles" x="140" y="300" transform="translate(140 300) scale(0.8) translate(-140 -300)"/>
+
+  <!-- Near kelp forest at both ends -->
+  <g color="#5a9a4a">
+    <use href="#kelp" x="40" y="392"/>
+    <use href="#kelp" x="96" y="396" transform="translate(96 396) scale(0.85) translate(-96 -396)"/>
+    <use href="#kelp" x="2020" y="394" transform="translate(2020 394) scale(0.9) translate(-2020 -394)"/>
+    <use href="#kelp" x="2120" y="396"/>
+    <use href="#kelp" x="2210" y="394" transform="translate(2210 394) scale(0.8) translate(-2210 -394)"/>
+    <use href="#kelp" x="2330" y="396" transform="translate(2330 396) scale(0.95) translate(-2330 -396)"/>
+  </g>
+  <g color="#78b04e">
+    <use href="#kelp" x="66" y="398" transform="translate(66 398) scale(0.7) translate(-66 -398)"/>
+    <use href="#kelp" x="2170" y="398" transform="translate(2170 398) scale(0.65) translate(-2170 -398)"/>
+    <use href="#kelp" x="2380" y="398" transform="translate(2380 398) scale(0.75) translate(-2380 -398)"/>
+  </g>
+
+  <!-- The near reef on the sand -->
+  <path d="M0 372 Q160 356 320 362 Q520 370 700 358 Q900 348 1100 360 Q1300 370 1500 358 Q1720 348 1900 360 Q2140 370 2400 356 V400 H0 Z" fill="url(#sand)"/>
+  <g fill="#5d8a98">
+    <path d="M150 372 Q156 340 186 338 Q214 340 222 372 Z"/>
+    <path d="M820 368 Q830 342 860 342 Q888 346 892 368 Z"/>
+    <path d="M1560 364 Q1570 336 1604 334 Q1636 338 1642 364 Z"/>
+    <path d="M2240 366 Q2250 344 2276 344 Q2300 348 2304 366 Z"/>
+  </g>
+  <g color="#f2a87a"><use href="#brain" x="300" y="372"/><use href="#brain" x="1700" y="366" transform="translate(1700 366) scale(0.8) translate(-1700 -366)"/></g>
+  <g color="#e9c46a"><use href="#brain" x="980" y="366" transform="translate(980 366) scale(0.7) translate(-980 -366)"/></g>
+  <g color="#ff8a5a"><use href="#staghorn" x="230" y="368"/><use href="#staghorn" x="1530" y="364" transform="translate(1530 364) scale(0.8) translate(-1530 -364)"/></g>
+  <g color="#f4789a"><use href="#staghorn" x="760" y="364" transform="translate(760 364) scale(0.9) translate(-760 -364)"/><use href="#staghorn" x="1920" y="364"/></g>
+  <g color="#a45ad0"><use href="#seafan" x="400" y="370"/><use href="#seafan" x="1460" y="362" transform="translate(1460 362) scale(0.8) translate(-1460 -362)"/><use href="#seafan" x="2080" y="368" transform="translate(2080 368) scale(0.9) translate(-2080 -368)"/></g>
+  <g color="#e86a8a"><use href="#seafan" x="900" y="360" transform="translate(900 360) scale(0.7) translate(-900 -360)"/></g>
+  <g color="#f2b33c"><use href="#tubes" x="520" y="366"/><use href="#tubes" x="1820" y="366" transform="translate(1820 366) scale(0.85) translate(-1820 -366)"/></g>
+  <g color="#ff9a4a"><use href="#tubes" x="1120" y="366" transform="translate(1120 366) scale(0.7) translate(-1120 -366)"/></g>
+  <g color="#ff9ac8"><use href="#anemone" x="600" y="364"/><use href="#anemone" x="1350" y="368"/><use href="#anemone" x="2000" y="362" transform="translate(2000 362) scale(0.9) translate(-2000 -362)"/></g>
+  <g color="#7ae0b0"><use href="#anemone" x="680" y="368" transform="translate(680 368) scale(0.8) translate(-680 -368)"/><use href="#anemone" x="1260" y="370" transform="translate(1260 370) scale(0.85) translate(-1260 -370)"/></g>
+  <g color="#4f9a5a">
+    <use href="#grass" x="120" y="374"/><use href="#grass" x="460" y="372"/><use href="#grass" x="1040" y="368"/><use href="#grass" x="1400" y="370"/><use href="#grass" x="1660" y="366"/><use href="#grass" x="2160" y="370"/><use href="#grass" x="2300" y="370"/>
+  </g>
+  <g color="#ff7a5a"><use href="#staghorn" x="110" y="374" transform="translate(110 374) scale(1.3) translate(-110 -374)"/><use href="#staghorn" x="2250" y="382" transform="translate(2250 382) scale(1.25) translate(-2250 -382)"/></g>
+  <g color="#f6a0c0"><use href="#staghorn" x="1300" y="374" transform="translate(1300 374) scale(1.1) translate(-1300 -374)"/></g>
+  <g color="#f2b87a"><use href="#brain" x="650" y="376" transform="translate(650 376) scale(1.15) translate(-650 -376)"/><use href="#brain" x="1880" y="374"/></g>
+  <g color="#9a5ad8"><use href="#seafan" x="560" y="378" transform="translate(560 378) scale(1.2) translate(-560 -378)"/><use href="#seafan" x="1970" y="376" transform="translate(1970 376) scale(1.15) translate(-1970 -376)"/></g>
+  <g color="#ffc24a"><use href="#tubes" x="330" y="378" transform="translate(330 378) scale(1.1) translate(-330 -378)"/><use href="#tubes" x="2370" y="376"/></g>
+  <g color="#ff8ab8"><use href="#anemone" x="460" y="380"/><use href="#anemone" x="1580" y="378" transform="translate(1580 378) scale(1.1) translate(-1580 -378)"/></g>
+  <g color="#6ad8a8"><use href="#anemone" x="1060" y="378"/><use href="#anemone" x="2120" y="378"/></g>
+  <use href="#star" x="196" y="340" transform="rotate(14 196 340)"/>
+  <use href="#star" x="1620" y="336" transform="rotate(-10 1620 336)"/>
+  <use href="#star" x="1190" y="378"/>
+  <use href="#shell" x="860" y="382"/>
+  <use href="#shell" x="2140" y="380"/>
+  <use href="#shell" x="1480" y="384"/>
+  <g stroke="#fff6d0" stroke-width="2" fill="none" stroke-linecap="round" opacity="0.5">
+    <path d="M40 388 q20 -6 40 0 q20 6 40 0 M380 384 q20 -6 40 0 M700 390 q20 -6 40 0 q20 6 40 0 M1000 386 q20 -6 40 0 M1300 390 q20 -6 40 0 q20 6 40 0 M1600 386 q20 -6 40 0 M1900 390 q20 -6 40 0 q20 6 40 0 M2240 388 q20 -6 40 0"/>
+  </g>
+</svg>

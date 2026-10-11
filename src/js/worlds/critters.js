@@ -2,15 +2,18 @@
 export default Object.freeze({
   key: 'critters',
   label: 'מאמני יצורים (בהשראת פוקימון)',
-  room: 'meadow',
   accent: { light: '#ca8a04', dark: '#fde047' },
-  decor: { window: 'meadow', door: 'office', sofa: 'log', coffee: 'juice', cooler: 'waterbarrel', plant: 'tree', shelf: 'books', picture: 'poster' },
   stations: { desk: 'berries', craft: 'punchbag' },
+  scene: { wallScale: 1.6 },
   cast: {
-    kinds: [['critter', 45], ['human', 45], ['rabbit', 5], ['fox', 5]],
-    outfits: [['tee', 30], ['vest', 30], ['jumpsuit', 20], ['hoodie', 20]],
-    headwear: [['cap', 50], [null, 40], ['beanie', 10]],
-    held: [['net', 25], [null, 75]],
+    archetypes: [
+      { key: 'trainer', weight: 30, kind: 'human', size: 0.94 },
+      { key: 'professor', weight: 10, kind: 'human', size: 1.04 },
+      { key: 'ember', weight: 16, kind: 'critter', size: 0.78 },
+      { key: 'turtlePup', weight: 16, kind: 'critter', size: 0.76 },
+      { key: 'leafSprite', weight: 14, kind: 'critter', size: 0.7 },
+      { key: 'cloudPuff', weight: 14, kind: 'cloud', size: 0.72 },
+    ],
   },
   lines: {
     openers: {

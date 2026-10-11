@@ -2,15 +2,18 @@
 export default Object.freeze({
   key: 'heroes',
   label: 'גיבורי על',
-  room: 'hq',
   accent: { light: '#b91c1c', dark: '#fca5a5' },
-  decor: { window: 'skyline', door: 'vault', sofa: 'beanbags', coffee: 'dispenser', cooler: 'cooler', plant: 'snake', shelf: 'servers', picture: 'poster' },
   stations: { desk: 'console', craft: 'punchbag' },
+  scene: { wallScale: 1.6 },
   cast: {
-    kinds: [['human', 70], ['robot', 10], ['alien', 10], ['dog', 5], ['cat', 5]],
-    outfits: [['cape', 75], ['jumpsuit', 25]],
-    headwear: [['mask', 55], [null, 30], ['helmet', 15]],
-    held: [['bolt', 10], ['gadget', 15], [null, 75]],
+    archetypes: [
+      { key: 'capedHero', weight: 30, kind: 'human', size: 1.05 },
+      { key: 'armoredHero', weight: 16, kind: 'human', size: 1.08 },
+      { key: 'speedster', weight: 14, kind: 'human', size: 1 },
+      { key: 'strongman', weight: 14, kind: 'human', size: 1.15 },
+      { key: 'sidekick', weight: 14, kind: 'human', size: 0.86 },
+      { key: 'robotHero', weight: 12, kind: 'robot', size: 1 },
+    ],
   },
   lines: {
     openers: {

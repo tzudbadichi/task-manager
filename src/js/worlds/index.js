@@ -1,6 +1,6 @@
-// The themed worlds of the people view. Each world file (worlds/<key>.js) holds its look - the room,
-// the scenery and work stations (art-worlds.js keys), the cast its characters are drawn from - and its
-// pool of lines. This module lists them. Pure data, covered by tests/worlds.test.js.
+// The themed worlds of the people view. Each world file (worlds/<key>.js) holds its data - the accent
+// color, the painted scene, its two work stations, the archetypes of its cast - and its pool of lines;
+// world-art/<key>.js draws it. This module lists them. Pure data, covered by tests/worlds.test.js.
 
 import office from './office.js';
 import wizards from './wizards.js';

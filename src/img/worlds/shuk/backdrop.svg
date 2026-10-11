@@ -1,0 +1,494 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="2400" height="400" viewBox="0 0 2400 400">
+  <!-- Shuk backdrop: an Israeli open-air market of Jerusalem stone in the late afternoon - a grand arched
+       market hall, stone arcades with rolled-up shutters, striped awnings over stalls of oranges,
+       pomegranates, watermelons, spice cones, halva and bread, hanging lights and dried fruit, a busy crowd,
+       and Jerusalem rooftops with solar water heaters, domes and cypresses beyond. Original art for this app. -->
+  <defs>
+    <linearGradient id="sky" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#6aa6d8"/>
+      <stop offset="0.38" stop-color="#a9cfe6"/>
+      <stop offset="0.64" stop-color="#f2e0bc"/>
+      <stop offset="0.84" stop-color="#f8cf96"/>
+      <stop offset="1" stop-color="#f6c48c"/>
+    </linearGradient>
+    <radialGradient id="sunGlow">
+      <stop offset="0" stop-color="#fffbe8" stop-opacity="1"/>
+      <stop offset="0.12" stop-color="#fff0c4" stop-opacity="0.85"/>
+      <stop offset="0.4" stop-color="#ffd896" stop-opacity="0.35"/>
+      <stop offset="1" stop-color="#ffd896" stop-opacity="0"/>
+    </radialGradient>
+    <linearGradient id="farHills" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#c8bca2"/>
+      <stop offset="1" stop-color="#ddd1b4"/>
+    </linearGradient>
+    <linearGradient id="facade" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#f4e6c4"/>
+      <stop offset="1" stop-color="#e2cb9c"/>
+    </linearGradient>
+    <linearGradient id="sideWall" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#ecdab0"/>
+      <stop offset="1" stop-color="#d8c193"/>
+    </linearGradient>
+    <linearGradient id="interior" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#3a2416"/>
+      <stop offset="0.6" stop-color="#5e3a22"/>
+      <stop offset="1" stop-color="#7a4e2c"/>
+    </linearGradient>
+    <linearGradient id="pavement" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#cbb48c"/>
+      <stop offset="0.5" stop-color="#d4c19c"/>
+      <stop offset="1" stop-color="#d8c7a3"/>
+    </linearGradient>
+    <radialGradient id="orangeG" cx="0.38" cy="0.35" r="0.7">
+      <stop offset="0" stop-color="#ffcf6a"/>
+      <stop offset="0.55" stop-color="#f6941c"/>
+      <stop offset="1" stop-color="#d06a0c"/>
+    </radialGradient>
+    <radialGradient id="pomG" cx="0.38" cy="0.35" r="0.7">
+      <stop offset="0" stop-color="#f06a72"/>
+      <stop offset="0.55" stop-color="#c42a3a"/>
+      <stop offset="1" stop-color="#8a1426"/>
+    </radialGradient>
+    <radialGradient id="tomG" cx="0.38" cy="0.35" r="0.7">
+      <stop offset="0" stop-color="#ff8a6a"/>
+      <stop offset="0.55" stop-color="#e2382a"/>
+      <stop offset="1" stop-color="#a81e16"/>
+    </radialGradient>
+    <radialGradient id="bulbGlow">
+      <stop offset="0" stop-color="#fff6c8" stop-opacity="0.95"/>
+      <stop offset="0.35" stop-color="#ffd978" stop-opacity="0.45"/>
+      <stop offset="1" stop-color="#ffc858" stop-opacity="0"/>
+    </radialGradient>
+
+    <!-- A solar water heater on a roof: a tilted panel and a white tank -->
+    <g id="solar">
+      <path d="M-14 0 L-14 -12 M14 0 L14 -18" stroke="#8a8f96" stroke-width="1.4"/>
+      <path d="M-20 0 L-12 -15 H18 L10 0 Z" fill="#2c4a72" stroke="#1c3050" stroke-width="1"/>
+      <path d="M-16 -7.5 H14 M-4 0 L4 -15 M4 0 L11 -15 M-12 0 L-4 -15" stroke="#6a8ab8" stroke-width="0.8"/>
+      <rect x="-15" y="-25" width="30" height="10" rx="5" fill="#f1f0ec" stroke="#9aa0a6" stroke-width="1"/>
+    </g>
+    <!-- A black water tank -->
+    <g id="tank">
+      <rect x="-7" y="-15" width="14" height="15" rx="2" fill="#2b2b30"/>
+      <rect x="-8" y="-17" width="16" height="3" rx="1.4" fill="#3a3a40"/>
+    </g>
+    <!-- A small stone dome -->
+    <g id="dome">
+      <path d="M-17 0 Q-17 -19 0 -21 Q17 -19 17 0 Z" fill="#d6c59c" stroke="#b39e72" stroke-width="1"/>
+      <path d="M-10 -12 Q-6 -18 2 -19" stroke="#f4ead0" stroke-width="2" fill="none" stroke-linecap="round"/>
+      <rect x="-19" y="-2" width="38" height="3" fill="#c8b48a"/>
+    </g>
+    <!-- A cypress -->
+    <g id="cypress">
+      <path d="M0 0 Q-10 -28 -1 -72 Q0 -76 1 -72 Q10 -28 0 0 Z" fill="#3c5a34"/>
+      <path d="M1 -70 Q8 -30 1 -2" stroke="#56784a" stroke-width="2" fill="none"/>
+    </g>
+    <!-- A palm -->
+    <g id="palm">
+      <path d="M-2 0 Q-4 -30 2 -62 L5 -62 Q0 -30 3 0 Z" fill="#8a6a44"/>
+      <g fill="#4f8a3c">
+        <path d="M3 -62 Q-14 -70 -30 -58 Q-14 -64 3 -60 Z"/><path d="M3 -62 Q20 -72 36 -60 Q20 -66 3 -60 Z"/>
+        <path d="M3 -62 Q-6 -82 -22 -84 Q-8 -76 2 -62 Z"/><path d="M3 -62 Q14 -84 30 -82 Q14 -76 4 -62 Z"/>
+        <path d="M3 -62 Q-18 -56 -26 -40 Q-14 -54 3 -60 Z"/><path d="M3 -62 Q24 -56 30 -42 Q18 -54 3 -60 Z"/>
+      </g>
+    </g>
+    <!-- An arched window with green shutters -->
+    <g id="win">
+      <path d="M-6 0 V-14 A6 6 0 0 1 6 -14 V0 Z" fill="#4a3a2e"/>
+      <path d="M-12 0 V-17 H-6 V0 Z M6 0 V-17 H12 V0 Z" fill="#4f7a5a" stroke="#355a40" stroke-width="0.8"/>
+      <path d="M-12 -11 H-6 M-12 -5 H-6 M6 -11 H12 M6 -5 H12" stroke="#355a40" stroke-width="0.8"/>
+      <rect x="-13" y="0" width="26" height="2.4" fill="#cdb386"/>
+    </g>
+    <!-- Fruit -->
+    <g id="o"><circle r="5.6" fill="url(#orangeG)" stroke="#b8600e" stroke-width="0.8"/></g>
+    <g id="p"><circle r="5.6" fill="url(#pomG)" stroke="#6e1020" stroke-width="0.8"/><path d="M-1.6 -5.2 L-1 -7.4 L0 -6 L1 -7.4 L1.6 -5.2 Z" fill="#7a1222"/></g>
+    <g id="t"><circle r="4.6" fill="url(#tomG)" stroke="#8a1a12" stroke-width="0.7"/><path d="M-1.8 -4 L0 -3 L1.8 -4" stroke="#3f7a2e" stroke-width="1.2" fill="none"/></g>
+    <g id="orangePile">
+      <use href="#o" x="-22.4" y="-5"/><use href="#o" x="-11.2" y="-5"/><use href="#o" x="0" y="-5"/><use href="#o" x="11.2" y="-5"/><use href="#o" x="22.4" y="-5"/>
+      <use href="#o" x="-16.8" y="-14.6"/><use href="#o" x="-5.6" y="-14.6"/><use href="#o" x="5.6" y="-14.6"/><use href="#o" x="16.8" y="-14.6"/>
+      <use href="#o" x="-11.2" y="-24.2"/><use href="#o" x="0" y="-24.2"/><use href="#o" x="11.2" y="-24.2"/>
+      <use href="#o" x="-5.6" y="-33.8"/><use href="#o" x="5.6" y="-33.8"/>
+    </g>
+    <g id="pomPile">
+      <use href="#p" x="-22.4" y="-5"/><use href="#p" x="-11.2" y="-5"/><use href="#p" x="0" y="-5"/><use href="#p" x="11.2" y="-5"/><use href="#p" x="22.4" y="-5"/>
+      <use href="#p" x="-16.8" y="-14.6"/><use href="#p" x="-5.6" y="-14.6"/><use href="#p" x="5.6" y="-14.6"/><use href="#p" x="16.8" y="-14.6"/>
+      <use href="#p" x="-11.2" y="-24.2"/><use href="#p" x="0" y="-24.2"/><use href="#p" x="11.2" y="-24.2"/>
+      <use href="#p" x="0" y="-33.8"/>
+    </g>
+    <g id="tomPile">
+      <use href="#t" x="-18.4" y="-4"/><use href="#t" x="-9.2" y="-4"/><use href="#t" x="0" y="-4"/><use href="#t" x="9.2" y="-4"/><use href="#t" x="18.4" y="-4"/>
+      <use href="#t" x="-13.8" y="-12"/><use href="#t" x="-4.6" y="-12"/><use href="#t" x="4.6" y="-12"/><use href="#t" x="13.8" y="-12"/>
+      <use href="#t" x="-9.2" y="-20"/><use href="#t" x="0" y="-20"/><use href="#t" x="9.2" y="-20"/>
+    </g>
+    <g id="cukes" fill="#4e8a32" stroke="#2f5a24" stroke-width="0.7">
+      <ellipse cx="-16" cy="-4" rx="9" ry="3.4"/><ellipse cx="0" cy="-4" rx="9" ry="3.4"/><ellipse cx="16" cy="-4" rx="9" ry="3.4"/>
+      <ellipse cx="-8" cy="-10.4" rx="9" ry="3.4"/><ellipse cx="8" cy="-10.4" rx="9" ry="3.4"/><ellipse cx="0" cy="-16.8" rx="9" ry="3.4"/>
+    </g>
+    <!-- A cone of spice in a tin bowl (spice color = the use's color) -->
+    <g id="spice">
+      <path d="M-22 -6 Q-10 -36 0 -40 Q10 -36 22 -6 Z" fill="currentColor"/>
+      <path d="M0 -40 Q10 -36 22 -6 H7 Q5 -24 0 -40 Z" fill="#000000" opacity="0.16"/>
+      <path d="M-12 -18 Q-7 -30 -2 -35" stroke="#ffffff" stroke-opacity="0.3" stroke-width="2.4" fill="none" stroke-linecap="round"/>
+      <path d="M-26 -8 H26 L22 0 H-22 Z" fill="#b7bcc2" stroke="#7c8692" stroke-width="1"/>
+    </g>
+    <!-- A burlap sack, rolled open (contents = the use's color) -->
+    <g id="sack">
+      <path d="M-16 0 Q-18 -16 -13 -24 H13 Q18 -16 16 0 Z" fill="#c9a064" stroke="#8a6a3a" stroke-width="1"/>
+      <ellipse cx="0" cy="-24" rx="14" ry="4.4" fill="#a8824a"/>
+      <ellipse cx="0" cy="-24.6" rx="11.6" ry="3.2" fill="currentColor"/>
+      <path d="M-13 -24 Q0 -18 13 -24" stroke="#dcbc84" stroke-width="2.4" fill="none"/>
+    </g>
+    <!-- A halva block cut from a wheel (the marbling = the use's color) -->
+    <g id="halva">
+      <path d="M-20 0 V-22 A20 6 0 0 1 20 -22 V0 A20 6 0 0 1 -20 0 Z" fill="#e3c792" stroke="#a8844a" stroke-width="1"/>
+      <path d="M-20 -22 A20 6 0 0 0 20 -22 A20 6 0 0 0 -20 -22 Z" fill="#efdcb0" stroke="#a8844a" stroke-width="1"/>
+      <path d="M0 -22 L20 -22 A20 6 0 0 1 14 -17.6 Z" fill="#d6b478"/>
+      <path d="M-15 -14 Q-8 -18 -2 -11 Q4 -5 12 -9 M-17 -5 Q-9 -9 -3 -4 Q3 1 10 -3" stroke="currentColor" stroke-width="2.2" fill="none" stroke-linecap="round"/>
+      <path d="M-10 -24 Q-3 -26.4 4 -23.4" stroke="currentColor" stroke-width="1.8" fill="none" stroke-linecap="round"/>
+      <path d="M-16 -2 Q0 4 16 -2" stroke="#ffffff" stroke-opacity="0.25" stroke-width="2" fill="none"/>
+    </g>
+    <!-- Watermelons -->
+    <g id="melon">
+      <ellipse rx="17" ry="11" fill="#3f8a3a" stroke="#1f4a1e" stroke-width="1"/>
+      <path d="M-12 -7 Q0 -12 12 -7 M-16 -1 Q0 -6 16 -1 M-13 6 Q0 2 13 6" stroke="#245a22" stroke-width="2.4" fill="none"/>
+      <ellipse cx="-5" cy="-5" rx="6" ry="2" fill="#ffffff" opacity="0.18"/>
+    </g>
+    <g id="melonHalf">
+      <path d="M-17 0 A17 12 0 0 1 17 0 Z" fill="#3f8a3a" stroke="#1f4a1e" stroke-width="1"/>
+      <path d="M-15 0 A15 10 0 0 1 15 0 Z" fill="#d8f0c0"/>
+      <path d="M-13.4 0 A13.4 8.6 0 0 1 13.4 0 Z" fill="#e8443c"/>
+      <g fill="#1f1a17"><ellipse cx="-6" cy="-3" rx="0.8" ry="1.2"/><ellipse cx="0" cy="-5" rx="0.8" ry="1.2"/><ellipse cx="6" cy="-3" rx="0.8" ry="1.2"/><ellipse cx="-2" cy="-2" rx="0.8" ry="1.2"/><ellipse cx="3" cy="-1.6" rx="0.8" ry="1.2"/></g>
+    </g>
+    <!-- A plastic crate (color = the use's color) -->
+    <g id="crate">
+      <rect x="-22" y="-18" width="44" height="18" rx="1.4" fill="currentColor" stroke="#000000" stroke-opacity="0.35" stroke-width="1"/>
+      <path d="M-18 -13 H18 M-18 -8 H18 M-18 -3 H18" stroke="#000000" stroke-opacity="0.25" stroke-width="1.6"/>
+      <rect x="-8" y="-16.6" width="16" height="3" rx="1.4" fill="#000000" opacity="0.3"/>
+    </g>
+    <!-- A striped awning, 200 wide (stripes = the use's color) -->
+    <g id="awning">
+      <path d="M-100 0 H100 L110 24 H-110 Z" fill="#f8f3e6"/>
+      <path d="M-100 0 H-80 L-88 24 H-110 Z M-60 0 H-40 L-44 24 H-66 Z M-20 0 H0 L0 24 H-22 Z M20 0 H40 L44 24 H22 Z M60 0 H80 L88 24 H66 Z" fill="currentColor"/>
+      <path d="M-110 24 q10 10 20 0 q10 10 20 0 q10 10 20 0 q10 10 20 0 q10 10 20 0 q10 10 20 0 q10 10 20 0 q10 10 20 0 q10 10 20 0 q10 10 20 0 q10 10 20 0 Z" fill="currentColor"/>
+      <path d="M-100 0 H100 L110 24 H-110 Z" fill="none" stroke="#000000" stroke-opacity="0.25" stroke-width="1"/>
+      <path d="M-104 34 H104" stroke="#000000" stroke-opacity="0.12" stroke-width="6"/>
+    </g>
+    <!-- A bare bulb with its glow -->
+    <g id="bulb">
+      <circle r="11" fill="url(#bulbGlow)"/>
+      <circle r="2.8" fill="#fff4c4" stroke="#d9a83a" stroke-width="0.6"/>
+    </g>
+    <!-- A string of dried apricots and figs -->
+    <g id="dried">
+      <path d="M0 0 V46" stroke="#8a6a44" stroke-width="1"/>
+      <g fill="#e88a2a" stroke="#a8561a" stroke-width="0.6"><circle cy="6" r="3"/><circle cy="18" r="3"/><circle cy="30" r="3"/><circle cy="42" r="3"/></g>
+      <g fill="#7a4a5a" stroke="#4a2a36" stroke-width="0.6"><circle cy="12" r="2.8"/><circle cy="24" r="2.8"/><circle cy="36" r="2.8"/></g>
+    </g>
+    <!-- People in the crowd -->
+    <g id="crowdA">
+      <circle cx="0" cy="-58" r="7"/><path d="M-11 0 V-34 Q-11 -48 0 -49 Q11 -48 11 -34 V0 Z"/>
+    </g>
+    <g id="crowdB">
+      <circle cx="0" cy="-54" r="6.6"/><path d="M-12 0 L-9 -32 Q-9 -45 0 -46 Q9 -45 9 -32 L12 0 Z"/><path d="M8 -36 L16 -22 L22 -24 L22 -12 L10 -12 Z"/>
+    </g>
+    <g id="crowdC">
+      <circle cx="0" cy="-50" r="6.4"/><path d="M-9 0 V-30 Q-10 -42 0 -43 Q10 -42 9 -30 V0 Z"/><path d="M-7 -56 Q0 -64 7 -56 Z"/>
+    </g>
+    <g id="farTown" fill="#efe4c8">
+      <rect x="0" y="-10" width="12" height="10"/><rect x="14" y="-14" width="10" height="14"/><rect x="26" y="-8" width="14" height="8"/>
+      <rect x="42" y="-12" width="9" height="12"/><rect x="53" y="-9" width="13" height="9"/><rect x="68" y="-15" width="10" height="15"/>
+      <path d="M84 0 Q81 -10 85 -20 Q89 -10 86 0 Z" fill="#7a8a62"/>
+    </g>
+  </defs>
+
+  <!-- Sky, sun and a few clouds, swifts -->
+  <rect width="2400" height="400" fill="url(#sky)"/>
+  <circle cx="1760" cy="150" r="520" fill="url(#sunGlow)"/>
+  <circle cx="1760" cy="150" r="28" fill="#fffaea"/>
+  <g fill="#ffffff">
+    <g opacity="0.85"><ellipse cx="320" cy="70" rx="70" ry="16"/><ellipse cx="290" cy="62" rx="36" ry="18"/><ellipse cx="348" cy="58" rx="40" ry="20"/></g>
+    <g opacity="0.75"><ellipse cx="900" cy="44" rx="56" ry="12"/><ellipse cx="928" cy="36" rx="32" ry="14"/></g>
+    <g opacity="0.8"><ellipse cx="2160" cy="74" rx="66" ry="15"/><ellipse cx="2130" cy="66" rx="34" ry="17"/><ellipse cx="2188" cy="60" rx="40" ry="19"/></g>
+  </g>
+  <g fill="none" stroke="#3a3436" stroke-width="1.6" stroke-linecap="round">
+    <path d="M600 104 q5 -5 10 0 q5 -5 10 0"/><path d="M640 120 q4 -4 8 0 q4 -4 8 0"/><path d="M1480 96 q5 -5 10 0 q5 -5 10 0"/><path d="M1516 84 q4 -4 8 0 q4 -4 8 0"/><path d="M1000 118 q4 -4 8 0 q4 -4 8 0"/>
+  </g>
+
+  <!-- Far Jerusalem hills with pale houses -->
+  <path d="M0 252 Q160 214 340 226 Q520 238 700 214 Q880 194 1060 212 Q1240 230 1420 206 Q1600 188 1780 210 Q1960 232 2140 208 Q2280 194 2400 210 V300 H0 Z" fill="url(#farHills)"/>
+  <g opacity="0.85">
+    <use href="#farTown" x="60" y="232"/><use href="#farTown" x="250" y="226"/><use href="#farTown" x="560" y="226"/><use href="#farTown" x="740" y="212"/>
+    <use href="#farTown" x="1600" y="196"/><use href="#farTown" x="1880" y="222"/><use href="#farTown" x="2080" y="214"/><use href="#farTown" x="2290" y="206"/>
+  </g>
+
+  <!-- Rooftops on the left: stone houses, solar heaters, domes, tanks, cypresses -->
+  <g>
+    <rect x="10" y="168" width="130" height="80" fill="#e6d2a4" stroke="#bfa676" stroke-width="1"/>
+    <rect x="10" y="168" width="14" height="80" fill="#cdb585"/>
+    <use href="#solar" x="70" y="168"/><use href="#solar" x="112" y="168"/>
+    <use href="#win" x="50" y="206"/><use href="#win" x="100" y="206"/>
+    <rect x="140" y="192" width="112" height="56" fill="#ead8ae" stroke="#bfa676" stroke-width="1"/>
+    <use href="#dome" x="196" y="192"/><use href="#tank" x="236" y="192"/>
+    <use href="#win" x="170" y="226"/><use href="#win" x="222" y="226"/>
+    <use href="#cypress" x="264" y="232"/>
+    <rect x="276" y="150" width="150" height="98" fill="#e2cc9c" stroke="#bfa676" stroke-width="1"/>
+    <rect x="276" y="150" width="16" height="98" fill="#c8ae7e"/>
+    <use href="#solar" x="320" y="150"/><use href="#solar" x="362" y="150"/><use href="#tank" x="404" y="150"/>
+    <path d="M410 150 V118 M402 124 H418 M404 130 H416" stroke="#5a5550" stroke-width="1.4"/>
+    <use href="#win" x="312" y="186"/><use href="#win" x="352" y="186"/><use href="#win" x="392" y="186"/>
+    <use href="#win" x="312" y="222"/><use href="#win" x="392" y="222"/>
+    <rect x="426" y="186" width="104" height="62" fill="#ecdcb4" stroke="#bfa676" stroke-width="1"/>
+    <path d="M440 222 V206 A10 10 0 0 1 460 206 V222 Z M466 222 V206 A10 10 0 0 1 486 206 V222 Z M492 222 V206 A10 10 0 0 1 512 206 V222 Z" fill="#5a4636"/>
+    <path d="M436 222 H516" stroke="#cdb386" stroke-width="2.4"/>
+    <use href="#solar" x="500" y="186"/>
+    <use href="#cypress" x="540" y="236"/><use href="#cypress" x="554" y="240" transform="translate(554 240) scale(0.8) translate(-554 -240)"/>
+    <rect x="566" y="164" width="150" height="84" fill="#e4cf9f" stroke="#bfa676" stroke-width="1"/>
+    <rect x="566" y="164" width="14" height="84" fill="#cab07f"/>
+    <use href="#solar" x="616" y="164"/><use href="#solar" x="660" y="164"/><use href="#tank" x="700" y="164"/>
+    <use href="#win" x="610" y="200"/><use href="#win" x="660" y="200"/>
+    <path d="M590 214 H700" stroke="#9aa0a6" stroke-width="0.8"/>
+    <g fill="#d94141"><rect x="600" y="214" width="8" height="10"/></g><rect x="626" y="214" width="9" height="12" fill="#2f6db3"/><rect x="652" y="214" width="8" height="9" fill="#f1efe8"/><rect x="676" y="214" width="9" height="11" fill="#e9b52a"/>
+    <rect x="716" y="180" width="150" height="68" fill="#ead6a8" stroke="#bfa676" stroke-width="1"/>
+    <use href="#dome" x="770" y="180"/><use href="#solar" x="830" y="180"/>
+    <use href="#win" x="750" y="214"/><use href="#win" x="800" y="214"/><use href="#win" x="846" y="214"/>
+    <use href="#palm" x="726" y="214"/>
+  </g>
+  <!-- Rooftops on the right -->
+  <g>
+    <rect x="1534" y="176" width="140" height="72" fill="#ead8ae" stroke="#bfa676" stroke-width="1"/>
+    <use href="#solar" x="1580" y="176"/><use href="#solar" x="1626" y="176"/>
+    <use href="#win" x="1570" y="212"/><use href="#win" x="1640" y="212"/>
+    <use href="#cypress" x="1684" y="236"/>
+    <rect x="1694" y="196" width="112" height="52" fill="#e6d2a4" stroke="#bfa676" stroke-width="1"/>
+    <use href="#dome" x="1748" y="196"/><use href="#tank" x="1790" y="196"/>
+    <use href="#win" x="1724" y="230"/><use href="#win" x="1776" y="230"/>
+    <rect x="1806" y="156" width="160" height="92" fill="#e2cc9c" stroke="#bfa676" stroke-width="1"/>
+    <rect x="1806" y="156" width="16" height="92" fill="#c8ae7e"/>
+    <use href="#solar" x="1850" y="156"/><use href="#solar" x="1894" y="156"/><use href="#solar" x="1938" y="156"/>
+    <path d="M1828 156 V126 M1820 132 H1836 M1822 138 H1834" stroke="#5a5550" stroke-width="1.4"/>
+    <use href="#win" x="1846" y="192"/><use href="#win" x="1890" y="192"/><use href="#win" x="1934" y="192"/>
+    <use href="#win" x="1846" y="228"/><use href="#win" x="1934" y="228"/>
+    <rect x="1966" y="190" width="110" height="58" fill="#ecdcb4" stroke="#bfa676" stroke-width="1"/>
+    <use href="#dome" x="2020" y="190"/>
+    <use href="#win" x="1994" y="226"/><use href="#win" x="2046" y="226"/>
+    <use href="#palm" x="2086" y="226"/>
+    <rect x="2094" y="166" width="150" height="82" fill="#e4cf9f" stroke="#bfa676" stroke-width="1"/>
+    <rect x="2094" y="166" width="14" height="82" fill="#cab07f"/>
+    <use href="#solar" x="2140" y="166"/><use href="#tank" x="2180" y="166"/><use href="#solar" x="2218" y="166"/>
+    <use href="#win" x="2140" y="204"/><use href="#win" x="2200" y="204"/>
+    <use href="#cypress" x="2254" y="234"/>
+    <rect x="2262" y="184" width="142" height="64" fill="#ead6a8" stroke="#bfa676" stroke-width="1"/>
+    <use href="#solar" x="2306" y="184"/><use href="#dome" x="2366" y="184"/>
+    <use href="#win" x="2300" y="220"/><use href="#win" x="2360" y="220"/>
+  </g>
+
+  <!-- The stone arcades on both sides: an upper floor of windows, shop arches with rolled-up shutters -->
+  <g>
+    <rect x="-4" y="212" width="874" height="160" fill="url(#sideWall)"/>
+    <rect x="1530" y="212" width="874" height="160" fill="url(#sideWall)"/>
+    <path d="M-4 206 H870 V214 H-4 Z M1530 206 H2404 V214 H1530 Z" fill="#d6be8e" stroke="#b39a6a" stroke-width="1"/>
+    <path d="M-4 216 H870 M1530 216 H2404" stroke="#a88e5e" stroke-opacity="0.5" stroke-width="2"/>
+    <g stroke="#c9ae80" stroke-opacity="0.55" stroke-width="1">
+      <path d="M-4 228 H870 M-4 242 H870 M-4 256 H870 M-4 270 H870 M-4 284 H870 M-4 298 H870 M-4 312 H870 M-4 326 H870 M-4 340 H870 M-4 354 H870"/>
+      <path d="M1530 228 H2404 M1530 242 H2404 M1530 256 H2404 M1530 270 H2404 M1530 284 H2404 M1530 298 H2404 M1530 312 H2404 M1530 326 H2404 M1530 340 H2404 M1530 354 H2404"/>
+    </g>
+    <g stroke="#c9ae80" stroke-opacity="0.55" stroke-width="13" stroke-dasharray="1.2 34">
+      <path d="M-4 235 H870 M-4 263 H870 M-4 291 H870 M-4 319 H870 M-4 347 H870 M1530 235 H2404 M1530 263 H2404 M1530 291 H2404 M1530 319 H2404 M1530 347 H2404"/>
+      <path d="M13 249 H870 M13 277 H870 M13 305 H870 M13 333 H870 M13 361 H870 M1547 249 H2404 M1547 277 H2404 M1547 305 H2404 M1547 333 H2404 M1547 361 H2404"/>
+    </g>
+    <g>
+      <use href="#win" x="80" y="244"/><use href="#win" x="210" y="244"/><use href="#win" x="340" y="244"/><use href="#win" x="470" y="244"/><use href="#win" x="600" y="244"/><use href="#win" x="730" y="244"/>
+      <use href="#win" x="1670" y="244"/><use href="#win" x="1800" y="244"/><use href="#win" x="1930" y="244"/><use href="#win" x="2060" y="244"/><use href="#win" x="2190" y="244"/><use href="#win" x="2320" y="244"/>
+    </g>
+    <g fill="url(#interior)" stroke="#bfa676" stroke-width="2">
+      <path d="M40 372 V300 A40 40 0 0 1 120 300 V372 Z"/><path d="M170 372 V300 A40 40 0 0 1 250 300 V372 Z"/><path d="M300 372 V300 A40 40 0 0 1 380 300 V372 Z"/>
+      <path d="M430 372 V300 A40 40 0 0 1 510 300 V372 Z"/><path d="M560 372 V300 A40 40 0 0 1 640 300 V372 Z"/><path d="M690 372 V300 A40 40 0 0 1 770 300 V372 Z"/>
+      <path d="M1630 372 V300 A40 40 0 0 1 1710 300 V372 Z"/><path d="M1760 372 V300 A40 40 0 0 1 1840 300 V372 Z"/><path d="M1890 372 V300 A40 40 0 0 1 1970 300 V372 Z"/>
+      <path d="M2020 372 V300 A40 40 0 0 1 2100 300 V372 Z"/><path d="M2150 372 V300 A40 40 0 0 1 2230 300 V372 Z"/><path d="M2280 372 V300 A40 40 0 0 1 2360 300 V372 Z"/>
+    </g>
+    <g fill="#5f8a6a" stroke="#3a5a44" stroke-width="1">
+      <rect x="42" y="298" width="76" height="8" rx="3"/><rect x="172" y="298" width="76" height="8" rx="3"/><rect x="302" y="298" width="76" height="8" rx="3"/>
+      <rect x="432" y="298" width="76" height="8" rx="3"/><rect x="562" y="298" width="76" height="8" rx="3"/><rect x="692" y="298" width="76" height="8" rx="3"/>
+      <rect x="1632" y="298" width="76" height="8" rx="3"/><rect x="1762" y="298" width="76" height="8" rx="3"/><rect x="1892" y="298" width="76" height="8" rx="3"/>
+      <rect x="2022" y="298" width="76" height="8" rx="3"/><rect x="2152" y="298" width="76" height="8" rx="3"/><rect x="2282" y="298" width="76" height="8" rx="3"/>
+    </g>
+    <g fill="#d6338a">
+      <circle cx="864" cy="214" r="5"/><circle cx="856" cy="222" r="4.6"/><circle cx="866" cy="230" r="4.2"/><circle cx="850" cy="212" r="4"/><circle cx="860" cy="242" r="3.6"/><circle cx="868" cy="252" r="3.4"/>
+      <circle cx="1536" cy="214" r="5"/><circle cx="1544" cy="222" r="4.6"/><circle cx="1534" cy="232" r="4.2"/><circle cx="1550" cy="212" r="4"/><circle cx="1538" cy="244" r="3.6"/>
+    </g>
+    <g fill="#4e8a32"><circle cx="858" cy="218" r="2.6"/><circle cx="862" cy="236" r="2.4"/><circle cx="1542" cy="228" r="2.6"/><circle cx="1546" cy="216" r="2.4"/></g>
+  </g>
+
+  <!-- The grand market hall in the center: Jerusalem stone, three arches with alternating stone voussoirs -->
+  <g>
+    <rect x="860" y="160" width="680" height="212" fill="url(#facade)"/>
+    <path d="M852 152 H1548 V162 H852 Z" fill="#dcc496" stroke="#b39a6a" stroke-width="1"/>
+    <path d="M860 152 V140 H876 V152 M900 152 V140 H916 V152 M940 152 V140 H956 V152 M980 152 V140 H996 V152 M1020 152 V140 H1036 V152 M1060 152 V140 H1076 V152 M1100 152 V140 H1116 V152 M1284 152 V140 H1300 V152 M1324 152 V140 H1340 V152 M1364 152 V140 H1380 V152 M1404 152 V140 H1420 V152 M1444 152 V140 H1460 V152 M1484 152 V140 H1500 V152 M1524 152 V140 H1540 V152 Z" fill="#e8d6ac" stroke="#b39a6a" stroke-width="1"/>
+    <path d="M1140 152 V126 H1170 Q1200 106 1230 126 H1260 V152 Z" fill="#ecdcb4" stroke="#b39a6a" stroke-width="1.2"/>
+    <path d="M1188 146 V132 Q1200 120 1212 132 V146 Z" fill="#b39a6a"/>
+    <g stroke="#cdb385" stroke-opacity="0.7" stroke-width="1">
+      <path d="M860 176 H1540 M860 190 H1540 M860 204 H1540 M860 218 H1540 M860 232 H1540 M860 246 H1540 M860 260 H1540 M860 274 H1540 M860 288 H1540 M860 302 H1540 M860 316 H1540 M860 330 H1540 M860 344 H1540 M860 358 H1540"/>
+    </g>
+    <g stroke="#cdb385" stroke-opacity="0.7" stroke-width="13" stroke-dasharray="1.2 38">
+      <path d="M860 169 H1540 M860 197 H1540 M860 225 H1540 M860 253 H1540 M860 281 H1540 M860 309 H1540 M860 337 H1540 M860 365 H1540"/>
+      <path d="M879 183 H1540 M879 211 H1540 M879 239 H1540 M879 267 H1540 M879 295 H1540 M879 323 H1540 M879 351 H1540"/>
+    </g>
+    <path d="M860 160 V372" stroke="#c8ae7e" stroke-width="10"/>
+    <use href="#win" x="990" y="204"/><use href="#win" x="1410" y="204"/>
+    <path d="M1060 204 V186 A9 9 0 0 1 1078 186 V204 Z M1322 204 V186 A9 9 0 0 1 1340 186 V204 Z" fill="#4a3a2e" stroke="#cdb386" stroke-width="2"/>
+    <!-- left arch -->
+    <path d="M916 372 V286 A74 74 0 0 1 1064 286 V372 Z" fill="#ead6aa" stroke="#b39a6a" stroke-width="1"/>
+    <path d="M923 372 V286 A67 67 0 0 1 1057 286 V372" fill="none" stroke="#cf9a76" stroke-width="14" stroke-dasharray="12 12"/>
+    <path d="M930 372 V286 A60 60 0 0 1 1050 286 V372 Z" fill="url(#interior)" stroke="#b39a6a" stroke-width="1.2"/>
+    <!-- right arch -->
+    <path d="M1336 372 V286 A74 74 0 0 1 1484 286 V372 Z" fill="#ead6aa" stroke="#b39a6a" stroke-width="1"/>
+    <path d="M1343 372 V286 A67 67 0 0 1 1477 286 V372" fill="none" stroke="#cf9a76" stroke-width="14" stroke-dasharray="12 12"/>
+    <path d="M1350 372 V286 A60 60 0 0 1 1470 286 V372 Z" fill="url(#interior)" stroke="#b39a6a" stroke-width="1.2"/>
+    <!-- the great pointed arch -->
+    <path d="M1106 372 V252 Q1106 190 1200 172 Q1294 190 1294 252 V372 Z" fill="#ead6aa" stroke="#b39a6a" stroke-width="1"/>
+    <path d="M1114 372 V252 Q1114 196 1200 180 Q1286 196 1286 252 V372" fill="none" stroke="#cf9a76" stroke-width="15" stroke-dasharray="13 13"/>
+    <path d="M1122 372 V252 Q1122 202 1200 188 Q1278 202 1278 252 V372 Z" fill="url(#interior)" stroke="#b39a6a" stroke-width="1.2"/>
+    <path d="M1192 170 H1208 L1206 186 H1194 Z" fill="#f2e2bc" stroke="#b39a6a" stroke-width="1"/>
+    <!-- inside: lights, hanging dried fruit, shoppers -->
+    <path d="M1124 232 Q1200 262 1276 232" fill="none" stroke="#2a1a10" stroke-width="1"/>
+    <use href="#bulb" x="1146" y="243"/><use href="#bulb" x="1172" y="250"/><use href="#bulb" x="1200" y="253"/><use href="#bulb" x="1228" y="250"/><use href="#bulb" x="1254" y="243"/>
+    <path d="M932 262 Q990 282 1048 262 M1352 262 Q1410 282 1468 262" fill="none" stroke="#2a1a10" stroke-width="1"/>
+    <use href="#bulb" x="956" y="271"/><use href="#bulb" x="990" y="276"/><use href="#bulb" x="1024" y="271"/>
+    <use href="#bulb" x="1376" y="271"/><use href="#bulb" x="1410" y="276"/><use href="#bulb" x="1444" y="271"/>
+    <use href="#dried" x="1136" y="212"/><use href="#dried" x="1264" y="212"/><use href="#dried" x="944" y="246"/><use href="#dried" x="1456" y="246"/>
+    <g fill="#24160e" opacity="0.6">
+      <use href="#crowdA" x="1150" y="372"/><use href="#crowdC" x="1176" y="366"/><use href="#crowdB" x="1236" y="370"/><use href="#crowdA" x="1262" y="364"/>
+      <use href="#crowdB" x="960" y="368"/><use href="#crowdC" x="1018" y="370"/><use href="#crowdA" x="1384" y="368"/><use href="#crowdC" x="1440" y="370"/>
+    </g>
+  </g>
+
+  <!-- String lights across the street -->
+  <g>
+    <path d="M0 226 Q215 262 430 226 Q645 262 860 226 M1540 226 Q1755 262 1970 226 Q2185 262 2400 226" fill="none" stroke="#3a3436" stroke-width="1"/>
+    <use href="#bulb" x="60" y="236"/><use href="#bulb" x="140" y="243"/><use href="#bulb" x="215" y="244"/><use href="#bulb" x="290" y="243"/><use href="#bulb" x="370" y="236"/>
+    <use href="#bulb" x="490" y="236"/><use href="#bulb" x="570" y="243"/><use href="#bulb" x="645" y="244"/><use href="#bulb" x="720" y="243"/><use href="#bulb" x="800" y="236"/>
+    <use href="#bulb" x="1600" y="236"/><use href="#bulb" x="1680" y="243"/><use href="#bulb" x="1755" y="244"/><use href="#bulb" x="1830" y="243"/><use href="#bulb" x="1910" y="236"/>
+    <use href="#bulb" x="2030" y="236"/><use href="#bulb" x="2110" y="243"/><use href="#bulb" x="2185" y="244"/><use href="#bulb" x="2260" y="243"/><use href="#bulb" x="2340" y="236"/>
+  </g>
+
+  <!-- The crowd in the street, behind the stalls -->
+  <g opacity="0.55">
+    <use href="#crowdA" x="248" y="372" fill="#7a6a8a"/><use href="#crowdB" x="478" y="370" fill="#8a6a5a"/><use href="#crowdC" x="716" y="372" fill="#5a7a8a"/>
+    <use href="#crowdA" x="744" y="368" fill="#8a5a5a"/><use href="#crowdB" x="786" y="372" fill="#6a7a5a"/><use href="#crowdC" x="826" y="366" fill="#7a6a8a"/>
+    <use href="#crowdA" x="1548" y="370" fill="#5a7a8a"/><use href="#crowdC" x="1796" y="372" fill="#8a6a5a"/><use href="#crowdB" x="2026" y="368" fill="#6a6a8a"/>
+    <use href="#crowdA" x="2252" y="372" fill="#8a5a5a"/>
+  </g>
+
+  <!-- Stalls: awnings on poles, tables of produce -->
+  <g stroke="#6e4a28" stroke-width="3" stroke-linecap="round">
+    <path d="M34 300 V372 M226 300 V372 M266 300 V372 M458 300 V372 M498 300 V372 M690 300 V372 M889 300 V372 M1081 300 V372 M1319 300 V372 M1511 300 V372 M1584 300 V372 M1776 300 V372 M1814 300 V372 M2006 300 V372 M2044 300 V372 M2236 300 V372 M2264 300 V372"/>
+  </g>
+  <g>
+    <use href="#awning" x="130" y="276" color="#2f6db3"/>
+    <use href="#awning" x="362" y="276" color="#e8762a"/>
+    <use href="#awning" x="594" y="276" color="#e9b52a"/>
+    <use href="#awning" x="985" y="276" color="#d94141"/>
+    <use href="#awning" x="1415" y="276" color="#3f9a5a"/>
+    <use href="#awning" x="1680" y="276" color="#d94141"/>
+    <use href="#awning" x="1910" y="276" color="#2f6db3"/>
+    <use href="#awning" x="2140" y="276" color="#e9b52a"/>
+    <use href="#awning" x="2364" y="276" color="#e8762a"/>
+  </g>
+  <g fill="#a8743f" stroke="#6e4a28" stroke-width="1">
+    <rect x="38" y="334" width="184" height="6"/><rect x="502" y="334" width="184" height="6"/><rect x="893" y="334" width="184" height="6"/>
+    <rect x="1124" y="334" width="152" height="6"/><rect x="1323" y="334" width="184" height="6"/><rect x="1588" y="334" width="184" height="6"/>
+    <rect x="1818" y="334" width="184" height="6"/><rect x="2048" y="334" width="184" height="6"/><rect x="2268" y="334" width="140" height="6"/>
+  </g>
+  <g fill="#efe2c4" opacity="0.92">
+    <rect x="40" y="340" width="180" height="32"/><rect x="504" y="340" width="180" height="32"/><rect x="1126" y="340" width="148" height="32"/>
+    <rect x="1820" y="340" width="180" height="32"/><rect x="2270" y="340" width="138" height="32"/>
+  </g>
+  <path d="M40 346 H220 M504 346 H684 M1126 346 H1274 M1820 346 H2000 M2270 346 H2408" stroke="#d94141" stroke-width="3" opacity="0.7"/>
+
+  <!-- 1: tomatoes and cucumbers -->
+  <use href="#tomPile" x="88" y="334"/><use href="#cukes" x="168" y="334"/><use href="#tomPile" x="200" y="334" transform="translate(200 334) scale(0.6) translate(-200 -334)"/>
+  <use href="#crate" x="80" y="372" color="#2f6db3"/><use href="#crate" x="170" y="372" color="#3f9a5a"/>
+  <!-- 2: watermelons -->
+  <use href="#melon" x="300" y="360"/><use href="#melon" x="334" y="362"/><use href="#melon" x="368" y="360"/><use href="#melon" x="402" y="362"/><use href="#melon" x="434" y="360"/>
+  <use href="#melon" x="318" y="342"/><use href="#melon" x="352" y="342"/><use href="#melon" x="386" y="342"/><use href="#melon" x="420" y="344"/>
+  <use href="#melon" x="336" y="324"/><use href="#melon" x="372" y="324"/><use href="#melon" x="404" y="326"/>
+  <use href="#melonHalf" x="354" y="308"/><use href="#melonHalf" x="390" y="309"/>
+  <!-- 3: figs, grapes and dates -->
+  <g>
+    <path d="M512 334 L520 322 H584 L592 334 Z M600 334 L608 322 H672 L680 334 Z" fill="#c9a064" stroke="#8a6a3a" stroke-width="1"/>
+    <g fill="#7a3a6a" stroke="#4a2244" stroke-width="0.6">
+      <path d="M528 322 q-4 -2 -3 -6 q3 -4 6 0 q1 4 -3 6 Z"/><path d="M540 322 q-4 -2 -3 -6 q3 -4 6 0 q1 4 -3 6 Z"/><path d="M552 322 q-4 -2 -3 -6 q3 -4 6 0 q1 4 -3 6 Z"/>
+      <path d="M564 322 q-4 -2 -3 -6 q3 -4 6 0 q1 4 -3 6 Z"/><path d="M576 322 q-4 -2 -3 -6 q3 -4 6 0 q1 4 -3 6 Z"/><path d="M534 316 q-4 -2 -3 -6 q3 -4 6 0 q1 4 -3 6 Z"/>
+      <path d="M546 316 q-4 -2 -3 -6 q3 -4 6 0 q1 4 -3 6 Z"/><path d="M558 316 q-4 -2 -3 -6 q3 -4 6 0 q1 4 -3 6 Z"/><path d="M570 316 q-4 -2 -3 -6 q3 -4 6 0 q1 4 -3 6 Z"/>
+    </g>
+    <g fill="#9ac25a" stroke="#5a7a2a" stroke-width="0.5">
+      <circle cx="620" cy="318" r="3"/><circle cx="626" cy="318" r="3"/><circle cx="632" cy="318" r="3"/><circle cx="623" cy="313" r="3"/><circle cx="629" cy="313" r="3"/><circle cx="626" cy="308" r="3"/>
+    </g>
+    <g fill="#5a2a5a" stroke="#341634" stroke-width="0.5">
+      <circle cx="648" cy="318" r="3"/><circle cx="654" cy="318" r="3"/><circle cx="660" cy="318" r="3"/><circle cx="651" cy="313" r="3"/><circle cx="657" cy="313" r="3"/><circle cx="654" cy="308" r="3"/>
+    </g>
+    <use href="#dried" x="530" y="300"/><use href="#dried" x="594" y="300"/><use href="#dried" x="658" y="300"/>
+  </g>
+  <!-- 4: oranges and pomegranates -->
+  <use href="#orangePile" x="940" y="334"/><use href="#pomPile" x="1006" y="334"/><use href="#orangePile" x="1060" y="334" transform="translate(1060 334) scale(0.7) translate(-1060 -334)"/>
+  <use href="#crate" x="934" y="372" color="#3f9a5a"/><use href="#crate" x="984" y="372" color="#2f6db3"/><use href="#crate" x="1034" y="372" color="#3f9a5a"/>
+  <use href="#crate" x="958" y="354" color="#2f6db3"/><use href="#crate" x="1008" y="354" color="#3f9a5a"/>
+  <!-- 5: the spice stall under the great arch -->
+  <use href="#spice" x="1173" y="316" color="#d9681e" transform="translate(1173 316) scale(0.72) translate(-1173 -316)"/>
+  <use href="#spice" x="1227" y="316" color="#6b8a3a" transform="translate(1227 316) scale(0.72) translate(-1227 -316)"/>
+  <use href="#spice" x="1146" y="334" color="#c8402a" transform="translate(1146 334) scale(1.18) translate(-1146 -334)"/>
+  <use href="#spice" x="1200" y="334" color="#e9a81c" transform="translate(1200 334) scale(1.18) translate(-1200 -334)"/>
+  <use href="#spice" x="1254" y="334" color="#8a5a2e" transform="translate(1254 334) scale(1.18) translate(-1254 -334)"/>
+  <use href="#sack" x="1146" y="372" color="#c8402a"/><use href="#sack" x="1182" y="372" color="#e2b33a"/><use href="#sack" x="1218" y="372" color="#a86a2a"/><use href="#sack" x="1254" y="372" color="#7a8a3a"/>
+  <!-- 6: halva and dried fruit -->
+  <use href="#halva" x="1350" y="334" color="#6f9a3a"/><use href="#halva" x="1394" y="334" color="#6a3a22"/><use href="#halva" x="1438" y="334" color="#a8743a"/>
+  <use href="#halva" x="1372" y="312" color="#a8743a" transform="translate(1372 312) scale(0.8) translate(-1372 -312)"/>
+  <use href="#halva" x="1416" y="312" color="#6f9a3a" transform="translate(1416 312) scale(0.8) translate(-1416 -312)"/>
+  <g fill="#e88a2a" stroke="#a8561a" stroke-width="0.6"><circle cx="1474" cy="330" r="3.4"/><circle cx="1481" cy="330" r="3.4"/><circle cx="1488" cy="330" r="3.4"/><circle cx="1495" cy="330" r="3.4"/><circle cx="1477" cy="324" r="3.4"/><circle cx="1484" cy="324" r="3.4"/><circle cx="1491" cy="324" r="3.4"/><circle cx="1480" cy="318" r="3.4"/><circle cx="1487" cy="318" r="3.4"/></g>
+  <use href="#dried" x="1340" y="300"/><use href="#dried" x="1490" y="300"/>
+  <use href="#crate" x="1360" y="372" color="#d94141"/><use href="#crate" x="1414" y="372" color="#2f6db3"/><use href="#crate" x="1468" y="372" color="#d94141"/>
+  <!-- 7: pomegranates and a juice press -->
+  <use href="#pomPile" x="1630" y="334"/><use href="#orangePile" x="1696" y="334"/>
+  <g>
+    <rect x="1736" y="300" width="4" height="30" fill="#3f4650"/><path d="M1738 304 L1766 290" stroke="#3f4650" stroke-width="3" stroke-linecap="round"/><circle cx="1767" cy="290" r="2.6" fill="#c0392b"/>
+    <path d="M1744 316 H1758 V322 Q1751 325 1744 322 Z" fill="#9aa3ad" stroke="#4b5563" stroke-width="0.8"/>
+    <path d="M1748 324 H1756 L1755 334 H1749 Z" fill="#f39a1e" stroke="#e6eef4" stroke-width="0.8"/>
+  </g>
+  <use href="#crate" x="1630" y="372" color="#3f9a5a"/><use href="#crate" x="1680" y="372" color="#d94141"/><use href="#crate" x="1730" y="372" color="#2f6db3"/>
+  <!-- 8: bread and long sesame bagels -->
+  <g>
+    <g fill="none" stroke-linecap="round">
+      <g stroke="#8a4e1e" stroke-width="5.4"><ellipse cx="1846" cy="326" rx="12" ry="5"/><ellipse cx="1876" cy="326" rx="12" ry="5"/><ellipse cx="1906" cy="326" rx="12" ry="5"/><ellipse cx="1861" cy="318" rx="12" ry="5"/><ellipse cx="1891" cy="318" rx="12" ry="5"/><ellipse cx="1876" cy="310" rx="12" ry="5"/></g>
+      <g stroke="#d58e44" stroke-width="3.8"><ellipse cx="1846" cy="326" rx="12" ry="5"/><ellipse cx="1876" cy="326" rx="12" ry="5"/><ellipse cx="1906" cy="326" rx="12" ry="5"/><ellipse cx="1861" cy="318" rx="12" ry="5"/><ellipse cx="1891" cy="318" rx="12" ry="5"/><ellipse cx="1876" cy="310" rx="12" ry="5"/></g>
+    </g>
+    <g fill="#e2b06a" stroke="#a8742a" stroke-width="1">
+      <ellipse cx="1950" cy="330" rx="16" ry="4"/><ellipse cx="1950" cy="325" rx="16" ry="4"/><ellipse cx="1950" cy="320" rx="16" ry="4"/><ellipse cx="1950" cy="315" rx="16" ry="4"/>
+      <path d="M1972 334 Q1972 318 1986 316 Q1998 318 1998 334 Z"/>
+    </g>
+    <g fill="#fbf0d0"><circle cx="1840" cy="322" r="0.7"/><circle cx="1852" cy="323" r="0.7"/><circle cx="1870" cy="322" r="0.7"/><circle cx="1884" cy="323" r="0.7"/><circle cx="1900" cy="322" r="0.7"/><circle cx="1912" cy="323" r="0.7"/><circle cx="1870" cy="306" r="0.7"/><circle cx="1882" cy="306" r="0.7"/></g>
+  </g>
+  <!-- 9: nuts and dried fruit in sacks -->
+  <use href="#sack" x="2076" y="334" color="#c8a06a"/><use href="#sack" x="2112" y="334" color="#8ab05a"/><use href="#sack" x="2148" y="334" color="#a8542a"/>
+  <use href="#sack" x="2184" y="334" color="#e2c48a"/><use href="#sack" x="2218" y="334" color="#5a3a2a"/>
+  <use href="#crate" x="2090" y="372" color="#2f6db3"/><use href="#crate" x="2140" y="372" color="#3f9a5a"/><use href="#crate" x="2190" y="372" color="#d94141"/>
+  <!-- 10: flowers in buckets -->
+  <g>
+    <g fill="#9aa3ad" stroke="#5a636e" stroke-width="1"><path d="M2290 334 L2292 314 H2310 L2312 334 Z"/><path d="M2328 334 L2330 314 H2348 L2350 334 Z"/><path d="M2366 334 L2368 314 H2386 L2388 334 Z"/></g>
+    <g fill="#e2566a"><circle cx="2296" cy="306" r="4"/><circle cx="2304" cy="302" r="4"/><circle cx="2300" cy="296" r="3.6"/></g>
+    <g fill="#f5c84a"><circle cx="2334" cy="306" r="4"/><circle cx="2342" cy="302" r="4"/><circle cx="2338" cy="296" r="3.6"/></g>
+    <g fill="#ffffff" stroke="#e2d6c4" stroke-width="0.6"><circle cx="2372" cy="306" r="4"/><circle cx="2380" cy="302" r="4"/><circle cx="2376" cy="296" r="3.6"/></g>
+    <g fill="#4e8a32"><circle cx="2292" cy="312" r="2.6"/><circle cx="2310" cy="310" r="2.6"/><circle cx="2330" cy="312" r="2.6"/><circle cx="2348" cy="310" r="2.6"/><circle cx="2368" cy="312" r="2.6"/><circle cx="2386" cy="310" r="2.6"/></g>
+  </g>
+  <!-- Crates stacked in the gaps -->
+  <use href="#crate" x="760" y="372" color="#2f6db3"/><use href="#crate" x="806" y="372" color="#3f9a5a"/><use href="#crate" x="782" y="354" color="#d94141"/>
+  <use href="#crate" x="1556" y="372" color="#3f9a5a" transform="translate(1556 372) scale(0.7) translate(-1556 -372)"/>
+
+  <!-- Jerusalem stone pavement, fading into the ground -->
+  <path d="M0 368 H2400 V400 H0 Z" fill="url(#pavement)"/>
+  <g stroke="#bfa880" stroke-width="1.2" opacity="0.6">
+    <path d="M0 376 H2400 M0 386 H2400"/>
+    <path d="M40 368 V376 M140 368 V376 M260 368 V376 M380 368 V376 M500 368 V376 M620 368 V376 M740 368 V376 M860 368 V376 M980 368 V376 M1100 368 V376 M1220 368 V376 M1340 368 V376 M1460 368 V376 M1580 368 V376 M1700 368 V376 M1820 368 V376 M1940 368 V376 M2060 368 V376 M2180 368 V376 M2300 368 V376"/>
+    <path d="M90 376 V386 M210 376 V386 M330 376 V386 M450 376 V386 M570 376 V386 M690 376 V386 M810 376 V386 M930 376 V386 M1050 376 V386 M1170 376 V386 M1290 376 V386 M1410 376 V386 M1530 376 V386 M1650 376 V386 M1770 376 V386 M1890 376 V386 M2010 376 V386 M2130 376 V386 M2250 376 V386 M2370 376 V386"/>
+  </g>
+  <rect y="386" width="2400" height="14" fill="#d8c7a3"/>
+</svg>

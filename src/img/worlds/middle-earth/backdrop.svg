@@ -1,0 +1,310 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="2400" height="400" viewBox="0 0 2400 400">
+  <!-- Middle-earth backdrop: a green shire at golden hour - far misty mountains, patchwork fields, round
+       doors in grassy hills, a great party tree, a mill by a pond. Original art for this app. -->
+  <defs>
+    <linearGradient id="sky" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#78b0e0"/>
+      <stop offset="0.45" stop-color="#b6dbef"/>
+      <stop offset="0.72" stop-color="#f3ecd0"/>
+      <stop offset="1" stop-color="#f8dfa6"/>
+    </linearGradient>
+    <radialGradient id="sunGlow">
+      <stop offset="0" stop-color="#fffbe6" stop-opacity="1"/>
+      <stop offset="0.18" stop-color="#fff0bd" stop-opacity="0.85"/>
+      <stop offset="0.5" stop-color="#ffe6a6" stop-opacity="0.35"/>
+      <stop offset="1" stop-color="#ffe2a0" stop-opacity="0"/>
+    </radialGradient>
+    <linearGradient id="mountains" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#8aa3c2"/>
+      <stop offset="1" stop-color="#cbd7e2"/>
+    </linearGradient>
+    <linearGradient id="mountainsNear" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#9db3b9"/>
+      <stop offset="1" stop-color="#c7d4cd"/>
+    </linearGradient>
+    <linearGradient id="haze" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#f7efd6" stop-opacity="0"/>
+      <stop offset="1" stop-color="#f7efd6" stop-opacity="0.9"/>
+    </linearGradient>
+    <linearGradient id="farHills" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#b5d08c"/>
+      <stop offset="1" stop-color="#9ec274"/>
+    </linearGradient>
+    <linearGradient id="midHills" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#9cc867"/>
+      <stop offset="1" stop-color="#84b455"/>
+    </linearGradient>
+    <linearGradient id="nearHill" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#8fc15c"/>
+      <stop offset="0.6" stop-color="#7cad4c"/>
+      <stop offset="1" stop-color="#729f45"/>
+    </linearGradient>
+    <linearGradient id="hillLight" x1="0" y1="0" x2="1" y2="0">
+      <stop offset="0" stop-color="#ffffff" stop-opacity="0"/>
+      <stop offset="0.7" stop-color="#fff3c4" stop-opacity="0.18"/>
+      <stop offset="1" stop-color="#fff3c4" stop-opacity="0.3"/>
+    </linearGradient>
+    <linearGradient id="ground" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#8cb25d"/>
+      <stop offset="1" stop-color="#86a95a"/>
+    </linearGradient>
+    <linearGradient id="water" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#a9d4e8"/>
+      <stop offset="1" stop-color="#6aa3c4"/>
+    </linearGradient>
+    <linearGradient id="thatch" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#d9b86a"/>
+      <stop offset="1" stop-color="#b8924a"/>
+    </linearGradient>
+    <linearGradient id="trunk" x1="0" y1="0" x2="1" y2="0">
+      <stop offset="0" stop-color="#5a3b22"/>
+      <stop offset="0.5" stop-color="#7a5332"/>
+      <stop offset="1" stop-color="#4d321d"/>
+    </linearGradient>
+    <radialGradient id="window" cx="0.45" cy="0.4" r="0.7">
+      <stop offset="0" stop-color="#fff6cf"/>
+      <stop offset="1" stop-color="#f2c565"/>
+    </radialGradient>
+
+    <!-- A round door set in a stone ring (door color = the use's color) -->
+    <g id="hole">
+      <ellipse cx="0" cy="34" rx="40" ry="7" fill="#5f8c3c" opacity="0.45"/>
+      <circle r="34" fill="#cdb995"/>
+      <path d="M0 -34 V-26 M24 -24 L18.4 -18.4 M34 0 H26 M24 24 L18.4 18.4 M-24 24 L-18.4 18.4 M-34 0 H-26 M-24 -24 L-18.4 -18.4" stroke="#a48f6c" stroke-width="2.4"/>
+      <circle r="34" fill="none" stroke="#96805d" stroke-width="2"/>
+      <circle r="26" fill="currentColor"/>
+      <path d="M-13 -22.5 V22.5 M0 -26 V26 M13 -22.5 V22.5" stroke="#000000" stroke-opacity="0.16" stroke-width="2"/>
+      <path d="M-20 -16 A26 26 0 0 1 16 -20" fill="none" stroke="#ffffff" stroke-opacity="0.22" stroke-width="3" stroke-linecap="round"/>
+      <circle r="26" fill="none" stroke="#000000" stroke-opacity="0.32" stroke-width="2.5"/>
+      <circle r="4.2" fill="#f1cc5c" stroke="#8f6c16" stroke-width="1.2"/>
+      <path d="M-30 32 H30 L26 39 H-26 Z" fill="#b9a47e" stroke="#94805d" stroke-width="1.2"/>
+    </g>
+    <!-- A round window with a warm glow and a flower box -->
+    <g id="porthole">
+      <circle r="15" fill="#7a5531"/>
+      <circle r="11.5" fill="url(#window)"/>
+      <path d="M0 -11.5 V11.5 M-11.5 0 H11.5" stroke="#7a5531" stroke-width="2.4"/>
+      <rect x="-16" y="14" width="32" height="7" rx="2" fill="#8a5a2f" stroke="#5f3d1f" stroke-width="1"/>
+      <circle cx="-11" cy="12" r="3.6" fill="#e2566a"/>
+      <circle cx="-4" cy="11" r="3.6" fill="#f5c84a"/>
+      <circle cx="3" cy="12" r="3.6" fill="#ffffff"/>
+      <circle cx="10" cy="11" r="3.6" fill="#d45ba8"/>
+      <circle cx="-7" cy="14" r="2.6" fill="#4e8a32"/>
+      <circle cx="7" cy="14" r="2.6" fill="#4e8a32"/>
+    </g>
+    <!-- A brick chimney with a curl of smoke -->
+    <g id="chimney">
+      <path d="M-8 0 V-26 H8 V0 Z" fill="#9c5a3c" stroke="#6e3c26" stroke-width="1.2"/>
+      <path d="M-10 -26 H10 V-31 H-10 Z" fill="#7d4630" stroke="#5a301f" stroke-width="1"/>
+      <path d="M-8 -18 H8 M-8 -10 H8 M0 -26 V-18 M-4 -18 V-10 M4 -10 V0" stroke="#6e3c26" stroke-width="0.8" opacity="0.7"/>
+      <g fill="#f4f1ea">
+        <ellipse cx="2" cy="-40" rx="7" ry="5" opacity="0.75"/>
+        <ellipse cx="10" cy="-52" rx="9" ry="6" opacity="0.6"/>
+        <ellipse cx="22" cy="-64" rx="11" ry="7" opacity="0.45"/>
+        <ellipse cx="38" cy="-73" rx="13" ry="7" opacity="0.3"/>
+      </g>
+    </g>
+    <!-- A round leafy tree -->
+    <g id="tree">
+      <path d="M-4 0 Q-3 -14 -2 -24 H2 Q3 -14 4 0 Z" fill="#6b4a2c"/>
+      <circle cx="0" cy="-34" r="17" fill="#4f8a34"/>
+      <circle cx="-11" cy="-26" r="12" fill="#467e2e"/>
+      <circle cx="11" cy="-27" r="12" fill="#558f38"/>
+      <circle cx="-5" cy="-42" r="9" fill="#67a344"/>
+    </g>
+    <!-- A garden: picket fence and flowers -->
+    <g id="flowers">
+      <circle cx="0" cy="0" r="4" fill="#4e8a32"/>
+      <circle cx="8" cy="-2" r="4.4" fill="#4e8a32"/>
+      <circle cx="16" cy="0" r="4" fill="#4e8a32"/>
+      <circle cx="-1" cy="-4" r="2.4" fill="#e2566a"/>
+      <circle cx="5" cy="-6" r="2.4" fill="#ffffff"/>
+      <circle cx="11" cy="-7" r="2.4" fill="#f5c84a"/>
+      <circle cx="17" cy="-4" r="2.4" fill="#d45ba8"/>
+      <circle cx="8" cy="-1" r="2" fill="#f08a3c"/>
+    </g>
+    <g id="sheep">
+      <ellipse cx="0" cy="0" rx="9" ry="6" fill="#f7f4ec"/>
+      <circle cx="-6" cy="-3" r="4" fill="#f7f4ec"/>
+      <circle cx="5" cy="-3" r="4" fill="#f7f4ec"/>
+      <ellipse cx="10" cy="-1" rx="3.4" ry="2.8" fill="#3a3230"/>
+      <path d="M-5 5 V9 M4 5 V9" stroke="#3a3230" stroke-width="1.6"/>
+    </g>
+  </defs>
+
+  <!-- Sky, sun and clouds -->
+  <rect width="2400" height="400" fill="url(#sky)"/>
+  <circle cx="1880" cy="118" r="260" fill="url(#sunGlow)"/>
+  <circle cx="1880" cy="118" r="34" fill="#fff8de"/>
+  <g fill="#ffffff">
+    <g opacity="0.92"><ellipse cx="300" cy="78" rx="70" ry="20"/><ellipse cx="260" cy="70" rx="40" ry="22"/><ellipse cx="330" cy="62" rx="46" ry="26"/><ellipse cx="380" cy="80" rx="40" ry="16"/></g>
+    <g opacity="0.85"><ellipse cx="780" cy="52" rx="60" ry="16"/><ellipse cx="750" cy="44" rx="34" ry="18"/><ellipse cx="808" cy="40" rx="38" ry="20"/></g>
+    <g opacity="0.9"><ellipse cx="1270" cy="96" rx="80" ry="18"/><ellipse cx="1230" cy="86" rx="44" ry="22"/><ellipse cx="1300" cy="78" rx="50" ry="26"/><ellipse cx="1350" cy="94" rx="36" ry="14"/></g>
+    <g opacity="0.75"><ellipse cx="1600" cy="46" rx="56" ry="14"/><ellipse cx="1630" cy="38" rx="36" ry="16"/></g>
+    <g opacity="0.88"><ellipse cx="2170" cy="82" rx="74" ry="18"/><ellipse cx="2140" cy="72" rx="40" ry="22"/><ellipse cx="2200" cy="66" rx="46" ry="24"/></g>
+  </g>
+  <g fill="#e8d9bd" opacity="0.6">
+    <ellipse cx="310" cy="92" rx="66" ry="6"/><ellipse cx="1280" cy="110" rx="74" ry="6"/><ellipse cx="2170" cy="96" rx="68" ry="6"/>
+  </g>
+
+  <!-- Far mountains with snow -->
+  <path d="M0 262 L0 214 L60 196 L120 168 L170 148 L205 162 L250 138 L300 170 L360 188 L420 160 L470 130 L520 150 L560 176 L640 190 L700 166 L760 142 L800 158 L850 186 L930 200 L1000 178 L1060 158 L1110 172 L1180 196 L1260 206 L1330 186 L1400 168 L1450 148 L1490 166 L1550 190 L1640 204 L1720 182 L1780 156 L1830 134 L1870 150 L1930 180 L2000 196 L2080 176 L2150 150 L2200 126 L2250 148 L2310 172 L2400 188 L2400 262 Z" fill="url(#mountains)"/>
+  <g fill="#f4f7fb">
+    <path d="M150 158 L170 148 L192 158 L182 160 L172 156 L162 164 Z"/>
+    <path d="M232 148 L250 138 L272 150 L262 152 L252 147 L242 154 Z"/>
+    <path d="M450 142 L470 130 L496 142 L484 144 L472 139 L460 148 Z"/>
+    <path d="M740 152 L760 142 L782 151 L770 154 L760 149 L750 157 Z"/>
+    <path d="M1042 166 L1060 158 L1080 166 L1068 168 L1060 164 L1052 170 Z"/>
+    <path d="M1430 158 L1450 148 L1472 158 L1460 160 L1450 155 L1440 163 Z"/>
+    <path d="M1806 146 L1830 134 L1854 145 L1842 148 L1830 142 L1818 151 Z"/>
+    <path d="M2176 138 L2200 126 L2226 138 L2212 141 L2200 135 L2188 144 Z"/>
+  </g>
+  <path d="M0 262 L0 240 L90 226 L170 236 L260 220 L360 232 L470 214 L560 230 L690 222 L800 236 L930 224 L1040 236 L1160 222 L1270 238 L1390 226 L1500 238 L1620 226 L1740 236 L1860 222 L1980 236 L2100 224 L2220 236 L2330 226 L2400 232 L2400 262 Z" fill="url(#mountainsNear)" opacity="0.9"/>
+  <rect y="190" width="2400" height="110" fill="url(#haze)"/>
+
+  <!-- Far hills: a patchwork of fields with hedgerows -->
+  <path d="M0 300 C200 262 380 258 560 276 C740 292 900 252 1100 258 C1300 264 1420 290 1600 280 C1780 270 1960 248 2160 262 C2280 270 2340 282 2400 286 L2400 340 L0 340 Z" fill="url(#farHills)"/>
+  <g opacity="0.85">
+    <path d="M140 286 L262 270 L336 279 L214 297 Z" fill="#cfd27c"/>
+    <path d="M336 279 L430 272 L470 284 L370 292 Z" fill="#b3cf7e"/>
+    <path d="M600 283 L722 289 L694 302 L560 297 Z" fill="#dcc66c"/>
+    <path d="M820 270 L930 260 L950 272 L842 282 Z" fill="#c2d384"/>
+    <path d="M980 262 L1092 258 L1122 271 L1002 277 Z" fill="#d6cb74"/>
+    <path d="M1180 268 L1290 270 L1300 282 L1188 281 Z" fill="#b6d187"/>
+    <path d="M1500 283 L1622 278 L1642 293 L1512 297 Z" fill="#d7c46a"/>
+    <path d="M1700 270 L1800 266 L1820 278 L1716 282 Z" fill="#c3d184"/>
+    <path d="M1980 256 L2102 258 L2122 271 L1992 271 Z" fill="#d6c66e"/>
+    <path d="M2200 266 L2300 270 L2290 282 L2196 279 Z" fill="#b4cf80"/>
+  </g>
+  <g fill="none" stroke="#6f9a47" stroke-width="3.2" stroke-linecap="round" stroke-dasharray="1 5">
+    <path d="M140 286 L262 270 L336 279 L430 272 M214 297 L336 279"/>
+    <path d="M560 297 L600 283 L722 289 M820 270 L930 260 L950 272"/>
+    <path d="M1002 277 L980 262 L1092 258 L1122 271 M1180 268 L1290 270"/>
+    <path d="M1500 283 L1622 278 L1642 293 M1700 270 L1800 266 L1820 278"/>
+    <path d="M1980 256 L2102 258 L2122 271 M2200 266 L2300 270"/>
+  </g>
+  <g fill="#6f9a48">
+    <circle cx="96" cy="294" r="8"/><circle cx="108" cy="290" r="6"/><circle cx="470" cy="276" r="7"/><circle cx="760" cy="272" r="9"/><circle cx="774" cy="276" r="6"/>
+    <circle cx="1146" cy="262" r="7"/><circle cx="1380" cy="282" r="8"/><circle cx="1680" cy="274" r="7"/><circle cx="1930" cy="262" r="9"/><circle cx="2360" cy="282" r="7"/>
+  </g>
+
+  <!-- Middle hills -->
+  <path d="M0 334 C160 302 300 296 460 312 C620 326 760 300 900 296 C1040 292 1180 310 1300 316 C1460 324 1600 300 1760 300 C1920 300 2080 318 2240 312 C2320 309 2370 312 2400 314 L2400 370 L0 370 Z" fill="url(#midHills)"/>
+  <use href="#tree" x="120" y="322"/>
+  <use href="#tree" x="146" y="326" transform="translate(146 326) scale(0.8) translate(-146 -326)"/>
+  <use href="#tree" x="312" y="314"/>
+  <use href="#tree" x="1296" y="324"/>
+  <use href="#tree" x="1430" y="316" transform="translate(1430 316) scale(0.85) translate(-1430 -316)"/>
+  <use href="#tree" x="2262" y="320"/>
+  <use href="#tree" x="2340" y="322" transform="translate(2340 322) scale(0.75) translate(-2340 -322)"/>
+  <use href="#sheep" x="1470" y="318"/>
+  <use href="#sheep" x="1500" y="324"/>
+  <use href="#sheep" x="2190" y="326"/>
+  <path d="M1440 330 H1540 M1446 324 V336 M1466 324 V336 M1486 324 V336 M1506 324 V336 M1526 324 V336" stroke="#8a6a44" stroke-width="2" stroke-linecap="round"/>
+
+  <!-- The great party tree -->
+  <g>
+    <ellipse cx="700" cy="362" rx="120" ry="14" fill="#5f8c3c" opacity="0.5"/>
+    <path d="M676 364 Q684 320 682 286 Q660 268 628 262 Q664 262 686 276 Q690 256 676 230 Q700 252 702 272 Q716 250 744 240 Q718 262 712 288 Q712 324 724 364 Z" fill="url(#trunk)"/>
+    <g>
+      <circle cx="700" cy="214" r="74" fill="#3e7428"/>
+      <circle cx="626" cy="246" r="52" fill="#3a6c25"/>
+      <circle cx="776" cy="244" r="54" fill="#3f7629"/>
+      <circle cx="660" cy="186" r="48" fill="#4b8631"/>
+      <circle cx="744" cy="182" r="50" fill="#4a8430"/>
+      <circle cx="700" cy="156" r="44" fill="#559338"/>
+      <circle cx="606" cy="214" r="34" fill="#4b8631"/>
+      <circle cx="800" cy="210" r="36" fill="#4d8933"/>
+      <circle cx="676" cy="146" r="26" fill="#68a845"/>
+      <circle cx="728" cy="160" r="22" fill="#6aab47"/>
+      <circle cx="640" cy="178" r="20" fill="#62a142"/>
+      <circle cx="772" cy="190" r="18" fill="#5e9c3f"/>
+    </g>
+    <path d="M610 262 Q700 292 790 262" fill="none" stroke="#5a4a2a" stroke-width="1.2"/>
+    <g fill="#ffd866">
+      <circle cx="626" cy="268" r="3.4"/><circle cx="650" cy="276" r="3.4"/><circle cx="676" cy="281" r="3.4"/><circle cx="700" cy="283" r="3.4"/>
+      <circle cx="724" cy="281" r="3.4"/><circle cx="750" cy="276" r="3.4"/><circle cx="774" cy="268" r="3.4"/>
+    </g>
+    <path d="M598 352 h40 M604 352 v-10 M632 352 v-10 M598 344 h40" stroke="#7a5532" stroke-width="3" stroke-linecap="round"/>
+    <path d="M760 352 h40 M766 352 v-10 M794 352 v-10 M760 344 h40" stroke="#7a5532" stroke-width="3" stroke-linecap="round"/>
+  </g>
+
+  <!-- Hill with homes on the left -->
+  <path d="M210 400 C270 340 350 302 450 300 C560 298 640 352 680 400 Z" fill="url(#nearHill)"/>
+  <path d="M210 400 C270 340 350 302 450 300 C560 298 640 352 680 400 Z" fill="url(#hillLight)"/>
+  <use href="#chimney" x="480" y="306"/>
+  <use href="#hole" x="420" y="352" color="#2e6f66"/>
+  <use href="#porthole" x="500" y="344"/>
+  <use href="#flowers" x="340" y="378"/>
+  <use href="#flowers" x="530" y="382"/>
+
+  <!-- The big hill with homes in the middle -->
+  <path d="M760 400 C820 330 900 266 1050 260 C1200 254 1300 300 1362 400 Z" fill="url(#nearHill)"/>
+  <path d="M760 400 C820 330 900 266 1050 260 C1200 254 1300 300 1362 400 Z" fill="url(#hillLight)"/>
+  <path d="M900 300 C960 280 1040 276 1120 282" fill="none" stroke="#a3d06f" stroke-width="6" stroke-linecap="round" opacity="0.6"/>
+  <use href="#chimney" x="1112" y="270"/>
+  <use href="#chimney" x="978" y="282"/>
+  <path d="M968 400 C984 382 994 374 1002 356 L1030 356 C1040 374 1072 386 1094 400 Z" fill="#d9c592"/>
+  <g fill="#c4ae7a"><circle cx="1004" cy="372" r="2.6"/><circle cx="1024" cy="380" r="2.2"/><circle cx="1046" cy="390" r="2.8"/><circle cx="992" cy="390" r="2.4"/></g>
+  <use href="#hole" x="1016" y="316" color="#3d7a35"/>
+  <use href="#porthole" x="1094" y="306"/>
+  <use href="#porthole" x="938" y="326"/>
+  <use href="#hole" x="1186" y="340" color="#d3a52c"/>
+  <path d="M884 360 H960 M890 352 V366 M904 352 V366 M918 352 V366 M932 352 V366 M946 352 V366 M884 356 H960" stroke="#f1e6cf" stroke-width="2.4" stroke-linecap="round"/>
+  <use href="#flowers" x="890" y="378"/>
+  <use href="#flowers" x="1060" y="372"/>
+  <use href="#flowers" x="1240" y="380"/>
+  <circle cx="1268" cy="352" r="10" fill="#e9852c" stroke="#a65a1a" stroke-width="1.4"/>
+  <circle cx="1284" cy="358" r="7" fill="#f09a3c" stroke="#a65a1a" stroke-width="1.2"/>
+  <path d="M1268 342 q2 -5 6 -6 M1284 351 q1 -4 4 -5" stroke="#4e7a2a" stroke-width="1.6" fill="none"/>
+
+  <!-- Hill with homes on the right -->
+  <path d="M1376 400 C1440 340 1520 290 1640 286 C1760 282 1850 322 1904 400 Z" fill="url(#nearHill)"/>
+  <path d="M1376 400 C1440 340 1520 290 1640 286 C1760 282 1850 322 1904 400 Z" fill="url(#hillLight)"/>
+  <use href="#chimney" x="1662" y="292"/>
+  <use href="#hole" x="1600" y="340" color="#a63f2c"/>
+  <use href="#porthole" x="1672" y="330"/>
+  <use href="#hole" x="1772" y="360" color="#2d5b8a"/>
+  <use href="#flowers" x="1520" y="380"/>
+  <use href="#flowers" x="1700" y="382"/>
+  <path d="M1480 372 H1550 M1486 364 V378 M1500 364 V378 M1514 364 V378 M1528 364 V378 M1542 364 V378 M1480 368 H1550" stroke="#f1e6cf" stroke-width="2.4" stroke-linecap="round"/>
+
+  <!-- The mill, its pond and a stone bridge -->
+  <path d="M1880 382 C1900 372 1930 368 1960 360 C1990 352 2020 352 2040 356" fill="none" stroke="url(#water)" stroke-width="12" stroke-linecap="round"/>
+  <ellipse cx="2120" cy="380" rx="120" ry="18" fill="url(#water)"/>
+  <path d="M2030 376 q20 -4 40 0 M2120 384 q24 -4 48 0 M2170 374 q14 -3 28 0" stroke="#e6f4fb" stroke-width="2" fill="none" stroke-linecap="round"/>
+  <path d="M1922 380 Q1936 352 1972 352 Q2008 352 2022 380 Z" fill="#b8a98c"/>
+  <path d="M1936 380 Q1946 362 1972 362 Q1998 362 2008 380 Z" fill="url(#water)"/>
+  <path d="M1918 352 H2026" stroke="#a49478" stroke-width="5" stroke-linecap="round"/>
+  <path d="M1930 360 h8 M1950 356 h8 M1986 356 h8 M2006 360 h8" stroke="#9c8c70" stroke-width="2"/>
+  <g>
+    <rect x="2140" y="290" width="120" height="78" fill="#c9bba0" stroke="#8e7f62" stroke-width="2"/>
+    <path d="M2140 300 h120 M2140 320 h120 M2140 340 h120 M2160 290 v10 M2200 290 v10 M2240 290 v10 M2180 300 v20 M2220 300 v20 M2160 320 v20 M2200 320 v20 M2240 320 v20 M2180 340 v28 M2220 340 v28" stroke="#a89878" stroke-width="1.4"/>
+    <path d="M2126 296 L2200 236 L2274 296 Z" fill="url(#thatch)" stroke="#8c6a32" stroke-width="2"/>
+    <path d="M2150 286 L2200 246 M2170 292 L2208 262 M2230 292 L2196 262 M2250 286 L2208 252" stroke="#a37e3c" stroke-width="1.4"/>
+    <rect x="2186" y="330" width="26" height="38" rx="12" fill="#6e4a2a" stroke="#4a2f19" stroke-width="1.6"/>
+    <circle cx="2236" cy="320" r="9" fill="url(#window)" stroke="#6e4a2a" stroke-width="3"/>
+    <circle cx="2128" cy="336" r="36" fill="none" stroke="#6b4a2c" stroke-width="6"/>
+    <path d="M2128 300 V372 M2092 336 H2164 M2103 311 L2153 361 M2153 311 L2103 361" stroke="#7d5733" stroke-width="3.4"/>
+    <circle cx="2128" cy="336" r="6" fill="#5a3b22"/>
+  </g>
+  <use href="#tree" x="2330" y="364"/>
+  <use href="#tree" x="2372" y="368" transform="translate(2372 368) scale(0.8) translate(-2372 -368)"/>
+  <use href="#tree" x="80" y="372"/>
+  <use href="#tree" x="44" y="376" transform="translate(44 376) scale(0.8) translate(-44 -376)"/>
+
+  <!-- The meadow in front, the same green as the ground tile -->
+  <path d="M0 372 C300 364 600 374 900 368 C1200 362 1500 372 1800 366 C2100 362 2300 370 2400 368 L2400 400 L0 400 Z" fill="url(#ground)"/>
+  <g stroke="#6f9446" stroke-width="2" stroke-linecap="round" fill="none" opacity="0.7">
+    <path d="M60 384 l-3 -8 M64 384 l2 -9 M68 384 l5 -7"/>
+    <path d="M260 378 l-3 -8 M264 378 l2 -9"/>
+    <path d="M720 382 l-3 -8 M724 382 l2 -9 M728 382 l5 -7"/>
+    <path d="M1320 380 l-3 -8 M1324 380 l2 -9"/>
+    <path d="M1880 386 l-3 -8 M1884 386 l2 -9 M1888 386 l5 -7"/>
+    <path d="M2280 382 l-3 -8 M2284 382 l2 -9"/>
+  </g>
+  <g>
+    <circle cx="180" cy="386" r="2.6" fill="#ffffff"/><circle cx="420" cy="390" r="2.4" fill="#f5c84a"/><circle cx="860" cy="388" r="2.6" fill="#ffffff"/>
+    <circle cx="1140" cy="386" r="2.4" fill="#e2566a"/><circle cx="1460" cy="392" r="2.6" fill="#ffffff"/><circle cx="1980" cy="392" r="2.4" fill="#f5c84a"/>
+  </g>
+</svg>

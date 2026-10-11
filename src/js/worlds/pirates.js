@@ -2,16 +2,18 @@
 export default Object.freeze({
   key: 'pirates',
   label: 'ספינת פיראטים',
-  room: 'ship',
   accent: { light: '#9a3412', dark: '#fdba74' },
-  decor: { window: 'sea', door: 'cabin', sofa: 'hammock', coffee: 'barrel', cooler: 'waterbarrel', plant: 'palm', shelf: 'treasure', picture: 'map' },
   stations: { desk: 'chest', craft: 'cannon' },
+  scene: { wallScale: 1.6 },
   cast: {
-    kinds: [['human', 62], ['parrot', 14], ['monkey', 10], ['octopus', 8], ['cat', 6]],
-    outfits: [['coat', 55], ['stripes', 30], ['vest', 15]],
-    headwear: [['tricorn', 40], ['bandana', 35], [null, 25]],
-    eyewear: [[null, 70], ['eyepatch', 30]],
-    held: [['sword', 35], ['scroll', 10], [null, 55]],
+    archetypes: [
+      { key: 'deckhand', weight: 26, kind: 'human', size: 1 },
+      { key: 'captain', weight: 14, kind: 'human', size: 1.08 },
+      { key: 'quartermaster', weight: 16, kind: 'human', size: 1.04 },
+      { key: 'lookout', weight: 18, kind: 'human', size: 1.02 },
+      { key: 'parrot', weight: 14, kind: 'parrot', size: 0.8 },
+      { key: 'monkey', weight: 12, kind: 'monkey', size: 0.72 },
+    ],
   },
   lines: {
     openers: {

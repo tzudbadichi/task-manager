@@ -2,24 +2,18 @@
 export default Object.freeze({
   key: 'kitchen',
   label: 'מטבח המסעדה',
-  room: 'kitchen',
   accent: { light: '#be123c', dark: '#fda4af' },
-  decor: {
-    window: 'sky',
-    door: 'swing',
-    sofa: 'stools',
-    coffee: 'coffee',
-    cooler: 'cooler',
-    plant: 'herbs',
-    shelf: 'spices',
-    picture: 'poster',
-  },
   stations: { desk: 'stove', craft: 'cuttingboard' },
+  scene: { wallScale: 1.6 },
   cast: {
-    kinds: [['human', 80], ['cat', 10], ['bear', 10]],
-    outfits: [['chef', 75], ['apron', 25]],
-    headwear: [['toque', 70], ['bandana', 15], [null, 15]],
-    held: [['spatula', 45], [null, 55]],
+    archetypes: [
+      { key: 'headChef', weight: 20, kind: 'human', size: 1.06 },
+      { key: 'lineCook', weight: 24, kind: 'human', size: 1 },
+      { key: 'pastryChef', weight: 16, kind: 'human', size: 0.95 },
+      { key: 'waiter', weight: 16, kind: 'human', size: 1.02 },
+      { key: 'sousChef', weight: 14, kind: 'human', size: 1 },
+      { key: 'dishwasher', weight: 10, kind: 'human', size: 0.95 },
+    ],
   },
   lines: {
     openers: {

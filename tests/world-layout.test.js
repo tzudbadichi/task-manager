@@ -28,6 +28,17 @@ describe('computeWorldLayout (the people view office)', () => {
     assert.ok(stretched.stations[0].floorY > few.stations[0].floorY);
   });
 
+  test('a painted scene makes the wall taller (less on phones), and everything moves down with it', () => {
+    const plain = computeWorldLayout({ width: 1200, count: 6 });
+    const scene = computeWorldLayout({ width: 1200, count: 6, wallScale: 1.6 });
+    assert.equal(scene.wallHeight, Math.round(plain.wallHeight * 1.6));
+    assert.equal(scene.height - plain.height, scene.wallHeight - plain.wallHeight);
+    assert.ok(scene.bounds.minY > plain.bounds.minY && scene.stations[0].floorY > plain.stations[0].floorY);
+    const phonePlain = computeWorldLayout({ width: 380, count: 6 });
+    const phoneScene = computeWorldLayout({ width: 380, count: 6, wallScale: 1.6 });
+    assert.equal(phoneScene.wallHeight, Math.round(phonePlain.wallHeight * 1.4));
+  });
+
   test('phones get the compact sizes', () => {
     assert.equal(computeWorldLayout({ width: COMPACT_MAX_WIDTH, count: 4 }).compact, true);
     const regular = computeWorldLayout({ width: COMPACT_MAX_WIDTH + 1, count: 4 });

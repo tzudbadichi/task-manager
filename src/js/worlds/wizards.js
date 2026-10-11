@@ -2,16 +2,18 @@
 export default Object.freeze({
   key: 'wizards',
   label: 'טירת הקוסמים (הארי פוטר)',
-  room: 'castle',
   accent: { light: '#7f1d1d', dark: '#fca5a5' },
-  decor: { window: 'stained', door: 'castle', sofa: 'armchairs', coffee: 'barrel', cooler: 'waterbarrel', plant: 'mandrake', shelf: 'spellbooks', picture: 'portrait' },
   stations: { desk: 'lectern', craft: 'cauldron' },
+  scene: { wallScale: 1.6 },
   cast: {
-    kinds: [['human', 64], ['owl', 10], ['cat', 8], ['ghost', 12], ['frog', 6]],
-    outfits: [['robe', 80], ['sweater', 12], ['stripes', 8]],
-    headwear: [[null, 45], ['wizard', 32], ['hood', 13], ['beanie', 10]],
-    eyewear: [[null, 74], ['round', 18], ['square', 8]],
-    held: [['wand', 72], ['staff', 8], [null, 20]],
+    archetypes: [
+      { key: 'student', weight: 34, kind: 'human', size: 0.86 },
+      { key: 'professor', weight: 15, kind: 'human', size: 1.08 },
+      { key: 'potioneer', weight: 12, kind: 'human', size: 1.02 },
+      { key: 'caretaker', weight: 10, kind: 'human', size: 1 },
+      { key: 'ghost', weight: 14, kind: 'ghost', size: 1 },
+      { key: 'owl', weight: 15, kind: 'owl', size: 0.68 },
+    ],
   },
   lines: {
     openers: {

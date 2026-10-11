@@ -2,15 +2,18 @@
 export default Object.freeze({
   key: 'underwater',
   label: 'מתחת לים',
-  room: 'ocean',
   accent: { light: '#0e7490', dark: '#67e8f9' },
-  decor: { window: 'underwater', door: 'hatch', sofa: 'rock', coffee: 'vent', cooler: 'kelp', plant: 'coral', shelf: 'treasure', picture: 'poster' },
   stations: { desk: 'clamdesk', craft: 'chest' },
+  scene: { wallScale: 1.6 },
   cast: {
-    kinds: [['fish', 26], ['octopus', 20], ['turtle', 16], ['merfolk', 26], ['human', 12]],
-    outfits: [['stripes', 40], ['tee', 30], ['vest', 30]],
-    headwear: [[null, 60], ['bubble', 15], ['crown', 10], ['flower', 15]],
-    held: [['trident', 30], ['net', 15], [null, 55]],
+    archetypes: [
+      { key: 'merfolk', weight: 24, kind: 'merfolk', size: 1.04 },
+      { key: 'fishfolk', weight: 20, kind: 'fish', size: 0.96 },
+      { key: 'octopus', weight: 16, kind: 'octopus', size: 0.96 },
+      { key: 'diver', weight: 14, kind: 'human', size: 1.08 },
+      { key: 'turtle', weight: 14, kind: 'turtle', size: 0.92 },
+      { key: 'crab', weight: 12, kind: 'crab', size: 0.8 },
+    ],
   },
   lines: {
     openers: {

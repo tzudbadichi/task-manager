@@ -2,15 +2,18 @@
 export default Object.freeze({
   key: 'dinos',
   label: 'פארק הדינוזאורים',
-  room: 'jungle',
   accent: { light: '#4d7c0f', dark: '#bef264' },
-  decor: { window: 'volcano', door: 'cave', sofa: 'log', coffee: 'campfire', cooler: 'waterbarrel', plant: 'palm', shelf: 'fossils', picture: 'poster' },
   stations: { desk: 'dig', craft: 'nest' },
+  scene: { wallScale: 1.6 },
   cast: {
-    kinds: [['dino', 50], ['human', 40], ['monkey', 10]],
-    outfits: [['khaki', 70], ['overalls', 30]],
-    headwear: [['safari', 50], [null, 30], ['cap', 20]],
-    held: [['shovel', 35], ['net', 15], [null, 50]],
+    archetypes: [
+      { key: 'paleontologist', weight: 24, kind: 'human', size: 1 },
+      { key: 'ranger', weight: 16, kind: 'human', size: 1.02 },
+      { key: 'raptor', weight: 16, kind: 'dino', size: 0.96 },
+      { key: 'horned', weight: 15, kind: 'dino', size: 1.04 },
+      { key: 'duckbill', weight: 15, kind: 'dino', size: 1.1 },
+      { key: 'babyNeck', weight: 14, kind: 'dino', size: 0.86 },
+    ],
   },
   lines: {
     openers: {

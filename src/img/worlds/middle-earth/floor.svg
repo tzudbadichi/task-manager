@@ -1,0 +1,35 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="240" height="240" viewBox="0 0 240 240">
+  <!-- Middle-earth ground: a soft meadow (seamless 240 x 240 tile). Original art for this app. -->
+  <rect width="240" height="240" fill="#86a95a"/>
+  <g stroke="#6c9244" stroke-width="1.6" stroke-linecap="round" fill="none" opacity="0.75">
+    <path d="M20 30 l-2 -6 M23 30 l1 -7 M26 30 l3 -5"/>
+    <path d="M120 70 l-2 -6 M123 70 l1 -7 M126 70 l3 -5"/>
+    <path d="M200 96 l-2 -6 M203 96 l1 -7"/>
+    <path d="M84 120 l-2 -6 M87 120 l1 -7 M90 120 l3 -5"/>
+    <path d="M30 196 l-2 -6 M33 196 l1 -7"/>
+    <path d="M150 190 l-2 -6 M153 190 l1 -7 M156 190 l3 -5"/>
+    <path d="M216 222 l-2 -6 M219 222 l1 -7"/>
+    <path d="M168 18 l-2 -6 M171 18 l1 -7"/>
+  </g>
+  <g stroke="#9cbf6c" stroke-width="1.4" stroke-linecap="round" fill="none" opacity="0.8">
+    <path d="M60 92 l-1 -5 M63 92 l2 -5"/>
+    <path d="M206 58 l-1 -5 M209 58 l2 -5"/>
+    <path d="M110 160 l-1 -5 M113 160 l2 -5"/>
+    <path d="M18 120 l-1 -5 M21 120 l2 -5"/>
+  </g>
+  <g fill="#6f9a47" opacity="0.8">
+    <circle cx="140" cy="118" r="2.2"/><circle cx="143.5" cy="118" r="2.2"/><circle cx="141.8" cy="115" r="2.2"/>
+    <circle cx="40" cy="80" r="2"/><circle cx="43" cy="80" r="2"/><circle cx="41.5" cy="77.3" r="2"/>
+  </g>
+  <g>
+    <circle cx="96" cy="36" r="2" fill="#ffffff"/><circle cx="96" cy="36" r="0.8" fill="#f2c94c"/>
+    <circle cx="190" cy="120" r="2" fill="#ffffff"/><circle cx="190" cy="120" r="0.8" fill="#f2c94c"/>
+    <circle cx="66" cy="226" r="1.8" fill="#f2c94c"/>
+    <circle cx="226" cy="190" r="1.8" fill="#f2c94c"/>
+    <circle cx="130" cy="232" r="1.6" fill="#e48aa4"/>
+    <circle cx="16" cy="64" r="1.6" fill="#e48aa4"/>
+  </g>
+  <g fill="#9a8a6a" opacity="0.5">
+    <ellipse cx="160" cy="80" rx="3" ry="2"/><ellipse cx="70" cy="140" rx="2.4" ry="1.6"/><ellipse cx="226" cy="140" rx="2" ry="1.4"/>
+  </g>
+</svg>

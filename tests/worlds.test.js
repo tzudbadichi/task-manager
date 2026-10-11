@@ -1,15 +1,44 @@
 import { describe, test } from 'node:test';
 import assert from 'node:assert/strict';
-import { readFileSync } from 'node:fs';
+import { existsSync, readFileSync } from 'node:fs';
 import { DEFAULT_WORLD_KEY, WORLDS, WORLD_KEYS, getWorld, worldStationFor } from '../src/js/worlds/index.js';
-import { CHARACTER_PARTS, OFFICE_SCENERY_KEYS } from '../src/js/art.js';
-import { WORLD_SCENERY_KEYS } from '../src/js/art-worlds.js';
+import { CHARACTER_PARTS, createCharacterArt, createDecorArt, createStationArt } from '../src/js/art.js';
+import { worldArtOf } from '../src/js/world-art/index.js';
+import { ART } from '../src/js/world-layout.js';
+import { installFakeDocument, walk } from './fixtures/fake-svg-dom.js';
 import { LINE_PLACEHOLDERS, buildPersona, composeConversation, composeMonologue, composePoseLine, lookOf } from '../src/js/people-model.js';
 import { deriveTaskStatus } from '../src/js/statuses.js';
 
 const office = getWorld(DEFAULT_WORLD_KEY);
-const themed = WORLDS.filter(world => world !== office);
-const STYLES = readFileSync(new URL('../src/css/styles.css', import.meta.url), 'utf8');
+const WORLDS_CSS = readFileSync(new URL('../src/css/worlds.css', import.meta.url), 'utf8');
+// Furniture a world draws in its own style (the office wall items are hidden in a painted scene).
+const DECOR_KINDS = ['door', 'shelf', 'sofa', 'coffee', 'cooler', 'plant', 'rug'];
+const MOODS = ['idle', 'working', 'sweating', 'waiting', 'bored', 'sleeping', 'celebrating'];
+
+installFakeDocument();
+
+const COLOR_VALUE = /^(#[0-9a-f]{3}|#[0-9a-f]{6}|#[0-9a-f]{8}|none|currentColor|transparent|url\(#[\w-]+\)|rgba?\([\d., ]+\))$/i;
+const COLOR_ATTRIBUTES = new Set(['fill', 'stroke', 'stop-color']);
+const NUMBER_ATTRIBUTES = new Set(['x', 'y', 'cx', 'cy', 'r', 'rx', 'ry', 'width', 'height', 'x1', 'y1', 'x2', 'y2', 'stroke-width', 'opacity', 'fill-opacity', 'stroke-opacity']);
+
+/**
+ * A drawn SVG tree has no broken values: no NaN / undefined / null anywhere, colors that are colors and
+ * numbers that are numbers (a typo in the art, or a category color fed to darker(), makes them).
+ */
+function assertDrawn(svgNode, label) {
+  assert.ok(svgNode && svgNode.tagName === 'svg', `${label}: no svg`);
+  let count = 0;
+  walk(svgNode, node => {
+    count += 1;
+    for (const [name, value] of node.attributes) {
+      const where = `${label}: <${node.tagName} ${name}="${value}">`;
+      assert.doesNotMatch(value, /NaN|undefined|null|\[object/, where);
+      if (COLOR_ATTRIBUTES.has(name)) assert.match(value, COLOR_VALUE, where);
+      if (NUMBER_ATTRIBUTES.has(name)) assert.ok(Number.isFinite(Number(value)), where);
+    }
+  });
+  assert.ok(count > 3, `${label}: nothing drawn`);
+}
 const MAX_LINE_LENGTH = 60; // a speech bubble is 200px wide; longer lines wrap into a tall bubble
 const placeholdersIn = text => [...text.matchAll(/\{([a-z]+)\}/g)].map(match => match[1]);
 const withoutPlaceholders = text => text.replace(/\{[a-z]+\}/g, '');
@@ -57,29 +86,81 @@ describe('the worlds list', () => {
 
 describe('each world can be drawn', () => {
   for (const world of WORLDS) {
-    test(`${world.key}: room, accent, scenery and stations exist`, () => {
+    test(`${world.key}: accent, scene, furniture and stations exist`, () => {
       assert.match(world.key, /^[a-z-]+$/);
       assert.ok(world.label.trim());
       if (world === office) {
         assert.equal(world.accent, null);
         assert.equal(world.stations, null);
+        assert.equal(world.scene, null);
+        assert.equal(worldArtOf(world.key), null);
       } else {
         assert.match(world.accent.light, /^#[0-9a-f]{6}$/);
         assert.match(world.accent.dark, /^#[0-9a-f]{6}$/);
-        assert.ok(STYLES.includes(`[data-room="${world.room}"]`), `styles.css has no room "${world.room}"`);
+        assert.ok(world.scene.wallScale >= 1 && world.scene.wallScale <= 2.2, `${world.key}: scene.wallScale`);
+        const art = worldArtOf(world.key);
+        assert.ok(art, `${world.key}: no world-art module`);
         for (const station of [world.stations.desk, world.stations.craft]) {
-          assert.ok(WORLD_SCENERY_KEYS.stations.includes(station), `unknown station ${station}`);
+          assert.equal(typeof art.stations?.[station], 'function', `${world.key}: no art for station "${station}"`);
         }
-      }
-      for (const kind of Object.keys(OFFICE_SCENERY_KEYS)) {
-        const variant = world.decor[kind];
-        const known = [...OFFICE_SCENERY_KEYS[kind], ...(WORLD_SCENERY_KEYS[kind] ?? [])];
-        assert.ok(known.includes(variant), `${world.key}: unknown ${kind} "${variant}"`);
+        // Every piece of furniture of the layout, in the world's own style (the office's otherwise).
+        assert.deepEqual(Object.keys(art.decor).sort(), [...DECOR_KINDS].sort(), `${world.key}: decor pieces`);
       }
     });
 
-    test(`${world.key}: the cast uses parts the art can draw`, () => {
+    if (world !== office) {
+      test(`${world.key}: the painted backdrop and the ground tile are safe SVG files of the right size`, () => {
+        for (const [file, width, height] of [['backdrop.svg', 2400, 400], ['floor.svg', 240, 240]]) {
+          const url = new URL(`../src/img/worlds/${world.key}/${file}`, import.meta.url);
+          assert.ok(existsSync(url), `${world.key}/${file} is missing`);
+          const source = readFileSync(url, 'utf8');
+          assert.match(source, /^<svg xmlns="http:\/\/www\.w3\.org\/2000\/svg"/, `${world.key}/${file}: must start with <svg xmlns=...>`);
+          assert.match(source, new RegExp(`<svg[^>]*\\swidth="${width}"[^>]*\\sheight="${height}"`), `${world.key}/${file}: width="${width}" height="${height}"`);
+          assert.match(source, new RegExp(`viewBox="0 0 ${width} ${height}"`), `${world.key}/${file}: viewBox`);
+          // An SVG shown as an image runs no scripts, but keep the files plain drawings anyway.
+          assert.doesNotMatch(source, /<script|<foreignObject|<image|\son[a-z]+=|javascript:/i, `${world.key}/${file}: scripts, images or handlers`);
+          assert.doesNotMatch(source.replace(/xmlns(:xlink)?="[^"]*"/g, ''), /https?:/, `${world.key}/${file}: no external references`);
+          assert.ok(WORLDS_CSS.includes(`img/worlds/${world.key}/${file}`), `worlds.css does not use ${world.key}/${file}`);
+        }
+      });
+
+      test(`${world.key}: every archetype, piece of furniture and station draws without broken values`, () => {
+        const art = worldArtOf(world.key);
+        const archetypes = world.cast.archetypes;
+        assert.ok(Array.isArray(archetypes) && archetypes.length >= 3, `${world.key}: cast.archetypes (at least 3)`);
+        assert.equal(new Set(archetypes.map(entry => entry.key)).size, archetypes.length);
+        for (const entry of archetypes) {
+          assert.equal(typeof art.archetypes[entry.key], 'function', `${world.key}: no art for archetype "${entry.key}"`);
+          assert.ok(entry.weight > 0 && typeof entry.kind === 'string' && entry.size >= 0.6 && entry.size <= 1.5, `${world.key}: archetype "${entry.key}" weight / kind / size`);
+          for (let index = 0; index < 24; index += 1) {
+            const look = lookOf(`${entry.key}-${index}`, { archetypes: [entry] });
+            assert.equal(look.archetype, entry.key);
+            for (const mood of MOODS) {
+              assertDrawn(createCharacterArt({ look, mood, activity: 'coding', worldKey: world.key }, { seasonKey: index % 3 === 0 ? 'purim' : null }), `${world.key} ${entry.key} #${index} ${mood}`);
+            }
+          }
+        }
+        for (const [kind, size] of Object.entries(ART)) {
+          if (!DECOR_KINDS.includes(kind)) continue;
+          for (const variant of [0, 1]) assertDrawn(createDecorArt(kind, size, { variant, worldKey: world.key }), `${world.key} decor ${kind} ${variant}`);
+        }
+        for (const station of new Set([world.stations.desk, world.stations.craft])) {
+          for (const done of [false, true]) assertDrawn(createStationArt('coding', { done, worldStation: station, worldKey: world.key }), `${world.key} station ${station}`);
+        }
+      });
+    }
+
+    test(`${world.key}: the cast picks looks the art can draw`, () => {
       const { cast } = world;
+      if (cast.archetypes) {
+        const keys = new Set(cast.archetypes.map(entry => entry.key));
+        for (let index = 0; index < 40; index += 1) {
+          const look = lookOf(`${world.key}-${index}`, cast);
+          assert.ok(keys.has(look.archetype));
+          assert.ok(look.size > 0.5 && look.size < 1.6 && look.pace >= 0 && look.pace < 1);
+        }
+        return;
+      }
       // Kinds and outfits are the world's own; a missing hat / eyewear / held table means the office's defaults.
       assert.ok(cast.kinds && cast.outfits, `${world.key}: the cast needs kinds and outfits`);
       const tables = { kinds: 'kinds', outfits: 'outfits', headwear: 'headwear', eyewear: 'eyewear', held: 'held' };

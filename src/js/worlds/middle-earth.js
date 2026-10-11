@@ -2,15 +2,18 @@
 export default Object.freeze({
   key: 'middle-earth',
   label: 'ארץ התיכונה (שר הטבעות)',
-  room: 'village',
   accent: { light: '#15803d', dark: '#86efac' },
-  decor: { window: 'hills', door: 'round', sofa: 'log', coffee: 'barrel', cooler: 'waterbarrel', plant: 'tree', shelf: 'scrolls', picture: 'map' },
   stations: { desk: 'maptable', craft: 'anvil' },
+  scene: { wallScale: 1.6 },
   cast: {
-    kinds: [['hobbit', 34], ['dwarf', 20], ['elf', 20], ['human', 14], ['tree', 8], ['horse', 4]],
-    outfits: [['tunic', 45], ['coat', 15], ['armor', 20], ['robe', 20]],
-    headwear: [[null, 55], ['helmet', 15], ['hood', 20], ['wizard', 5], ['laurel', 5]],
-    held: [['sword', 18], ['axe', 18], ['staff', 14], ['scroll', 10], [null, 40]],
+    archetypes: [
+      { key: 'hobbit', weight: 32, kind: 'hobbit', size: 0.8 },
+      { key: 'dwarf', weight: 20, kind: 'dwarf', size: 0.86 },
+      { key: 'elf', weight: 18, kind: 'elf', size: 1.08 },
+      { key: 'ranger', weight: 14, kind: 'human', size: 1.02 },
+      { key: 'wizard', weight: 8, kind: 'human', size: 1.1 },
+      { key: 'treefolk', weight: 8, kind: 'tree', size: 1.3 },
+    ],
   },
   lines: {
     openers: {

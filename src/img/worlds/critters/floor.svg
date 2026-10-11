@@ -1,0 +1,44 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="240" height="240" viewBox="0 0 240 240">
+  <!-- Creature trainers ground: a sunny lawn with short grass tufts, a few tall-grass clumps and tiny
+       flowers (seamless 240 x 240 tile). Original art for this app. -->
+  <rect width="240" height="240" fill="#8fc96a"/>
+  <g stroke="#77b453" stroke-width="1.6" stroke-linecap="round" fill="none" opacity="0.85">
+    <path d="M20 34 l-2 -6 M23 34 l1 -7 M26 34 l3 -5"/>
+    <path d="M118 22 l-2 -6 M121 22 l1 -7"/>
+    <path d="M196 70 l-2 -6 M199 70 l1 -7 M202 70 l3 -5"/>
+    <path d="M70 100 l-2 -6 M73 100 l1 -7"/>
+    <path d="M150 128 l-2 -6 M153 128 l1 -7 M156 128 l3 -5"/>
+    <path d="M28 160 l-2 -6 M31 160 l1 -7"/>
+    <path d="M216 176 l-2 -6 M219 176 l1 -7"/>
+    <path d="M100 206 l-2 -6 M103 206 l1 -7 M106 206 l3 -5"/>
+    <path d="M178 226 l-2 -6 M181 226 l1 -7"/>
+  </g>
+  <g stroke="#a8dc82" stroke-width="1.4" stroke-linecap="round" fill="none" opacity="0.9">
+    <path d="M60 56 l-1 -5 M63 56 l2 -5"/>
+    <path d="M176 104 l-1 -5 M179 104 l2 -5"/>
+    <path d="M118 168 l-1 -5 M121 168 l2 -5"/>
+    <path d="M210 20 l-1 -5 M213 20 l2 -5"/>
+    <path d="M44 214 l-1 -5 M47 214 l2 -5"/>
+  </g>
+  <g>
+    <path d="M128 80 L131 70 L134 78 L137 68 L140 78 L143 70 L146 80 Z" fill="#6aaa48"/>
+    <path d="M131 80 L133.6 73 L136 79 L138.6 72 L141 79 L143.4 74 L145 80 Z" fill="#7cbd56"/>
+    <path d="M30 120 L33 110 L36 118 L39 108 L42 118 L45 110 L48 120 Z" fill="#6aaa48"/>
+    <path d="M33 120 L35.6 113 L38 119 L40.6 112 L43 119 L45.4 114 L47 120 Z" fill="#7cbd56"/>
+    <path d="M184 200 L187 190 L190 198 L193 188 L196 198 L199 190 L202 200 Z" fill="#6aaa48"/>
+    <path d="M187 200 L189.6 193 L192 199 L194.6 192 L197 199 L199.4 194 L201 200 Z" fill="#7cbd56"/>
+  </g>
+  <g>
+    <circle cx="96" cy="44" r="2" fill="#ffffff"/><circle cx="96" cy="44" r="0.8" fill="#facc15"/>
+    <circle cx="214" cy="132" r="2" fill="#ffffff"/><circle cx="214" cy="132" r="0.8" fill="#facc15"/>
+    <circle cx="68" cy="184" r="1.8" fill="#facc15"/>
+    <circle cx="160" cy="62" r="1.6" fill="#f472b6"/>
+    <circle cx="10" cy="80" r="1.6" fill="#ffffff"/>
+    <circle cx="140" cy="230" r="1.8" fill="#ffffff"/><circle cx="140" cy="230" r="0.7" fill="#facc15"/>
+    <circle cx="232" cy="236" r="1.4" fill="#f472b6"/>
+  </g>
+  <g fill="#7fbc5c" opacity="0.6">
+    <circle cx="86" cy="140" r="1.6"/><circle cx="89" cy="140" r="1.6"/><circle cx="87.5" cy="137.4" r="1.6"/>
+    <circle cx="200" cy="40" r="1.6"/><circle cx="203" cy="40" r="1.6"/><circle cx="201.5" cy="37.4" r="1.6"/>
+  </g>
+</svg>

@@ -2,15 +2,18 @@
 export default Object.freeze({
   key: 'west',
   label: 'המערב הפרוע',
-  room: 'western',
   accent: { light: '#a16207', dark: '#fde047' },
-  decor: { window: 'mesa', door: 'saloon', sofa: 'haybales', coffee: 'campfire', cooler: 'pump', plant: 'cactus', shelf: 'bottles', picture: 'wanted' },
   stations: { desk: 'saloonbar', craft: 'anvil' },
+  scene: { wallScale: 1.6 },
   cast: {
-    kinds: [['human', 70], ['horse', 20], ['dog', 10]],
-    outfits: [['sheriff', 45], ['vest', 30], ['coat', 25]],
-    headwear: [['cowboy', 75], [null, 15], ['bandana', 10]],
-    held: [['lasso', 35], [null, 65]],
+    archetypes: [
+      { key: 'cowhand', weight: 30, kind: 'human', size: 1 },
+      { key: 'sheriff', weight: 14, kind: 'human', size: 1.05 },
+      { key: 'saloonKeeper', weight: 14, kind: 'human', size: 1 },
+      { key: 'prospector', weight: 14, kind: 'human', size: 0.94 },
+      { key: 'horsefolk', weight: 14, kind: 'horse', size: 1.12 },
+      { key: 'homesteader', weight: 14, kind: 'human', size: 0.98 },
+    ],
   },
   lines: {
     openers: {

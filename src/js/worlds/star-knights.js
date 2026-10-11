@@ -2,15 +2,18 @@
 export default Object.freeze({
   key: 'star-knights',
   label: 'מלחמת הכוכבים',
-  room: 'starship',
   accent: { light: '#1d4ed8', dark: '#93c5fd' },
-  decor: { window: 'desert2', door: 'airlock', sofa: 'pods', coffee: 'dispenser', cooler: 'tank', plant: 'cactus', shelf: 'weapons', picture: 'poster' },
   stations: { desk: 'holotable', craft: 'workbench' },
+  scene: { wallScale: 1.6 },
   cast: {
-    kinds: [['human', 46], ['droid', 18], ['alien', 16], ['yeti', 10], ['robot', 10]],
-    outfits: [['robe', 45], ['jumpsuit', 30], ['armor', 25]],
-    headwear: [[null, 50], ['hood', 30], ['helmet', 10], ['visor', 10]],
-    held: [['lightsword', 60], [null, 40]],
+    archetypes: [
+      { key: 'knight', weight: 26, kind: 'human', size: 1.04 },
+      { key: 'pilot', weight: 18, kind: 'human', size: 1 },
+      { key: 'smuggler', weight: 16, kind: 'human', size: 1.02 },
+      { key: 'droid', weight: 14, kind: 'droid', size: 0.84 },
+      { key: 'trader', weight: 14, kind: 'alien', size: 0.96 },
+      { key: 'copilot', weight: 10, kind: 'furry', size: 1.34 },
+    ],
   },
   lines: {
     openers: {

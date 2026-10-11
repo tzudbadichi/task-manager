@@ -2,25 +2,17 @@
 export default Object.freeze({
   key: 'spies',
   label: 'המרגלים הצעירים (City Spies)',
-  room: 'spyhq',
   accent: { light: '#0f766e', dark: '#5eead4' },
-  decor: {
-    window: 'worldmap',
-    door: 'vault',
-    sofa: 'beanbags',
-    coffee: 'coffee',
-    cooler: 'cooler',
-    plant: 'snake',
-    shelf: 'servers',
-    picture: 'screen',
-  },
   stations: { desk: 'gadgetdesk', craft: 'safe' },
+  scene: { wallScale: 1.6 },
   cast: {
-    kinds: [['human', 88], ['dog', 6], ['cat', 6]],
-    outfits: [['trench', 35], ['hoodie', 25], ['suit', 20], ['jumpsuit', 20]],
-    headwear: [[null, 50], ['earpiece', 35], ['cap', 15]],
-    eyewear: [[null, 60], ['sun', 40]],
-    held: [['gadget', 45], [null, 55]],
+    archetypes: [
+      { key: 'fieldAgent', weight: 30, kind: 'human', size: 0.94 },
+      { key: 'techGenius', weight: 22, kind: 'human', size: 0.9 },
+      { key: 'infiltrator', weight: 18, kind: 'human', size: 0.96 },
+      { key: 'disguiseMaster', weight: 18, kind: 'human', size: 1 },
+      { key: 'handler', weight: 12, kind: 'human', size: 1.06 },
+    ],
   },
   lines: {
     openers: {

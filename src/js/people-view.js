@@ -4,11 +4,11 @@
 // done - and characters walk over to each other to chat in speech bubbles. A task that joins the view
 // comes in through the door, and one that leaves it walks out.
 //
-// The office can be a themed world (worlds/*.js: a wizard castle, a pirate ship...) with its own room,
-// scenery, stations, characters and lines; the office itself is the default world.
+// The office can be a themed world (worlds/*.js: a wizard castle, a pirate ship...) with its own painted
+// scene, furniture, stations, characters and lines (world-art/*.js); the office itself is the default world.
 //
 // people-model.js decides who each character is and what it does next, world-layout.js where everything
-// is, art.js and art-worlds.js draw it, and styles.css ("People view") animates the poses. This module runs the office:
+// is, art.js, figure-kit.js and world-art/*.js draw it, and styles.css ("People view") animates the poses. This module runs the office:
 // it keeps the characters across renders (keyed by task id), moves them on every animation frame
 // (positions through CSSOM transforms, allowed by the CSP), and orchestrates the conversations.
 
@@ -48,6 +48,8 @@ const TALKING_Z = 100000; // a talking character (and its bubble) stays on top
 const TAG_LENGTH = 22;
 // Poses a character can comment on by itself.
 const POSES_WITH_LINES = new Set(['sip', 'sit', 'look', 'think', 'work', 'wait', 'dance', 'sleep']);
+// A themed world's painted backdrop (css/worlds.css) is its wall: no office windows, pictures or clock on it.
+const WALL_ITEMS_OF_THE_OFFICE = new Set(['window', 'picture', 'clock']);
 
 function timeOfDay(hour) {
   if (hour >= 5 && hour < 11) return 'morning';
@@ -122,15 +124,18 @@ export function createPeopleWorld(container, { getPersona, canTalk = () => true,
 
   function drawDecor() {
     for (const element of decorElements) element.remove();
-    decorElements = layout.decor.map(item => {
+    clock = null;
+    const items = world.scene ? layout.decor.filter(item => !WALL_ITEMS_OF_THE_OFFICE.has(item.kind)) : layout.decor;
+    decorElements = items.map(item => {
       const size = ART[item.kind];
-      const art = createDecorArt(item.kind, size, { variant: item.variant ?? 0, theme: world.decor?.[item.kind] ?? null });
+      const art = createDecorArt(item.kind, size, { variant: item.variant ?? 0, worldKey: world.key });
       const element = h('div', { class: ['decor', `decor-${item.kind}`], 'aria-hidden': 'true' }, art);
       const height = item.width * (size.height / size.width);
       placeElement(element, item.left, item.top ?? item.floorY - height, item.width, item.z);
       if (item.kind === 'clock') clock = element.firstElementChild;
       return element;
     });
+    if (world.scene) decorElements.unshift(h('div', { class: 'world-backdrop', 'aria-hidden': 'true' }));
     room.prepend(...decorElements);
   }
 
@@ -143,12 +148,11 @@ export function createPeopleWorld(container, { getPersona, canTalk = () => true,
     const key = `${width}|${count}|${Math.round(minHeight)}|${world.key}`;
     if (key === layoutKey) return true;
     const previous = layout;
-    layout = computeWorldLayout({ width, count, minHeight });
+    layout = computeWorldLayout({ width, count, minHeight, wallScale: world.scene?.wallScale ?? 1 });
     layoutKey = key;
     room.style.setProperty('height', `${layout.height}px`);
     room.style.setProperty('--wall-h', `${layout.wallHeight}px`);
     room.classList.toggle('is-compact', layout.compact);
-    room.dataset.room = world.room;
     room.dataset.world = world.key;
     drawDecor();
     seats = layout.spots.seats.map(() => null);
@@ -184,9 +188,9 @@ export function createPeopleWorld(container, { getPersona, canTalk = () => true,
     }
     const isDone = persona.status === 'done';
     const worldStation = worldStationFor(world, persona.activity);
-    const signature = `${persona.activity}|${isDone}|${worldStation}`;
+    const signature = `${persona.activity}|${isDone}|${world.key}|${worldStation}`;
     if (station.signature !== signature) {
-      station.element.replaceChildren(createStationArt(persona.activity, { done: isDone, worldStation }));
+      station.element.replaceChildren(createStationArt(persona.activity, { done: isDone, worldStation, worldKey: world.key }));
       station.signature = signature;
     }
     station.element.classList.toggle('is-busy', persona.mood === 'working' || persona.mood === 'sweating');

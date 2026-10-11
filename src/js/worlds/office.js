@@ -2,16 +2,14 @@
 export default Object.freeze({
   key: 'office',
   label: 'המשרד',
-  room: 'office',
   accent: null,
-  decor: { window: 'sky', door: 'office', sofa: 'sofa', coffee: 'coffee', cooler: 'cooler', plant: 'fern', shelf: 'books', picture: 'art' },
   stations: null,
+  scene: null,
   cast: {
     kinds: [['human', 50], ['cat', 6], ['dog', 6], ['bear', 4], ['fox', 4], ['panda', 4], ['rabbit', 4], ['penguin', 4], ['frog', 3], ['monkey', 4], ['robot', 6], ['alien', 5]],
     outfits: [['tee', 1], ['hoodie', 1], ['suit', 1], ['dress', 1], ['overalls', 1], ['labcoat', 1], ['stripes', 1], ['sweater', 1], ['vest', 1]],
     headwear: [[null, 62], ['cap', 7], ['beanie', 6], ['headphones', 7], ['bow', 5], ['flower', 5], ['hardhat', 4], ['crown', 2], ['tophat', 2]],
     eyewear: [[null, 66], ['round', 13], ['square', 12], ['sun', 9]],
-    held: [[null, 1]],
   },
   lines: {
     openers: {

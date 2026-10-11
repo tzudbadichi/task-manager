@@ -2,15 +2,18 @@
 export default Object.freeze({
   key: 'shuk',
   label: 'השוק',
-  room: 'market',
   accent: { light: '#c2410c', dark: '#fdba74' },
-  decor: { window: 'street', door: 'shutter', sofa: 'crates', coffee: 'juice', cooler: 'cooler', plant: 'herbs', shelf: 'spices', picture: 'poster' },
   stations: { desk: 'stall', craft: 'scale' },
+  scene: { wallScale: 1.6 },
   cast: {
-    kinds: [['human', 76], ['cat', 16], ['dog', 8]],
-    outfits: [['apron', 60], ['tee', 20], ['vest', 20]],
-    headwear: [[null, 50], ['kerchief', 25], ['cap', 25]],
-    held: [[null, 1]],
+    archetypes: [
+      { key: 'vendor', weight: 26, kind: 'human', size: 1.02 },
+      { key: 'spiceMerchant', weight: 16, kind: 'human', size: 0.98 },
+      { key: 'baker', weight: 14, kind: 'human', size: 1 },
+      { key: 'shopper', weight: 20, kind: 'human', size: 0.98 },
+      { key: 'musician', weight: 12, kind: 'human', size: 1 },
+      { key: 'shukCat', weight: 12, kind: 'cat', size: 0.78 },
+    ],
   },
   lines: {
     openers: {

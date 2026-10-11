@@ -32,14 +32,19 @@ const HOME_OFFSET_UNITS = ART.station.left - ART.character.centerX + 2;
 export const COMPACT_MAX_WIDTH = 700;
 const WINDOW_EVERY_PX = 320;
 
+// A themed world's painted backdrop needs a taller wall; on phones it grows less.
+const COMPACT_MAX_WALL_SCALE = 1.4;
+
 /**
- * width: the office width; count: how many desks; minHeight: stretch to at least this (full screen).
+ * width: the office width; count: how many desks; minHeight: stretch to at least this (full screen);
+ * wallScale: how much taller the back wall is (a themed world's painted scene).
  * Desks are laid out in reading order for a right-to-left page: the first desk is top right.
  */
-export function computeWorldLayout({ width, count, minHeight = 0 }) {
+export function computeWorldLayout({ width, count, minHeight = 0, wallScale = 1 }) {
   const compact = width <= COMPACT_MAX_WIDTH;
   const size = compact ? SIZES.compact : SIZES.regular;
-  const { unit, pad, wallHeight, aisle, cellWidth, cellHeight, loungeHeight } = size;
+  const { unit, pad, aisle, cellWidth, cellHeight, loungeHeight } = size;
+  const wallHeight = Math.round(size.wallHeight * (compact ? Math.min(wallScale, COMPACT_MAX_WALL_SCALE) : wallScale));
   const columns = Math.max(1, Math.floor((width - pad * 2) / cellWidth));
   const rows = Math.ceil(count / columns);
   const naturalHeight = wallHeight + aisle + rows * cellHeight + loungeHeight;

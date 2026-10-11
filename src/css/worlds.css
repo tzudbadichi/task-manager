@@ -1,0 +1,49 @@
+/* Themed worlds of the people view (worlds/*.js, world-art/*.js): every world has a painted backdrop
+   (img/worlds/<key>/backdrop.svg, 2400 x 400) for its back wall and a seamless ground tile
+   (img/worlds/<key>/floor.svg, 240 x 240). people-view.js adds .world-backdrop to the room and makes the
+   wall taller (world.scene.wallScale); the backdrop covers the wall, anchored at its foot, and fades into
+   the ground. */
+
+.world-backdrop {
+  width: 100%;
+  height: calc(var(--wall-h) + 28px);
+  z-index: 0;
+  background-position: center bottom;
+  background-size: cover;
+  background-repeat: no-repeat;
+  -webkit-mask-image: linear-gradient(to bottom, #000 calc(100% - 34px), transparent);
+  mask-image: linear-gradient(to bottom, #000 calc(100% - 34px), transparent);
+  pointer-events: none;
+}
+.people-world:not([data-world="office"]).is-compact { background-size: 180px 180px, auto; }
+
+.people-world[data-world="middle-earth"] { background: url("../img/worlds/middle-earth/floor.svg") 0 0 / 240px 240px repeat, #86a95a; }
+.people-world[data-world="middle-earth"] .world-backdrop { background-image: url("../img/worlds/middle-earth/backdrop.svg"); }
+.people-world[data-world="wizards"] { background: url("../img/worlds/wizards/floor.svg") 0 0 / 240px 240px repeat, #8f8a84; }
+.people-world[data-world="wizards"] .world-backdrop { background-image: url("../img/worlds/wizards/backdrop.svg"); }
+.people-world[data-world="spies"] { background: url("../img/worlds/spies/floor.svg") 0 0 / 240px 240px repeat, #2b3442; }
+.people-world[data-world="spies"] .world-backdrop { background-image: url("../img/worlds/spies/backdrop.svg"); }
+.people-world[data-world="space"] { background: url("../img/worlds/space/floor.svg") 0 0 / 240px 240px repeat, #8b97a8; }
+.people-world[data-world="space"] .world-backdrop { background-image: url("../img/worlds/space/backdrop.svg"); }
+.people-world[data-world="star-knights"] { background: url("../img/worlds/star-knights/floor.svg") 0 0 / 240px 240px repeat, #c9b98f; }
+.people-world[data-world="star-knights"] .world-backdrop { background-image: url("../img/worlds/star-knights/backdrop.svg"); }
+.people-world[data-world="pirates"] { background: url("../img/worlds/pirates/floor.svg") 0 0 / 240px 240px repeat, #a8743f; }
+.people-world[data-world="pirates"] .world-backdrop { background-image: url("../img/worlds/pirates/backdrop.svg"); }
+.people-world[data-world="heroes"] { background: url("../img/worlds/heroes/floor.svg") 0 0 / 240px 240px repeat, #4b5563; }
+.people-world[data-world="heroes"] .world-backdrop { background-image: url("../img/worlds/heroes/backdrop.svg"); }
+.people-world[data-world="underwater"] { background: url("../img/worlds/underwater/floor.svg") 0 0 / 240px 240px repeat, #e7cf8d; }
+.people-world[data-world="underwater"] .world-backdrop { background-image: url("../img/worlds/underwater/backdrop.svg"); }
+.people-world[data-world="dinos"] { background: url("../img/worlds/dinos/floor.svg") 0 0 / 240px 240px repeat, #8a7a4a; }
+.people-world[data-world="dinos"] .world-backdrop { background-image: url("../img/worlds/dinos/backdrop.svg"); }
+.people-world[data-world="west"] { background: url("../img/worlds/west/floor.svg") 0 0 / 240px 240px repeat, #d9b77a; }
+.people-world[data-world="west"] .world-backdrop { background-image: url("../img/worlds/west/backdrop.svg"); }
+.people-world[data-world="shuk"] { background: url("../img/worlds/shuk/floor.svg") 0 0 / 240px 240px repeat, #d8c7a3; }
+.people-world[data-world="shuk"] .world-backdrop { background-image: url("../img/worlds/shuk/backdrop.svg"); }
+.people-world[data-world="critters"] { background: url("../img/worlds/critters/floor.svg") 0 0 / 240px 240px repeat, #8fc96a; }
+.people-world[data-world="critters"] .world-backdrop { background-image: url("../img/worlds/critters/backdrop.svg"); }
+.people-world[data-world="kitchen"] { background: url("../img/worlds/kitchen/floor.svg") 0 0 / 240px 240px repeat, #d9dde3; }
+.people-world[data-world="kitchen"] .world-backdrop { background-image: url("../img/worlds/kitchen/backdrop.svg"); }
+.people-world[data-world="olympus"] { background: url("../img/worlds/olympus/floor.svg") 0 0 / 240px 240px repeat, #ece6da; }
+.people-world[data-world="olympus"] .world-backdrop { background-image: url("../img/worlds/olympus/backdrop.svg"); }
+.people-world[data-world="cyber"] { background: url("../img/worlds/cyber/floor.svg") 0 0 / 240px 240px repeat, #1a1d33; }
+.people-world[data-world="cyber"] .world-backdrop { background-image: url("../img/worlds/cyber/backdrop.svg"); }
